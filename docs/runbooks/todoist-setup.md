@@ -21,6 +21,8 @@ config:integrations ergänzt einmalig einen zufälligen 32-Byte-Schlüssel INTEG
 2. Unter „Sensible Änderungen bestätigen“ Passwort und einen neuen TOTP-Code eingeben. Die Freigabe gilt höchstens fünf Minuten; bereits verbrauchte Codes nicht nochmals verwenden.
 3. In der Todoist-Webanwendung Avatar → Einstellungen → Integrationen → Entwickler → API-Token kopieren; siehe [offizielle Entwicklerhilfe](https://developer.todoist.com/). Token wie ein Passwort behandeln.
 4. Token ausschliesslich im geschützten Helios-Passwortfeld einfügen und „Token verschlüsselt speichern“. Danach wird das Feld geleert; der gespeicherte Wert ist nicht erneut abrufbar. Nicht in URLs, Browserstorage, Repository, Supportlogs oder Screenshots ablegen.
+   Falls die Sicherheitsbestätigung fehlt oder abgelaufen ist, zeigt das Tokenformular den Fehler direkt beim Speichern an. Über den Link oberhalb des Tokenfelds zur Passwort-/TOTP-Bestätigung wechseln und danach erneut speichern. Die Verbindungsprüfung wird erst nach erfolgreichem Speichern aktiv.
+
 5. „Verbindung prüfen & Projekte laden“ wählen. Es erfolgen nur lesende Abrufe; bestehende Projekte und Aufgaben werden nicht umgebaut. Fehler und Abrufpause beachten.
 
 ## Privat und Arbeitgeber
