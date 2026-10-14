@@ -635,3 +635,25 @@ it("rejects an older read result after a newer claim has completed", async () =>
     )!.data.content,
   ).toBe("Newer verified title");
 });
+
+it("recognizes revoked project access without reporting a valid token as invalid", async () => {
+  const snap = await connect();
+  const c = snap.contexts[0]!;
+  await work.handle(
+    "context-save",
+    headers(),
+    input(c, { projectId: projects[0]!.id }),
+  );
+  const denied: typeof fetch = (url, init) =>
+    new URL(String(url)).pathname.startsWith("/api/v1/projects/")
+      ? Promise.resolve(Response.json({ error: token }, { status: 403 }))
+      : f.fetcher(url, init);
+  const restricted = createWorkService(db, config, createTodoistReader(denied));
+  await expect(
+    restricted.handle("tasks-refresh", headers(), { contextId: c.id }),
+  ).rejects.toMatchObject({ code: "project_missing" });
+  const current = await work.snapshot(headers());
+  expect(current.contexts[0]!.configured).toBe(false);
+  expect(current.problems.some((p) => p.code === "project_missing")).toBe(true);
+  expect(current.problems.some((p) => p.code === "auth_error")).toBe(false);
+});

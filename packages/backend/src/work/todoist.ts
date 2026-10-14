@@ -58,63 +58,14 @@ export function createTodoistReader(
         signal: AbortSignal.timeout(timeout),
         cache: "no-store",
       });
-      if (!response.ok) {
-        let retry = Number(response.headers.get("retry-after"));
-        if (!Number.isFinite(retry)) {
-          const date = Date.parse(response.headers.get("retry-after") ?? "");
-          retry = (date - Date.now()) / 1000;
-        }
-        try {
-          const b = await response.json();
-          if (typeof b.retry_after === "number")
-            retry = Math.max(retry || 0, b.retry_after);
-        } catch {}
-        retry = Math.min(86400, Math.max(1, Math.ceil(retry || 30)));
+      if (!response.ok)
         throw new TodoistFault(
-          response.status === 401 || response.status === 403
-            ? "auth_error"
-            : response.status === 429
-              ? "rate_limit"
-              : response.status === 404
-                ? path.startsWith("projects")
-                  ? "project_missing"
-                  : "task_unavailable"
-                : response.status >= 500
-                  ? "network"
-                  : "unexpected",
-          retry,
+          classifyResponse(response.status, path, query),
+          await retryDelay(response),
         );
-      }
-      const reader = response.body?.getReader();
-      if (!reader) throw new TodoistFault("unexpected");
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          size += value.length;
-          if (size > 8 * 1024 * 1024) throw new TodoistFault("unexpected");
-          chunks.push(value);
-        }
-      } finally {
-        await reader.cancel();
-      }
-      try {
-        return JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      } catch {
-        throw new TodoistFault("unexpected");
-      }
+      return await boundedJson(response);
     } catch (e) {
-      if (e instanceof TodoistFault) throw e;
-      if (
-        typeof e === "object" &&
-        e !== null &&
-        "name" in e &&
-        ["TimeoutError", "AbortError"].includes(String(e.name))
-      )
-        throw new TodoistFault("timeout");
-      throw new TodoistFault("network");
+      throw normalizedFault(e);
     }
   }
   async function pages<T>(
@@ -175,4 +126,72 @@ export function createTodoistReader(
         .filter((c) => !c.is_deleted && c.item_id === id)
         .map(({ id, content, posted_at }) => ({ id, content, posted_at })),
   };
+}
+
+function classifyResponse(
+  status: number,
+  path: string,
+  query: Record<string, string>,
+): ProblemCode {
+  if (status === 401) return "auth_error";
+  if (status === 429) return "rate_limit";
+  if (status >= 500) return "network";
+  if (status !== 403 && status !== 404) return "unexpected";
+  if (path.startsWith("projects/") || query.project_id)
+    return "project_missing";
+  if (path.startsWith("tasks/") || query.task_id) return "task_unavailable";
+  if (status === 403) return "auth_error";
+  return "unexpected";
+}
+async function retryDelay(response: Response) {
+  const header = response.headers.get("retry-after");
+  let delay = Number(header);
+  if (!Number.isFinite(delay))
+    delay = (Date.parse(header ?? "") - Date.now()) / 1000;
+  try {
+    const body = await boundedJson(response);
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      "retry_after" in body &&
+      typeof body.retry_after === "number"
+    )
+      delay = Math.max(delay || 0, body.retry_after);
+  } catch {
+    /* Status and safe header remain authoritative when the error body is absent or invalid. */
+  }
+  return Math.min(86400, Math.max(1, Math.ceil(delay || 30)));
+}
+async function boundedJson(response: Response): Promise<unknown> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new TodoistFault("unexpected");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > 8 * 1024 * 1024) throw new TodoistFault("unexpected");
+      chunks.push(value);
+    }
+  } finally {
+    await reader.cancel();
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new TodoistFault("unexpected");
+  }
+}
+function normalizedFault(error: unknown) {
+  if (error instanceof TodoistFault) return error;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    ["TimeoutError", "AbortError"].includes(String(error.name))
+  )
+    return new TodoistFault("timeout");
+  return new TodoistFault("network");
 }

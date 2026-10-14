@@ -30,10 +30,10 @@ const at = (value: string | null) =>
 export function Workbench({
   settings = false,
   mobile = false,
-}: {
+}: Readonly<{
   settings?: boolean;
   mobile?: boolean;
-}) {
+}>) {
   const [snapshot, setSnapshot] = useState<WorkSnapshot | null>(null),
     [selected, setSelected] = useState(""),
     [loaded, setLoaded] = useState<{
@@ -141,6 +141,7 @@ export function Workbench({
                 .filter((c) => c.active)
                 .map((c) => (
                   <button
+                    type="button"
                     key={c.id}
                     className="context-pill"
                     data-theme={c.theme}
@@ -224,7 +225,10 @@ export function Workbench({
                     <h2>Arbeitgeber & Privat</h2>
                     <p>Freie Namen, bewusste Zuordnung, eigene Farben.</p>
                   </div>
-                  <button onClick={() => setNewEmployer(!newEmployer)}>
+                  <button
+                    type="button"
+                    onClick={() => setNewEmployer(!newEmployer)}
+                  >
                     Arbeitgeber hinzufügen
                   </button>
                 </div>
@@ -253,80 +257,15 @@ export function Workbench({
             </>
           )}
           {snapshot && !settings && !mobile && (
-            <>
-              <div className="panel-heading">
-                <div>
-                  <h2>Aufgabenübersicht</h2>
-                  <p className="help">
-                    Letzter vollständiger Abruf: {at(list?.lastSyncAt ?? null)}
-                  </p>
-                </div>
-                <button
-                  disabled={busy || pause || !current?.configured}
-                  onClick={() =>
-                    void action("tasks-refresh", { contextId: selected }).catch(
-                      () => {},
-                    )
-                  }
-                >
-                  Aufgaben aktualisieren
-                </button>
-              </div>
-              {pause && (
-                <p className="help">
-                  Nächster Abruf ab {at(snapshot.integration.nextAllowedAt)}.
-                </p>
-              )}
-              {!current?.configured ? (
-                <section className="card">
-                  <h2>Deinen Kontext verbinden.</h2>
-                  <p>
-                    In den Einstellungen Todoist verbinden und ein bestehendes
-                    Projekt bewusst auswählen.
-                  </p>
-                  <Link href="/settings/contexts">Kontext einrichten →</Link>
-                </section>
-              ) : !list ? (
-                <p role="status">Aufgaben werden geladen …</p>
-              ) : (
-                <>
-                  {list.stale && (
-                    <p className="status-notice">
-                      {list.lastSyncAt
-                        ? "Gespeicherter Stand · veraltet oder Verbindung gestört."
-                        : "Noch keine Aufgaben abgerufen."}{" "}
-                      Todoist bleibt die Quelle.
-                    </p>
-                  )}
-                  {!list.tasks.length && (
-                    <section className="card">
-                      <h2>
-                        {list.lastSyncAt
-                          ? "Hier ist gerade Platz."
-                          : "Bereit für den ersten Abruf."}
-                      </h2>
-                      <p>
-                        {list.lastSyncAt
-                          ? "Der letzte vollständige Abruf enthielt keine Aufgaben."
-                          : "Aufgaben über die Schaltfläche bewusst laden."}
-                      </p>
-                    </section>
-                  )}
-                  <div className="task-list">
-                    {list.tasks.map((task) => (
-                      <TaskCard
-                        key={task.data.id}
-                        task={task}
-                        contextId={selected}
-                        tasks={list.tasks}
-                        disabled={busy || pause}
-                        action={action}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
+            <TaskOverview
+              snapshot={snapshot}
+              current={current}
+              list={list}
+              selected={selected}
+              busy={busy}
+              pause={pause}
+              action={action}
+            />
           )}
           {mobile && snapshot && (
             <section className="card">
@@ -350,7 +289,7 @@ export function Workbench({
     </div>
   );
 }
-function StepUp({ onError }: { onError: (v: string) => void }) {
+function StepUp({ onError }: Readonly<{ onError: (v: string) => void }>) {
   const [pwd, setPwd] = useState(""),
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
@@ -403,7 +342,9 @@ function StepUp({ onError }: { onError: (v: string) => void }) {
             required
           />
         </label>
-        <button disabled={busy}>Änderungen bestätigen</button>
+        <button type="submit" disabled={busy}>
+          Änderungen bestätigen
+        </button>
         {ok && (
           <p role="status">Bestätigung für maximal fünf Minuten gültig.</p>
         )}
@@ -417,12 +358,12 @@ function Connection({
   busy,
   pause,
   action,
-}: {
+}: Readonly<{
   data: WorkSnapshot;
   busy: boolean;
   pause: boolean;
   action: Action;
-}) {
+}>) {
   const [token, setToken] = useState("");
   const i = data.integration;
   return (
@@ -473,7 +414,7 @@ function Connection({
             onChange={(e) => setToken(e.target.value)}
           />
         </label>
-        <button disabled={busy || !i.keyAvailable}>
+        <button type="submit" disabled={busy || !i.keyAvailable}>
           Token verschlüsselt speichern
         </button>
       </form>
@@ -484,6 +425,7 @@ function Connection({
         In Todoist: Einstellungen → Integrationen → Entwickler → API-Token.
       </p>
       <button
+        type="button"
         disabled={busy || pause || !i.enabled || !i.hasToken}
         onClick={() => void action("catalog-refresh", {}).catch(() => {})}
       >
@@ -492,6 +434,7 @@ function Connection({
       {i.hasToken && (
         <>
           <button
+            type="button"
             className="secondary"
             disabled={busy}
             onClick={() =>
@@ -504,6 +447,7 @@ function Connection({
             {i.enabled ? "Verbindung deaktivieren" : "Verbindung aktivieren"}
           </button>
           <button
+            type="button"
             className="secondary"
             disabled={busy}
             onClick={() =>
@@ -532,12 +476,12 @@ function ContextEditor({
   snapshot,
   busy,
   save,
-}: {
+}: Readonly<{
   context?: ContextView;
   snapshot: WorkSnapshot;
   busy: boolean;
   save: (data: ContextInput) => Promise<unknown>;
-}) {
+}>) {
   const [data, setData] = useState<ContextInput>({
     id: context?.id,
     revision: context?.revision ?? 0,
@@ -666,7 +610,9 @@ function ContextEditor({
           Projektwechsel verändert keine Todoist-Aufgabe. Deaktivierung erhält
           lokale Referenzen.
         </p>
-        <button disabled={busy}>Kontext speichern</button>
+        <button type="submit" disabled={busy}>
+          Kontext speichern
+        </button>
       </form>
     </article>
   );
@@ -675,11 +621,11 @@ function Problems({
   snapshot,
   busy,
   action,
-}: {
+}: Readonly<{
   snapshot: WorkSnapshot;
   busy: boolean;
   action: Action;
-}) {
+}>) {
   return (
     <section className="card settings-panel">
       <h2>Verbindungen & Probleme</h2>
@@ -705,6 +651,7 @@ function Problems({
             </p>
             {p.status === "open" && (
               <button
+                type="button"
                 disabled={busy}
                 className="secondary"
                 onClick={() =>
@@ -729,13 +676,13 @@ function TaskCard({
   tasks,
   disabled,
   action,
-}: {
+}: Readonly<{
   task: TaskView;
   contextId: string;
   tasks: TaskView[];
   disabled: boolean;
   action: Action;
-}) {
+}>) {
   const [comments, setComments] = useState<CommentView[] | null>(null),
     [error, setError] = useState("");
   const t = task.data;
@@ -804,6 +751,7 @@ function TaskCard({
         <p className="help">Abgerufen: {at(task.retrievedAt)}</p>
         {task.state === "active" && (
           <button
+            type="button"
             className="secondary"
             disabled={disabled}
             onClick={async () => {
@@ -843,5 +791,101 @@ function TaskCard({
         )}
       </details>
     </article>
+  );
+}
+
+function TaskOverview({
+  snapshot,
+  current,
+  list,
+  selected,
+  busy,
+  pause,
+  action,
+}: Readonly<{
+  snapshot: WorkSnapshot;
+  current: ContextView | undefined;
+  list: TaskList | null;
+  selected: string;
+  busy: boolean;
+  pause: boolean;
+  action: Action;
+}>) {
+  return (
+    <>
+      <div className="panel-heading">
+        <div>
+          <h2>Aufgabenübersicht</h2>
+          <p className="help">
+            Letzter vollständiger Abruf: {at(list?.lastSyncAt ?? null)}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={busy || pause || !current?.configured}
+          onClick={() =>
+            void action("tasks-refresh", { contextId: selected }).catch(
+              () => {},
+            )
+          }
+        >
+          Aufgaben aktualisieren
+        </button>
+      </div>
+      {pause && (
+        <p className="help">
+          Nächster Abruf ab {at(snapshot.integration.nextAllowedAt)}.
+        </p>
+      )}
+      {!current?.configured ? (
+        <section className="card">
+          <h2>Deinen Kontext verbinden.</h2>
+          <p>
+            In den Einstellungen Todoist verbinden und ein bestehendes Projekt
+            bewusst auswählen.
+          </p>
+          <Link href="/settings/contexts">Kontext einrichten →</Link>
+        </section>
+      ) : !list ? (
+        <p role="status">Aufgaben werden geladen …</p>
+      ) : (
+        <>
+          {list.stale && (
+            <p className="status-notice">
+              {list.lastSyncAt
+                ? "Gespeicherter Stand · veraltet oder Verbindung gestört."
+                : "Noch keine Aufgaben abgerufen."}{" "}
+              Todoist bleibt die Quelle.
+            </p>
+          )}
+          {!list.tasks.length && (
+            <section className="card">
+              <h2>
+                {list.lastSyncAt
+                  ? "Hier ist gerade Platz."
+                  : "Bereit für den ersten Abruf."}
+              </h2>
+              <p>
+                {list.lastSyncAt
+                  ? "Der letzte vollständige Abruf enthielt keine Aufgaben."
+                  : "Aufgaben über die Schaltfläche bewusst laden."}
+              </p>
+            </section>
+          )}
+          <div className="task-list">
+            {list.tasks.map((task) => (
+              <TaskCard
+                key={task.data.id}
+                task={task}
+                contextId={selected}
+                tasks={list.tasks}
+                disabled={busy || pause}
+                action={action}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </>
   );
 }

@@ -282,32 +282,7 @@ export function createWorkService(
       if (old?.kind === "private" && !input.active)
         throw new WorkFault("PRIVATE_REQUIRED");
       if (input.projectId && remap) {
-        const [p] = await db
-          .select()
-          .from(s.projectCatalog)
-          .where(
-            and(
-              eq(s.projectCatalog.integrationId, i.id),
-              eq(s.projectCatalog.projectId, input.projectId),
-              eq(s.projectCatalog.credentialVersion, i.credentialVersion),
-              eq(s.projectCatalog.available, true),
-              eq(s.projectCatalog.inbox, false),
-            ),
-          );
-        if (!p || !i.enabled || !i.encryptedToken)
-          throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
-        const duplicate = await db
-          .select()
-          .from(s.contexts)
-          .where(
-            and(
-              eq(s.contexts.userId, userId),
-              eq(s.contexts.projectId, input.projectId),
-              eq(s.contexts.active, true),
-            ),
-          );
-        if (input.active && duplicate.some((c) => c.id !== old?.id))
-          throw new WorkFault("PROJECT_ALREADY_ASSIGNED", 409);
+        await validateProjectAssignment(db, userId, i, input, old?.id);
       }
       const id = old?.id ?? randomUUID();
       const values = {
@@ -347,6 +322,350 @@ export function createWorkService(
       return { id, revision: values.revision };
     });
   }
+  async function changeIntegration(action: string, h: Headers, input: unknown) {
+    const data = z
+      .strictObject({
+        revision: z.number().int().nonnegative(),
+        ...(action === "token-save"
+          ? {
+              token: z
+                .string()
+                .trim()
+                .min(1)
+                .max(512)
+                .regex(/^[!-~]+$/),
+            }
+          : {}),
+      })
+      .parse(input) as { revision: number; token?: string };
+    return authorized(h, true, true, async (db, userId) => {
+      const i = await ensure(db, userId);
+      if (i.revision !== data.revision) throw conflict();
+      if (action === "token-save" && !config.INTEGRATION_KEY)
+        throw new WorkFault("KEY_UNAVAILABLE", 503);
+      if (action === "integration-enable" && !i.encryptedToken)
+        throw new WorkFault("NOT_CONNECTED", 409);
+      const rotated = action === "token-save" || action === "token-remove";
+      const credentialVersion = rotated ? randomUUID() : i.credentialVersion;
+      const encryptedToken =
+        action === "token-save"
+          ? await symmetricEncrypt({
+              key: config.INTEGRATION_KEY!,
+              data: data.token!,
+            })
+          : action === "token-remove"
+            ? null
+            : i.encryptedToken;
+      await db
+        .update(s.integrations)
+        .set({
+          encryptedToken,
+          credentialVersion,
+          enabled: action === "token-save" || action === "integration-enable",
+          revision: i.revision + 1,
+          state:
+            action === "token-save" || action === "integration-enable"
+              ? "not_tested"
+              : "not_connected",
+          lastCatalogAt: rotated ? null : i.lastCatalogAt,
+          lastCheckedAt: null,
+          nextAllowedAt: null,
+        })
+        .where(eq(s.integrations.id, i.id));
+      if (rotated)
+        await db
+          .update(s.projectCatalog)
+          .set({ available: false })
+          .where(eq(s.projectCatalog.integrationId, i.id));
+      return { ok: true };
+    });
+  }
+  async function refreshCatalog(h: Headers, input: unknown) {
+    z.strictObject({}).parse(input);
+    const job = await claim(h);
+    try {
+      const projects = await reader.projects(await token(job.i));
+      if (new Set(projects.map((p) => p.id)).size !== projects.length)
+        throw new TodoistFault("unexpected");
+      return await finish(h, job, false, async (db, i) => {
+        const now = new Date();
+        await db
+          .update(s.projectCatalog)
+          .set({ available: false })
+          .where(eq(s.projectCatalog.integrationId, i.id));
+        for (const p of projects)
+          await db
+            .insert(s.projectCatalog)
+            .values({
+              integrationId: i.id,
+              projectId: p.id,
+              name: p.name,
+              inbox: p.inbox_project === true,
+              available: !p.is_deleted && !p.is_archived,
+              credentialVersion: i.credentialVersion,
+              retrievedAt: now,
+            })
+            .onConflictDoUpdate({
+              target: [
+                s.projectCatalog.integrationId,
+                s.projectCatalog.projectId,
+              ],
+              set: {
+                name: p.name,
+                inbox: p.inbox_project === true,
+                available: !p.is_deleted && !p.is_archived,
+                credentialVersion: i.credentialVersion,
+                retrievedAt: now,
+              },
+            });
+        const cs = await db
+          .select()
+          .from(s.contexts)
+          .where(
+            and(eq(s.contexts.userId, i.userId), eq(s.contexts.active, true)),
+          );
+        for (const c of cs) {
+          if (c.projectId) {
+            const valid = projects.some(
+              (p) =>
+                p.id === c.projectId &&
+                !p.is_deleted &&
+                !p.is_archived &&
+                !p.inbox_project,
+            );
+            if (valid)
+              await resolve(
+                db,
+                i,
+                ["project_missing", "invalid_mapping"],
+                c.id,
+              );
+            else await problem(db, i, "project_missing", c.id);
+          }
+        }
+        await db
+          .update(s.integrations)
+          .set({ state: "ready", lastCheckedAt: now, lastCatalogAt: now })
+          .where(eq(s.integrations.id, i.id));
+        await resolve(db, i, technical);
+        return { ok: true, count: projects.length };
+      });
+    } catch (e) {
+      if (
+        e instanceof AuthFault ||
+        (e instanceof WorkFault && e.code === "REVISION_CONFLICT")
+      )
+        throw e;
+      return failed(h, job, e);
+    }
+  }
+  async function refreshTasks(h: Headers, input: unknown) {
+    const { contextId } = z.strictObject({ contextId: z.uuid() }).parse(input);
+    const job = await claim(h, contextId);
+    try {
+      const t = await token(job.i);
+      const p = await reader.project(t, job.c!.projectId!);
+      if (
+        p.id !== job.c!.projectId ||
+        p.inbox_project ||
+        p.is_deleted ||
+        p.is_archived
+      )
+        throw new TodoistFault("project_missing");
+      const tasks = await reader.tasks(t, p.id);
+      const sections = await reader.sections(t, p.id);
+      if (
+        tasks.some((t) => t.project_id !== p.id) ||
+        sections.some((t) => t.project_id !== p.id) ||
+        new Set(tasks.map((t) => t.id)).size !== tasks.length
+      )
+        throw new TodoistFault("unexpected");
+      return await finish(h, job, false, async (db, i) => {
+        const now = new Date();
+        await db
+          .update(s.taskProjections)
+          .set({
+            state: "unknown",
+            revision: sql`${s.taskProjections.revision}+1`,
+          })
+          .where(
+            and(
+              eq(s.taskProjections.integrationId, i.id),
+              eq(s.taskProjections.contextId, contextId),
+              eq(s.taskProjections.projectId, p.id),
+            ),
+          );
+        for (const task of tasks) {
+          const values = {
+            contextId,
+            projectId: p.id,
+            credentialVersion: i.credentialVersion,
+            data: task,
+            state: task.is_deleted
+              ? ("deleted" as const)
+              : task.checked
+                ? ("completed" as const)
+                : ("active" as const),
+            sectionName:
+              sections.find((s) => s.id === task.section_id)?.name ?? null,
+            fingerprint: createHash("sha256")
+              .update(JSON.stringify(task))
+              .digest("hex"),
+            retrievedAt: now,
+          };
+          await db
+            .insert(s.taskProjections)
+            .values({ ...values, integrationId: i.id, taskId: task.id })
+            .onConflictDoUpdate({
+              target: [
+                s.taskProjections.integrationId,
+                s.taskProjections.taskId,
+              ],
+              set: {
+                ...values,
+                revision: sql`${s.taskProjections.revision}+1`,
+              },
+            });
+        }
+        await db
+          .update(s.contexts)
+          .set({ lastSyncAt: now })
+          .where(eq(s.contexts.id, contextId));
+        await db
+          .update(s.integrations)
+          .set({ state: "ready", lastCheckedAt: now })
+          .where(eq(s.integrations.id, i.id));
+        await resolve(
+          db,
+          i,
+          [...technical, "project_missing", "invalid_mapping", "stale_cache"],
+          contextId,
+        );
+        return { ok: true, count: tasks.length };
+      });
+    } catch (e) {
+      if (
+        e instanceof AuthFault ||
+        (e instanceof WorkFault && e.code === "REVISION_CONFLICT")
+      )
+        throw e;
+      return failed(h, job, e);
+    }
+  }
+  async function readComments(h: Headers, input: unknown) {
+    const { contextId, taskId } = z
+      .strictObject({ contextId: z.uuid(), taskId: externalId })
+      .parse(input);
+    const job = await claim(h, contextId);
+    try {
+      const cached = await authorized(h, true, false, async (db, userId) => {
+        await owned(db, userId, contextId);
+        const [row] = await db
+          .select()
+          .from(s.taskProjections)
+          .where(
+            and(
+              eq(s.taskProjections.integrationId, job.i.id),
+              eq(s.taskProjections.taskId, taskId),
+              eq(s.taskProjections.contextId, contextId),
+              eq(s.taskProjections.projectId, job.c!.projectId!),
+              eq(s.taskProjections.credentialVersion, job.i.credentialVersion),
+            ),
+          );
+        if (!row) throw new WorkFault("TASK_NOT_FOUND", 404);
+        return row;
+      });
+      const t = await token(job.i);
+      const current = await reader.task(t, taskId);
+      if (current.project_id !== job.c!.projectId || current.is_deleted) {
+        await finish(h, job, false, async (db) => {
+          await db
+            .update(s.taskProjections)
+            .set({ state: "unknown" })
+            .where(
+              and(
+                eq(s.taskProjections.integrationId, cached.integrationId),
+                eq(s.taskProjections.taskId, taskId),
+              ),
+            );
+        });
+        throw new WorkFault("TASK_NO_LONGER_IN_CONTEXT", 409);
+      }
+      const comments = await reader.comments(t, taskId);
+      return finish(h, job, false, async () => ({ comments }));
+    } catch (e) {
+      if (e instanceof TodoistFault && e.code === "task_unavailable") {
+        await finish(h, job, false, async (db) => {
+          await db
+            .update(s.taskProjections)
+            .set({ state: "unknown" })
+            .where(
+              and(
+                eq(s.taskProjections.integrationId, job.i.id),
+                eq(s.taskProjections.contextId, contextId),
+                eq(s.taskProjections.taskId, taskId),
+              ),
+            );
+        });
+        throw new WorkFault("task_unavailable", 409);
+      }
+      if (e instanceof AuthFault || e instanceof WorkFault) throw e;
+      return failed(h, job, e);
+    }
+  }
+  async function checkProblem(h: Headers, input: unknown) {
+    const { id, revision } = z
+      .strictObject({
+        id: z.uuid(),
+        revision: z.number().int().nonnegative(),
+      })
+      .parse(input);
+    return authorized(h, true, false, async (db, userId) => {
+      const [p] = await db
+        .select()
+        .from(s.integrationProblems)
+        .where(
+          and(
+            eq(s.integrationProblems.id, id),
+            eq(s.integrationProblems.userId, userId),
+          ),
+        );
+      if (!p) throw new WorkFault("PROBLEM_NOT_FOUND", 404);
+      if (p.revision !== revision) throw conflict();
+      if (p.status !== "resolved")
+        await db
+          .update(s.integrationProblems)
+          .set({
+            status: "checked",
+            checkedAt: new Date(),
+            revision: p.revision + 1,
+          })
+          .where(eq(s.integrationProblems.id, id));
+      return { ok: true };
+    });
+  }
+  const actionHandlers = new Map<
+    string,
+    (h: Headers, input: unknown) => Promise<unknown>
+  >([
+    ["context-save", (h, input) => saveContext(h, contextInput.parse(input))],
+    ...[
+      "token-save",
+      "token-remove",
+      "integration-enable",
+      "integration-disable",
+    ].map(
+      (name) =>
+        [
+          name,
+          (h: Headers, input: unknown) => changeIntegration(name, h, input),
+        ] as const,
+    ),
+    ["catalog-refresh", refreshCatalog],
+    ["tasks-refresh", refreshTasks],
+    ["comments-read", readComments],
+    ["problem-check", checkProblem],
+  ]);
   return {
     async snapshot(h: Headers): Promise<WorkSnapshot> {
       return authorized(h, false, false, async (db, userId) => {
@@ -488,418 +807,86 @@ export function createWorkService(
     },
     async handle(action: string, h: Headers, input: unknown) {
       await authorized(h, true, false, async () => {});
-      if (action === "context-save")
-        return saveContext(h, contextInput.parse(input));
-      if (
-        action === "token-save" ||
-        action === "integration-disable" ||
-        action === "token-remove" ||
-        action === "integration-enable"
-      ) {
-        const data = z
-          .strictObject({
-            revision: z.number().int().nonnegative(),
-            ...(action === "token-save"
-              ? {
-                  token: z
-                    .string()
-                    .trim()
-                    .min(1)
-                    .max(512)
-                    .regex(/^[!-~]+$/),
-                }
-              : {}),
-          })
-          .parse(input) as { revision: number; token?: string };
-        return authorized(h, true, true, async (db, userId) => {
-          const i = await ensure(db, userId);
-          if (i.revision !== data.revision) throw conflict();
-          if (action === "token-save" && !config.INTEGRATION_KEY)
-            throw new WorkFault("KEY_UNAVAILABLE", 503);
-          if (action === "integration-enable" && !i.encryptedToken)
-            throw new WorkFault("NOT_CONNECTED", 409);
-          const rotated = action === "token-save" || action === "token-remove";
-          const credentialVersion = rotated
-            ? randomUUID()
-            : i.credentialVersion;
-          const encryptedToken =
-            action === "token-save"
-              ? await symmetricEncrypt({
-                  key: config.INTEGRATION_KEY!,
-                  data: data.token!,
-                })
-              : action === "token-remove"
-                ? null
-                : i.encryptedToken;
-          await db
-            .update(s.integrations)
-            .set({
-              encryptedToken,
-              credentialVersion,
-              enabled:
-                action === "token-save" || action === "integration-enable",
-              revision: i.revision + 1,
-              state:
-                action === "token-save" || action === "integration-enable"
-                  ? "not_tested"
-                  : "not_connected",
-              lastCatalogAt: rotated ? null : i.lastCatalogAt,
-              lastCheckedAt: null,
-              nextAllowedAt: null,
-            })
-            .where(eq(s.integrations.id, i.id));
-          if (rotated)
-            await db
-              .update(s.projectCatalog)
-              .set({ available: false })
-              .where(eq(s.projectCatalog.integrationId, i.id));
-          return { ok: true };
-        });
-      }
-      if (action === "catalog-refresh") {
-        z.strictObject({}).parse(input);
-        const job = await claim(h);
-        try {
-          const projects = await reader.projects(await token(job.i));
-          if (new Set(projects.map((p) => p.id)).size !== projects.length)
-            throw new TodoistFault("unexpected");
-          return await finish(h, job, false, async (db, i) => {
-            const now = new Date();
-            await db
-              .update(s.projectCatalog)
-              .set({ available: false })
-              .where(eq(s.projectCatalog.integrationId, i.id));
-            for (const p of projects)
-              await db
-                .insert(s.projectCatalog)
-                .values({
-                  integrationId: i.id,
-                  projectId: p.id,
-                  name: p.name,
-                  inbox: p.inbox_project === true,
-                  available: !p.is_deleted && !p.is_archived,
-                  credentialVersion: i.credentialVersion,
-                  retrievedAt: now,
-                })
-                .onConflictDoUpdate({
-                  target: [
-                    s.projectCatalog.integrationId,
-                    s.projectCatalog.projectId,
-                  ],
-                  set: {
-                    name: p.name,
-                    inbox: p.inbox_project === true,
-                    available: !p.is_deleted && !p.is_archived,
-                    credentialVersion: i.credentialVersion,
-                    retrievedAt: now,
-                  },
-                });
-            const cs = await db
-              .select()
-              .from(s.contexts)
-              .where(
-                and(
-                  eq(s.contexts.userId, i.userId),
-                  eq(s.contexts.active, true),
-                ),
-              );
-            for (const c of cs) {
-              if (c.projectId) {
-                const valid = projects.some(
-                  (p) =>
-                    p.id === c.projectId &&
-                    !p.is_deleted &&
-                    !p.is_archived &&
-                    !p.inbox_project,
-                );
-                if (valid)
-                  await resolve(
-                    db,
-                    i,
-                    ["project_missing", "invalid_mapping"],
-                    c.id,
-                  );
-                else await problem(db, i, "project_missing", c.id);
-              }
-            }
-            await db
-              .update(s.integrations)
-              .set({ state: "ready", lastCheckedAt: now, lastCatalogAt: now })
-              .where(eq(s.integrations.id, i.id));
-            await resolve(db, i, technical);
-            return { ok: true, count: projects.length };
-          });
-        } catch (e) {
-          if (
-            e instanceof AuthFault ||
-            (e instanceof WorkFault && e.code === "REVISION_CONFLICT")
-          )
-            throw e;
-          return failed(h, job, e);
-        }
-      }
-      if (action === "tasks-refresh") {
-        const { contextId } = z
-          .strictObject({ contextId: z.uuid() })
-          .parse(input);
-        const job = await claim(h, contextId);
-        try {
-          const t = await token(job.i);
-          const p = await reader.project(t, job.c!.projectId!);
-          if (
-            p.id !== job.c!.projectId ||
-            p.inbox_project ||
-            p.is_deleted ||
-            p.is_archived
-          )
-            throw new TodoistFault("project_missing");
-          const tasks = await reader.tasks(t, p.id);
-          const sections = await reader.sections(t, p.id);
-          if (
-            tasks.some((t) => t.project_id !== p.id) ||
-            sections.some((t) => t.project_id !== p.id) ||
-            new Set(tasks.map((t) => t.id)).size !== tasks.length
-          )
-            throw new TodoistFault("unexpected");
-          return await finish(h, job, false, async (db, i) => {
-            const now = new Date();
-            await db
-              .update(s.taskProjections)
-              .set({
-                state: "unknown",
-                revision: sql`${s.taskProjections.revision}+1`,
-              })
-              .where(
-                and(
-                  eq(s.taskProjections.integrationId, i.id),
-                  eq(s.taskProjections.contextId, contextId),
-                  eq(s.taskProjections.projectId, p.id),
-                ),
-              );
-            for (const task of tasks) {
-              const values = {
-                contextId,
-                projectId: p.id,
-                credentialVersion: i.credentialVersion,
-                data: task,
-                state: task.is_deleted
-                  ? ("deleted" as const)
-                  : task.checked
-                    ? ("completed" as const)
-                    : ("active" as const),
-                sectionName:
-                  sections.find((s) => s.id === task.section_id)?.name ?? null,
-                fingerprint: createHash("sha256")
-                  .update(JSON.stringify(task))
-                  .digest("hex"),
-                retrievedAt: now,
-              };
-              await db
-                .insert(s.taskProjections)
-                .values({ ...values, integrationId: i.id, taskId: task.id })
-                .onConflictDoUpdate({
-                  target: [
-                    s.taskProjections.integrationId,
-                    s.taskProjections.taskId,
-                  ],
-                  set: {
-                    ...values,
-                    revision: sql`${s.taskProjections.revision}+1`,
-                  },
-                });
-            }
-            await db
-              .update(s.contexts)
-              .set({ lastSyncAt: now })
-              .where(eq(s.contexts.id, contextId));
-            await db
-              .update(s.integrations)
-              .set({ state: "ready", lastCheckedAt: now })
-              .where(eq(s.integrations.id, i.id));
-            await resolve(
-              db,
-              i,
-              [
-                ...technical,
-                "project_missing",
-                "invalid_mapping",
-                "stale_cache",
-              ],
-              contextId,
-            );
-            return { ok: true, count: tasks.length };
-          });
-        } catch (e) {
-          if (
-            e instanceof AuthFault ||
-            (e instanceof WorkFault && e.code === "REVISION_CONFLICT")
-          )
-            throw e;
-          return failed(h, job, e);
-        }
-      }
-      if (action === "comments-read") {
-        const { contextId, taskId } = z
-          .strictObject({ contextId: z.uuid(), taskId: externalId })
-          .parse(input);
-        const job = await claim(h, contextId);
-        try {
-          const cached = await authorized(
-            h,
-            true,
-            false,
-            async (db, userId) => {
-              await owned(db, userId, contextId);
-              const [row] = await db
-                .select()
-                .from(s.taskProjections)
-                .where(
-                  and(
-                    eq(s.taskProjections.integrationId, job.i.id),
-                    eq(s.taskProjections.taskId, taskId),
-                    eq(s.taskProjections.contextId, contextId),
-                    eq(s.taskProjections.projectId, job.c!.projectId!),
-                    eq(
-                      s.taskProjections.credentialVersion,
-                      job.i.credentialVersion,
-                    ),
-                  ),
-                );
-              if (!row) throw new WorkFault("TASK_NOT_FOUND", 404);
-              return row;
-            },
-          );
-          const t = await token(job.i);
-          const current = await reader.task(t, taskId);
-          if (current.project_id !== job.c!.projectId || current.is_deleted) {
-            await finish(h, job, false, async (db) => {
-              await db
-                .update(s.taskProjections)
-                .set({ state: "unknown" })
-                .where(
-                  and(
-                    eq(s.taskProjections.integrationId, cached.integrationId),
-                    eq(s.taskProjections.taskId, taskId),
-                  ),
-                );
-            });
-            throw new WorkFault("TASK_NO_LONGER_IN_CONTEXT", 409);
-          }
-          const comments = await reader.comments(t, taskId);
-          return finish(h, job, false, async () => ({ comments }));
-        } catch (e) {
-          if (e instanceof TodoistFault && e.code === "task_unavailable") {
-            await finish(h, job, false, async (db) => {
-              await db
-                .update(s.taskProjections)
-                .set({ state: "unknown" })
-                .where(
-                  and(
-                    eq(s.taskProjections.integrationId, job.i.id),
-                    eq(s.taskProjections.contextId, contextId),
-                    eq(s.taskProjections.taskId, taskId),
-                  ),
-                );
-            });
-            throw new WorkFault("task_unavailable", 409);
-          }
-          if (e instanceof AuthFault || e instanceof WorkFault) throw e;
-          return failed(h, job, e);
-        }
-      }
-      if (action === "problem-check") {
-        const { id, revision } = z
-          .strictObject({
-            id: z.uuid(),
-            revision: z.number().int().nonnegative(),
-          })
-          .parse(input);
-        return authorized(h, true, false, async (db, userId) => {
-          const [p] = await db
-            .select()
-            .from(s.integrationProblems)
-            .where(
-              and(
-                eq(s.integrationProblems.id, id),
-                eq(s.integrationProblems.userId, userId),
-              ),
-            );
-          if (!p) throw new WorkFault("PROBLEM_NOT_FOUND", 404);
-          if (p.revision !== revision) throw conflict();
-          if (p.status !== "resolved")
-            await db
-              .update(s.integrationProblems)
-              .set({
-                status: "checked",
-                checkedAt: new Date(),
-                revision: p.revision + 1,
-              })
-              .where(eq(s.integrationProblems.id, id));
-          return { ok: true };
-        });
-      }
-      // Unknown actions still require authorization before revealing anything.
-      await identity.requireActive(h);
-      throw new WorkFault("NOT_FOUND", 404);
+      const handler = actionHandlers.get(action);
+      if (!handler) throw new WorkFault("NOT_FOUND", 404);
+      return handler(h, input);
     },
   };
 }
+const workErrorMessages: Record<string, string> = {
+  ...problemMessages,
+  REVISION_CONFLICT:
+    "Die Daten wurden zwischenzeitlich geändert. Neu laden und erneut prüfen.",
+  PROJECT_ALREADY_ASSIGNED:
+    "Dieses Projekt ist bereits einem aktiven Kontext zugeordnet.",
+  RETRY_LATER: "Bitte die Abrufpause abwarten.",
+  KEY_UNAVAILABLE:
+    "Der Integrationsschlüssel ist nicht verfügbar. Lokale Konfiguration prüfen.",
+};
+function errorResponse(
+  status: number,
+  code: string,
+  message = "Die Anfrage konnte nicht bestätigt werden.",
+) {
+  return { status, body: { error: { code, message } } };
+}
 export function publicWorkError(e: unknown) {
   if (e instanceof TodoistFault)
-    return {
-      status: e.code === "rate_limit" ? 429 : 502,
-      body: { error: { code: e.code, message: problemMessages[e.code] } },
-    };
-  if (e instanceof AuthFault)
-    return {
-      status: e.status,
-      body: {
-        error: {
-          code: e.code,
-          message:
-            e.code === "STEP_UP_REQUIRED"
-              ? "Bitte zuerst Passwort und neuen Authenticator-Code bestätigen."
-              : "Die Anfrage konnte nicht bestätigt werden.",
-        },
-      },
-    };
+    return errorResponse(
+      e.code === "rate_limit" ? 429 : 502,
+      e.code,
+      problemMessages[e.code],
+    );
+  if (e instanceof AuthFault) {
+    const message =
+      e.code === "STEP_UP_REQUIRED"
+        ? "Bitte zuerst Passwort und neuen Authenticator-Code bestätigen."
+        : undefined;
+    return errorResponse(e.status, e.code, message);
+  }
   if (e instanceof z.ZodError)
-    return {
-      status: 400,
-      body: {
-        error: {
-          code: "INVALID_REQUEST",
-          message: "Bitte die Eingaben prüfen.",
-        },
-      },
-    };
+    return errorResponse(400, "INVALID_REQUEST", "Bitte die Eingaben prüfen.");
   if (e instanceof WorkFault)
-    return {
-      status: e.status,
-      body: {
-        error: {
-          code: e.code,
-          message:
-            problemMessages[e.code as ProblemCode] ??
-            (e.code === "REVISION_CONFLICT"
-              ? "Die Daten wurden zwischenzeitlich geändert. Neu laden und erneut prüfen."
-              : e.code === "PROJECT_ALREADY_ASSIGNED"
-                ? "Dieses Projekt ist bereits einem aktiven Kontext zugeordnet."
-                : e.code === "RETRY_LATER"
-                  ? "Bitte die Abrufpause abwarten."
-                  : e.code === "KEY_UNAVAILABLE"
-                    ? "Der Integrationsschlüssel ist nicht verfügbar. Lokale Konfiguration prüfen."
-                    : "Die Anfrage konnte nicht bestätigt werden."),
-        },
-      },
-    };
-  return {
-    status: 503,
-    body: {
-      error: {
-        code: "SERVICE_UNAVAILABLE",
-        message: "Der Dienst ist momentan nicht verfügbar.",
-      },
-    },
-  };
+    return errorResponse(e.status, e.code, workErrorMessages[e.code]);
+  return errorResponse(
+    503,
+    "SERVICE_UNAVAILABLE",
+    "Der Dienst ist momentan nicht verfügbar.",
+  );
+}
+
+async function validateProjectAssignment(
+  db: Db,
+  userId: string,
+  i: Integration,
+  input: ContextInput,
+  contextId: string | undefined,
+) {
+  if (!input.projectId) return;
+  const [p] = await db
+    .select()
+    .from(s.projectCatalog)
+    .where(
+      and(
+        eq(s.projectCatalog.integrationId, i.id),
+        eq(s.projectCatalog.projectId, input.projectId),
+        eq(s.projectCatalog.credentialVersion, i.credentialVersion),
+        eq(s.projectCatalog.available, true),
+        eq(s.projectCatalog.inbox, false),
+      ),
+    );
+  if (!p || !i.enabled || !i.encryptedToken)
+    throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+  const duplicate = await db
+    .select()
+    .from(s.contexts)
+    .where(
+      and(
+        eq(s.contexts.userId, userId),
+        eq(s.contexts.projectId, input.projectId),
+        eq(s.contexts.active, true),
+      ),
+    );
+  if (input.active && duplicate.some((c) => c.id !== contextId))
+    throw new WorkFault("PROJECT_ALREADY_ASSIGNED", 409);
 }

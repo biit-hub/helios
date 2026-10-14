@@ -149,3 +149,19 @@ describe("verified Todoist v1 read-only contract", () => {
     ).toThrow();
   });
 });
+
+it("distinguishes scoped permission loss from invalid connection credentials", async () => {
+  const r = createTodoistReader(async () =>
+    Response.json({ error: token }, { status: 403 }),
+  );
+  await expect(r.projects(token)).rejects.toMatchObject({ code: "auth_error" });
+  await expect(r.project(token, projects[0]!.id)).rejects.toMatchObject({
+    code: "project_missing",
+  });
+  await expect(r.tasks(token, projects[0]!.id)).rejects.toMatchObject({
+    code: "project_missing",
+  });
+  await expect(r.task(token, "opaque-task")).rejects.toMatchObject({
+    code: "task_unavailable",
+  });
+});

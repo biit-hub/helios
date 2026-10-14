@@ -4,18 +4,18 @@ Geprüft am 14. Oktober 2026 anhand der [offiziellen Todoist API v1](https://dev
 
 ## Verifizierte API-Fakten
 
-| Gegenstand          | Vertrag und Helios-Verwendung                                                                                                                        |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Basis / Auth        | https://api.todoist.com/api/v1/; Authorization: Bearer mit persönlichem API-Token, ausschliesslich serverseitig                                      |
-| Projekte            | GET projects und GET projects/{id}; Liste aktiver zugänglicher Projekte; id ist ein undurchsichtiger String, niemals als Zahl casten                 |
-| Pagination          | results und next_cursor (String oder null); cursor und limit=200 mit unveränderten Filtern für Folgeseiten                                           |
-| Eingang             | inbox_project bei persönlichen Projekten; Workspaceprojekte besitzen workspace_id. Keine Erkennung über Namen, Zahlen oder feste IDs                 |
-| Aufgaben            | GET tasks?project_id=... liefert aktive Aufgaben; GET tasks/{id} dient der erneuten Scopeprüfung vor Kommentarabrufen                                |
-| Hierarchie / Status | parent_id und section_id nativ; checked und is_deleted explizit; Abschnittsnamen über GET sections?project_id=...                                    |
-| Priorität           | API 1 normal bis 4 dringend; Oberfläche zeigt die üblichen P4 bis P1 entsprechend umgekehrt                                                          |
-| Datum / Deadline    | due.date, optional due.datetime/timezone/is_recurring; deadline.date ist fachlich getrennt. Fehlende Werte bleiben leer; keine erfundene Deadline    |
-| Kommentare          | GET comments?task_id=... paginiert; item_id bindet den Kommentar an die Aufgabe; content/posted_at werden gelesen, gelöschte Kommentare ausgefiltert |
-| Fehler              | 401/403 Authfehler, 404 nicht zugänglich/fehlend, 429 Rate Limit, 5xx temporär; Retry-After und numerisches retry_after berücksichtigen              |
+| Gegenstand          | Vertrag und Helios-Verwendung                                                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Basis / Auth        | https://api.todoist.com/api/v1/; Authorization: Bearer mit persönlichem API-Token, ausschliesslich serverseitig                                                                                              |
+| Projekte            | GET projects und GET projects/{id}; Liste aktiver zugänglicher Projekte; id ist ein undurchsichtiger String, niemals als Zahl casten                                                                         |
+| Pagination          | results und next_cursor (String oder null); cursor und limit=200 mit unveränderten Filtern für Folgeseiten                                                                                                   |
+| Eingang             | inbox_project bei persönlichen Projekten; Workspaceprojekte besitzen workspace_id. Keine Erkennung über Namen, Zahlen oder feste IDs                                                                         |
+| Aufgaben            | GET tasks?project_id=... liefert aktive Aufgaben; GET tasks/{id} dient der erneuten Scopeprüfung vor Kommentarabrufen                                                                                        |
+| Hierarchie / Status | parent_id und section_id nativ; checked und is_deleted explizit; Abschnittsnamen über GET sections?project_id=...                                                                                            |
+| Priorität           | API 1 normal bis 4 dringend; Oberfläche zeigt die üblichen P4 bis P1 entsprechend umgekehrt                                                                                                                  |
+| Datum / Deadline    | due.date, optional due.datetime/timezone/is_recurring; deadline.date ist fachlich getrennt. Fehlende Werte bleiben leer; keine erfundene Deadline                                                            |
+| Kommentare          | GET comments?task_id=... paginiert; item_id bindet den Kommentar an die Aufgabe; content/posted_at werden gelesen, gelöschte Kommentare ausgefiltert                                                         |
+| Fehler              | 401 Authfehler; 403/404 je nach Ressourcenbindung fehlender Projekt-/Taskzugriff, sonst globaler Auth-/Vertragsfehler, 429 Rate Limit, 5xx temporär; Retry-After und numerisches retry_after berücksichtigen |
 
 Die dokumentierten Zahlen zu Full-/Partial-Sync-Quoten werden nicht als Quote für GET-Ressourcen übernommen. Helios verwendet keinen Sync-Schreib- oder Tokenmigrationsendpunkt. Ein persönlicher Token kann bei Todoist weitergehende Rechte besitzen; Helios beschränkt den Adapter strukturell auf GET. Das ist eine Anwendungsgarantie, keine Behauptung über einen externen Read-only-Scope dieses Tokens.
 
