@@ -1,0 +1,17 @@
+{
+  "name": "@helios/worker",
+  "version": "0.1.0-dev.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@helios/backend": "workspace:*",
+    "@helios/contracts": "workspace:*",
+    "tsx": "4.23.15"
+  }
+}
