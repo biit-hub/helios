@@ -22,7 +22,7 @@ export function taskBasis(t: TodoistTask) {
           t.content,
           t.description,
           t.priority,
-          [...t.labels].sort(),
+          [...t.labels].sort((a, b) => a.localeCompare(b)),
           t.due,
           t.deadline,
           t.duration ?? null,
