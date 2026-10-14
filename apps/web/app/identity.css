@@ -1,0 +1,117 @@
+.auth-shell {
+  max-width: 850px;
+}
+.auth-card h1 {
+  font-size: 34px;
+}
+.auth-card section {
+  border-top: 1px solid var(--border);
+  margin-top: 30px;
+  padding-top: 15px;
+}
+.auth-card form {
+  display: grid;
+  gap: 16px;
+}
+.auth-card label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+}
+.auth-card input {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 13px;
+  color: var(--text);
+}
+.auth-card .check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 400;
+}
+.auth-card input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+button {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 17px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  margin: 8px 8px 8px 0;
+}
+button.secondary {
+  background: var(--surface);
+  color: var(--accent);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.help {
+  font-size: 13px;
+  color: var(--muted);
+}
+.form-error {
+  color: #9c271d;
+  min-height: 1em;
+  margin: 0;
+}
+.setup-link {
+  display: block;
+  margin-top: 22px;
+}
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0;
+  list-style: none;
+  gap: 10px;
+}
+.recovery-codes li,
+.secret-text {
+  font-family: monospace;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  background: var(--soft);
+  padding: 10px;
+  border-radius: 7px;
+}
+.sessions {
+  list-style: none;
+  padding: 0;
+}
+.sessions li {
+  border: 1px solid var(--border);
+  padding: 15px;
+  border-radius: 12px;
+  margin: 10px 0;
+}
+.auth-card img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 550px) {
+  .recovery-codes {
+    grid-template-columns: 1fr;
+  }
+  .auth-card h1 {
+    font-size: 28px;
+  }
+}
