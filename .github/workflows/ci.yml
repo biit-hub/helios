@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17.7-bookworm
+        image: postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
         env:
           {
             POSTGRES_USER: helios,
@@ -22,7 +22,7 @@ jobs:
             POSTGRES_DB: helios_test,
           }
         ports: ["5432:5432"]
-        options: --health-cmd='pg_isready -U helios -d helios_test' --health-interval=5s --health-timeout=3s --health-retries=20
+        options: --health-cmd="pg_isready -U helios -d helios_test" --health-interval=5s --health-timeout=3s --health-retries=20
     env:
       HELIOS_ENV: test
       DATABASE_URL: postgresql://helios:synthetic-test-only@127.0.0.1:5432/helios_test
@@ -77,4 +77,4 @@ jobs:
           docker compose exec -T worker node_modules/.bin/tsx apps/worker/src/smoke.ts
           curl --fail http://127.0.0.1:3100/api/health/ready
       - if: always()
-        run: docker compose down
+        run: if [ -f .env ]; then docker compose down; fi

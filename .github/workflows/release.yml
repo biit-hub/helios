@@ -84,6 +84,6 @@ jobs:
             docker tag "helios-$APP:release" "$DOCKERHUB_NAMESPACE/helios-$APP:latest"
             docker push "$DOCKERHUB_NAMESPACE/helios-$APP:latest"
           done
-      - name: Synchronize develop through a PR
+      - name: Record release follow-up for Codex
         run: |
-          gh pr create --repo "$GITHUB_REPOSITORY" --base develop --head main --title "chore(release): synchronize main after $RELEASE_VERSION" --body "Synchronize the explicitly approved stable release into develop. Review and required checks apply."
+          echo "Codex must create and integrate the synchronization PR main to develop, verify images and complete the explicitly commissioned release." >> "$GITHUB_STEP_SUMMARY"

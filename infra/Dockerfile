@@ -1,4 +1,6 @@
-FROM node:22.23.2-bookworm-slim AS build
+FROM node:22.23.2-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 AS runtime
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* /usr/local/lib/node_modules/npm /opt/yarn-* && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
+FROM node:22.23.2-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm install --global pnpm@11.25.0
@@ -6,7 +8,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 RUN pnpm --filter @helios/worker deploy --prod --legacy /runtime
-FROM node:22.23.2-bookworm-slim AS web
+FROM runtime AS web
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
@@ -14,11 +16,12 @@ COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/
 USER node
 EXPOSE 3000
 CMD ["node","apps/web/server.js"]
-FROM node:22.23.2-bookworm-slim AS worker
+FROM runtime AS worker
 WORKDIR /app
 COPY --from=build --chown=node:node /runtime ./apps/worker
 RUN ln -s apps/worker/node_modules node_modules && mkdir packages && ln -s ../apps/worker/node_modules/@helios/backend packages/backend
 ENV NODE_ENV=production
 USER node
 CMD ["node_modules/.bin/tsx","apps/worker/src/index.ts"]
+
 

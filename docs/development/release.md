@@ -12,3 +12,5 @@ Nur ein ausdrücklicher Auftrag des Projektverantwortlichen startet diesen Proze
 Docker Hub bleibt zunächst unkonfiguriert. Später Repositoryvariable DOCKERHUB_NAMESPACE, Umgebungssecret DOCKERHUB_USERNAME und DOCKERHUB_TOKEN (minimaler Schreibzugriff nur auf helios-web/helios-worker) setzen. Keine persönlichen Passwörter verwenden. Workflow ist vorbereitet, aber ohne expliziten Auftrag und Credentials nicht produktiv ausprobiert. Keine Docker-Hub-Identität aus GitHub ableiten.
 
 Nach dem Merge können Registry-/GitHub-Ausfälle eine teilweise Veröffentlichung erzeugen; latest nicht vor erfolgreicher Versionpublikation aktualisieren. Zwei Registrytags sind nicht atomar gemeinsam aktualisierbar. Wiederanlauf nach einem Teilfehler muss den vorhandenen Tag/Release/Digest lesen und darf keine neue Version erfinden. Bei kritischem Fund Veröffentlichung stoppen.
+
+GitHub Actions darf keine PR-Reviews genehmigen. Der Workflow vermerkt die Nacharbeit; Codex erstellt und integriert anschliessend den Synchronisations-PR mit normalen Pflichtchecks im freigegebenen Releaseauftrag.
