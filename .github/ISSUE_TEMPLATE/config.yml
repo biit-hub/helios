@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Sicherheitslücke vertraulich melden
+    url: https://github.com/biit-hub/helios/security/advisories/new
+    about: Private Vulnerability Reporting verwenden, keine öffentlichen Secrets.

@@ -1,0 +1,11 @@
+# E1.1 is not approved for public deployment. Use only after E1.2 security acceptance.
+# Later attach ONLY web to the existing NPM network, using an explicit override.
+# postgres and worker stay on the private backend network; no host ports.
+name: helios-prod
+services:
+  web:
+    environment:
+      HELIOS_ENV: production
+  worker:
+    environment:
+      HELIOS_ENV: production

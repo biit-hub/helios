@@ -1,0 +1,89 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        {
+          description: "Explicitly approved release PR develop to main",
+          required: true,
+        }
+      sha: { description: "Exact approved develop HEAD SHA", required: true }
+      version:
+        { description: "Approved stable SemVer, without v", required: true }
+permissions:
+  contents: read
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/develop' && github.actor == github.repository_owner
+    environment: release
+    runs-on: ubuntu-latest
+    permissions:
+      { contents: write, pull-requests: write, checks: read, actions: read }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_PR: ${{ inputs.pr }}
+      RELEASE_SHA: ${{ inputs.sha }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          {
+            ref: "${{ inputs.sha }}",
+            fetch-depth: 0,
+            persist-credentials: false,
+          }
+      - name: Verify release authorization and checks
+        run: node scripts/verify-release.mjs
+      - run: docker build -f infra/Dockerfile --target web -t helios-web:release .
+      - run: docker build -f infra/Dockerfile --target worker -t helios-worker:release .
+      - uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          {
+            image-ref: "helios-web:release",
+            severity: "HIGH,CRITICAL",
+            exit-code: "1",
+            ignore-unfixed: true,
+          }
+      - uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          {
+            image-ref: "helios-worker:release",
+            severity: "HIGH,CRITICAL",
+            exit-code: "1",
+            ignore-unfixed: true,
+          }
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          {
+            username: "${{ secrets.DOCKERHUB_USERNAME }}",
+            password: "${{ secrets.DOCKERHUB_TOKEN }}",
+          }
+      - name: Integrate approved release PR
+        run: |
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/$RELEASE_PR/merge" -f sha="$RELEASE_SHA" -f merge_method=merge > merge.json
+          node -e 'const r=require("./merge.json");if(!r.merged)process.exit(1)'
+      - name: Tag and GitHub Release
+        run: |
+          SHA=$(node -p 'require("./merge.json").sha')
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/v$RELEASE_VERSION" -f sha="$SHA"
+          gh release create "v$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --title "Helios $RELEASE_VERSION" --generate-notes
+      - name: Publish versioned images before promoting latest
+        run: |
+          MINOR=$(node -p 'process.env.RELEASE_VERSION.split(".").slice(0,2).join(".")')
+          for APP in web worker; do
+            docker tag "helios-$APP:release" "$DOCKERHUB_NAMESPACE/helios-$APP:$RELEASE_VERSION"
+            docker push "$DOCKERHUB_NAMESPACE/helios-$APP:$RELEASE_VERSION"
+          done
+          for APP in web worker; do
+            docker tag "helios-$APP:release" "$DOCKERHUB_NAMESPACE/helios-$APP:$MINOR"
+            docker push "$DOCKERHUB_NAMESPACE/helios-$APP:$MINOR"
+            docker tag "helios-$APP:release" "$DOCKERHUB_NAMESPACE/helios-$APP:latest"
+            docker push "$DOCKERHUB_NAMESPACE/helios-$APP:latest"
+          done
+      - name: Record release follow-up for Codex
+        run: |
+          echo "Codex must create and integrate the synchronization PR main to develop, verify images and complete the explicitly commissioned release." >> "$GITHUB_STEP_SUMMARY"

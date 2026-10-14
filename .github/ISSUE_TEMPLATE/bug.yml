@@ -1,0 +1,19 @@
+name: Fehler melden
+description: Reproduzierbarer Fehler ohne private Daten
+body:
+  - type: textarea
+    id: description
+    attributes: { label: Erwartetes und tatsächliches Verhalten }
+    validations: { required: true }
+  - type: textarea
+    id: reproduction
+    attributes: { label: Schritte und synthetische Beispieldaten }
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes: { label: Commit oder Version }
+  - type: markdown
+    attributes:
+      {
+        value: "Keine Secrets oder echten Aufgaben veröffentlichen. Sicherheitslücken privat über Security melden.",
+      }

@@ -1,0 +1,61 @@
+name: helios-dev
+services:
+  postgres:
+    image: postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Run pnpm config:init}
+      POSTGRES_USER: ${POSTGRES_USER:?Run pnpm config:init}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run pnpm config:init}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  web:
+    build: { context: ., dockerfile: infra/Dockerfile, target: web }
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Run pnpm config:init}
+      HELIOS_ENV: ${HELIOS_ENV:-development}
+      RESTORE_MODE: ${RESTORE_MODE:-false}
+    ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
+    networks: [backend, frontend]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          'fetch("http://127.0.0.1:3000/api/health/ready").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+  worker:
+    build: { context: ., dockerfile: infra/Dockerfile, target: worker }
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Run pnpm config:init}
+      HELIOS_ENV: ${HELIOS_ENV:-development}
+      WORKER_ENABLED: ${WORKER_ENABLED:-true}
+      RESTORE_MODE: ${RESTORE_MODE:-false}
+    networks: [backend]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, node_modules/.bin/tsx, apps/worker/src/health.ts]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+networks:
+  backend: { internal: true }
+  frontend: {}
+volumes:
+  postgres-data:
