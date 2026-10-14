@@ -2,9 +2,9 @@
 
 Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Aufgaben bleiben später in Todoist führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E1.2, Authentifizierungsgrundlage, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Dazu PostgreSQL/Drizzle, pg-boss-Worker, Testjob und Healthchecks aus E1.1.
+**Stand: E2, Kontexte und lesende Todoist-Anbindung, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
 
-Geplant: Kontexte, Todoist-Lesesicht, Tagespläne/Fokus/Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Keine fachlichen Todoist-Ansichten oder produktiven Integrationen eingerichtet. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+Geplant: Tagespläne/Fokus/Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Todoist-Inhalte werden in E2 ausschliesslich gelesen; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
 
 ## Schnellstart mit Docker Compose
 
@@ -17,6 +17,7 @@ git checkout develop
 pnpm install --frozen-lockfile
 pnpm config:init
 pnpm config:auth
+pnpm config:integrations
 docker compose up -d postgres
 docker compose build
 docker compose run --rm --no-deps worker node_modules/.bin/tsx packages/backend/src/migrate.ts
@@ -24,7 +25,7 @@ docker compose up -d web worker
 docker compose exec worker node_modules/.bin/tsx apps/worker/src/smoke.ts
 ```
 
-Öffne [Helios lokal](http://127.0.0.1:3100) oder [das mobile Grundlayout](http://127.0.0.1:3100/mobile). Ohne Anmeldung führt die Anwendung zum echten Login. Es wird kein Defaultkonto angelegt. Die Einrichtung erfolgt wie nachstehend über das lokale CLI. Der Testjob schreibt ausschliesslich eine synthetische UUID in die neue Datenbank.
+Öffne [Helios lokal](http://127.0.0.1:3100) oder [die mobile Kontextauswahl](http://127.0.0.1:3100/mobile). Ohne Anmeldung führt die Anwendung zum echten Login. Es wird kein Defaultkonto angelegt. Die Einrichtung erfolgt wie nachstehend über das lokale CLI. Der Testjob schreibt ausschliesslich eine synthetische UUID in die neue Datenbank.
 
 Compose verwendet das Projekt `helios-dev`, ein eigenes Volume und ein internes Netzwerk. Nur Web bindet an Loopback. PostgreSQL und Worker haben keine Hostports. Keine Helios-1.0-Volumes oder bestehenden NPM-Container verwenden.
 
@@ -48,20 +49,29 @@ Details: [Einrichtung](docs/runbooks/authentication.md), [Recovery](docs/runbook
 
 `pnpm config:init` legt einmalig eine ignorierte `.env` mit zufälligem Datenbankpasswort an. Es überschreibt keine Datei. [.env.example](.env.example) enthält nur Platzhalter. Unix-Dateirechte werden auf 0600 gesetzt; auf Windows den Zugriff über NTFS auf den eigenen Benutzer begrenzen. Niemals `docker compose config` mit aufgelösten Secrets veröffentlichen. Passwortänderungen aktualisieren keine bereits initialisierte PostgreSQL-Rolle automatisch.
 
-| Variable                      | Bedeutung                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------------- |
-| HELIOS_ENV                    | development, test oder production; unabhängig von NODE_ENV                                |
-| DATABASE_URL                  | Private PostgreSQL-Verbindungsadresse; Compose-Hostname postgres                          |
-| POSTGRES_DB / USER / PASSWORD | Initialisierung der neuen PostgreSQL-Datenbank                                            |
-| WEB_PORT                      | Lokaler Loopbackport, Standard 3100                                                       |
-| WORKER_ENABLED                | Exakt true/false, zum Anhalten der Verarbeitung                                           |
-| RESTORE_MODE                  | true blockiert Worker, geschützte Authzugriffe und Mutationen beim Restore                |
-| AUTH_SECRET                   | Privater zufälliger Signatur-/Verschlüsselungsschlüssel, nicht rotieren ohne Recoveryplan |
-| AUTH_ORIGIN                   | Exakter kanonischer Browserorigin, z. B. http://127.0.0.1:3100 lokal                      |
+| Variable                      | Bedeutung                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| HELIOS_ENV                    | development, test oder production; unabhängig von NODE_ENV                                        |
+| DATABASE_URL                  | Private PostgreSQL-Verbindungsadresse; Compose-Hostname postgres                                  |
+| POSTGRES_DB / USER / PASSWORD | Initialisierung der neuen PostgreSQL-Datenbank                                                    |
+| WEB_PORT                      | Lokaler Loopbackport, Standard 3100                                                               |
+| WORKER_ENABLED                | Exakt true/false, zum Anhalten der Verarbeitung                                                   |
+| RESTORE_MODE                  | true blockiert Worker, geschützte Authzugriffe und Mutationen beim Restore                        |
+| AUTH_SECRET                   | Privater zufälliger Signatur-/Verschlüsselungsschlüssel, nicht rotieren ohne Recoveryplan         |
+| INTEGRATION_KEY               | Separater privater 32-Byte-Hexschlüssel für Todoist-Credentials; lokal generiert, separat sichern |
+| AUTH_ORIGIN                   | Exakter kanonischer Browserorigin, z. B. http://127.0.0.1:3100 lokal                              |
 
 `pnpm config:auth` ergänzt nur fehlende AUTH_SECRET/AUTH_ORIGIN in der ignorierten lokalen .env, ohne bestehende Werte zu ersetzen. AUTH_SECRET enthält mindestens 32 zufällige Bytes als Hex und schützt Cookie-Signaturen sowie TOTP-/Recovery-Verschlüsselung. Verlust dieses Schlüssels erfordert lokale Recovery. AUTH_ORIGIN ist der exakte Browserorigin; in Entwicklung HTTP nur auf Loopback, in Produktion ausschliesslich HTTPS.
 
-Testdatenbanken müssen auf `_test` enden. Produktion braucht getrennte Konfiguration, Schlüssel und Compose-Projektnamen. Die [Produktionsvorlage](infra/compose.production.example.yaml) bereitet NPM vor; sie ist noch keine Deploymentfreigabe. Keine echten Todoist-, TermiHub- oder Ollama-Zugangsdaten erforderlich.
+Testdatenbanken müssen auf `_test` enden. Produktion braucht getrennte Konfiguration, Schlüssel und Compose-Projektnamen. Die [Produktionsvorlage](infra/compose.production.example.yaml) bereitet NPM vor; sie ist noch keine Deploymentfreigabe. Für die Entwicklung sind keine echten Todoist-, TermiHub- oder Ollama-Zugangsdaten erforderlich.
+
+## Kontexte und Todoist
+
+Unter Einstellungen den Privatkontext benennen und Arbeitgeber frei hinzufügen. Kupfer, Meerblau, Waldgrün, Pflaume, Terrakotta und Gold entsprechen dem bestätigten V2-Design. Sichtbare Kontext-Pills wechseln die Lesesicht; Konfiguration bleibt serverseitig gespeichert.
+
+Todoist-Token nach frischer Passwort-/TOTP-Bestätigung hinterlegen, Verbindung prüfen, bestehendes Projekt auswählen und speichern. Pro aktivem Kontext genau ein Projekt, keine aktive Doppelzuordnung. Danach Aufgaben bewusst aktualisieren. Eingang und fremde Projekte werden nicht automatisch verarbeitet; keine Todoist-Schreibaktionen, keine Hintergrund-KI. TermiHub ist nur als optionale Referenz vorbereitet.
+
+Vollständige [Einrichtungsanleitung](docs/runbooks/todoist-setup.md), [API-Vertrag und Grenzen](docs/integrations/todoist.md), [Architektur](docs/architecture/contexts-todoist.md) und [E2-Prüfbericht](docs/development/e2-verification.md). INTEGRATION_KEY über pnpm config:integrations ergänzen und bei Backups separat sichern.
 
 ## Betrieb und Updates
 

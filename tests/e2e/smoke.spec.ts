@@ -10,6 +10,18 @@ test("unauthenticated desktop and mobile shells redirect to real login", async (
   await expect(page).toHaveURL(/login\?returnTo=%2Fmobile/);
   const denied = await request.get("/api/protected");
   expect(denied.status()).toBe(401);
+  expect((await request.get("/api/work")).status()).toBe(401);
+  expect((await request.get("/api/work?contextId=invalid")).status()).toBe(401);
+  expect(
+    (
+      await request.post("/api/work/context-save", {
+        headers: { Origin: "http://127.0.0.1:3101" },
+        data: {},
+      })
+    ).status(),
+  ).toBe(401);
+  await page.goto("/settings/contexts");
+  await expect(page).toHaveURL(/login\?returnTo=%2Fsettings%2Fcontexts/);
   expect(await denied.json()).toEqual({ error: { code: "AUTH_REQUIRED" } });
   expect(
     await page.evaluate(
@@ -25,7 +37,7 @@ test("liveness reveals no configuration; raw auth routes and CSRF are blocked", 
   expect(await r.json()).toEqual({
     status: "ok",
     service: "web",
-    stage: "E1.2",
+    stage: "E2",
   });
   expect(
     (await request.post("/api/auth/sign-up/email", { data: {} })).status(),

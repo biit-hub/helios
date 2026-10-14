@@ -26,6 +26,7 @@ describe("hard session and request boundaries", () => {
   ])("rejects redirect %s", (target) => expect(safeReturnTo(target)).toBe("/"));
   it("allows only explicit application paths", () => {
     expect(safeReturnTo("/mobile")).toBe("/mobile");
+    expect(safeReturnTo("/settings/contexts")).toBe("/settings/contexts");
     expect(safeReturnTo("/settings/security")).toBe("/settings/security");
   });
   it.each([

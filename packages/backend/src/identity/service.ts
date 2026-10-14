@@ -373,6 +373,23 @@ export function createIdentityService(
   config: IdentityConfig,
 ) {
   return {
+    async withActive<T>(
+      headers: Headers,
+      options: { mutation?: boolean; stepUp?: boolean },
+      fn: (db: Db, userId: string) => Promise<T>,
+    ): Promise<T> {
+      if (config.RESTORE_MODE) throw new AuthFault("RESTORE_BLOCKED", 503);
+      assertRequest(headers, config, options.mutation ?? false);
+      return transaction(database, config, async (db, auth) => {
+        const value = await active(
+          db,
+          auth,
+          baseHeaders(headers, config),
+          options.stepUp ?? false,
+        );
+        return fn(db, value.current.user.id);
+      });
+    },
     async requireActive(headers: Headers, stepUp = false) {
       if (config.RESTORE_MODE) throw new AuthFault("RESTORE_BLOCKED", 503);
       assertRequest(headers, config);

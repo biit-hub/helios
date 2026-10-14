@@ -23,6 +23,7 @@ services:
       RESTORE_MODE: ${RESTORE_MODE:-false}
       AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
       AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
+      INTEGRATION_KEY: ${INTEGRATION_KEY:-}
     ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
     networks: [backend, frontend]
     depends_on:
@@ -49,6 +50,7 @@ services:
       RESTORE_MODE: ${RESTORE_MODE:-false}
       AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
       AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
+      INTEGRATION_KEY: ${INTEGRATION_KEY:-}
     networks: [backend]
     depends_on:
       postgres: { condition: service_healthy }

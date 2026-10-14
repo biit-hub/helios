@@ -1,17 +1,7 @@
-import Link from "next/link";
-import { Foundation } from "@helios/ui";
 import { requirePage } from "../../lib/guard";
-import { Logout } from "../../components/identity-forms";
+import { Workbench } from "../../components/workbench";
 export const dynamic = "force-dynamic";
-export default async function Mobile() {
+export default async function Page() {
   await requirePage("/mobile");
-  return (
-    <>
-      <Foundation mobile />
-      <div className="shell mobile">
-        <Link href="/settings/security">Sicherheitseinstellungen</Link>
-        <Logout />
-      </div>
-    </>
-  );
+  return <Workbench mobile />;
 }

@@ -20,7 +20,8 @@
     "job:smoke": "tsx apps/worker/src/smoke.ts",
     "config:init": "node scripts/init-env.mjs",
     "security:secrets": "node scripts/check-secrets.mjs",
-    "config:auth": "node scripts/init-auth-env.mjs"
+    "config:auth": "node scripts/init-auth-env.mjs",
+    "config:integrations": "node scripts/init-integrations-env.mjs"
   },
   "devDependencies": {
     "typescript": "6.0.3",

@@ -11,6 +11,8 @@ if (
   );
 process.env.AUTH_SECRET ??= "e".repeat(64);
 process.env.AUTH_ORIGIN = url;
+process.env.INTEGRATION_KEY ??= "b".repeat(64);
+process.env.TODOIST_TEST_ORIGIN ??= "http://127.0.0.1:3102/api/v1/";
 export default defineConfig({
   testDir: "./tests/e2e",
   testIgnore: "**/fixture-bootstrap.ts",
@@ -18,7 +20,12 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   timeout: 240000,
-  use: { baseURL: url, trace: "retain-on-failure" },
+  use: {
+    baseURL: url,
+    trace: "retain-on-failure",
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     {
@@ -37,6 +44,8 @@ export default defineConfig({
           DATABASE_URL: process.env.DATABASE_URL,
           AUTH_SECRET: process.env.AUTH_SECRET,
           AUTH_ORIGIN: url,
+          INTEGRATION_KEY: process.env.INTEGRATION_KEY,
+          TODOIST_TEST_ORIGIN: process.env.TODOIST_TEST_ORIGIN,
         },
       },
 });

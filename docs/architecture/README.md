@@ -24,3 +24,5 @@ Workerheartbeat wird alle zehn Sekunden geschrieben. Web-Readiness prüft migrie
 ## E1.2
 
 Die [Authentifizierungsarchitektur](authentication.md) implementiert Better Auth, Argon2id, obligatorisches TOTP, Recovery und die festgelegten Sitzungsfristen. Die Shell ist jetzt geschützt. Öffentlicher HTTPS-Betrieb bleibt bis zur separaten Abnahme gesperrt.
+
+E2: [Kontexte und Todoist-Lesesicht](contexts-todoist.md), [verifizierte API-Verträge](../integrations/todoist.md). Historische Planungsmarkierungen werden durch den E2-Auftrag und Prüfbericht konkretisiert.

@@ -11,3 +11,5 @@ export const workerHeartbeats = pgTable("worker_heartbeats", {
 });
 
 export * from "./identity/schema";
+
+export * from "./work/schema";

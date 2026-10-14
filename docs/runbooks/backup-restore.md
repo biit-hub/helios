@@ -30,3 +30,5 @@ Vor Wiederaufnahme: Sessions/Challenges widerrufen; externe Todoistzustände les
 Bei verlorenem age-/Integrations-/TOTP-Schlüssel können Daten nicht einfach rekonstruiert werden. RPO/RTO, externes Ziel, Retention und Schlüsselhinterlegung bleiben vor Nutzung echter Pläne zu entscheiden.
 
 E1.2 ergänzt AUTH_SECRET und die Authentifizierungstabellen als geschützte Sicherungsbestandteile. Nach Restore mit RESTORE_MODE arbeiten und den [lokalen administrativen Recoveryablauf](identity-recovery.md) abschliessen, bevor Zugriffe wieder freigegeben werden. Restaurierte Sessions, Challenges und Recoverycodes dürfen nicht ungeprüft erneut gültig werden.
+
+E2 ergänzt INTEGRATION_KEY als separat geschützten Sicherungsbestandteil sowie Kontexte/Integration/Catalog/Taskprojektionen/Probleme. Ohne den passenden Schlüssel kann ein gesicherter Todoist-Token nicht entschlüsselt werden. Nach isoliertem Restore erst Auth-Recovery, dann bewusst Token/Projektzuordnung lesend prüfen; keine alten Queuejobs oder Testorigins automatisch übernehmen.

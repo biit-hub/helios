@@ -72,12 +72,14 @@ jobs:
         run: |
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work node:22.23.2-bookworm-slim node scripts/init-env.mjs
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work node:22.23.2-bookworm-slim node scripts/init-auth-env.mjs
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work node:22.23.2-bookworm-slim node scripts/init-integrations-env.mjs
           docker compose up -d --wait postgres
           docker compose run --rm --no-deps worker node_modules/.bin/tsx packages/backend/src/migrate.ts
           docker compose up -d --wait web worker
           docker compose exec -T worker node_modules/.bin/tsx apps/worker/src/smoke.ts
           curl --fail http://127.0.0.1:3100/api/health/ready
           curl --fail http://127.0.0.1:3100/login > /dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/api/work)" = "401"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/api/protected)" = "401"
       - if: always()
         run: if [ -f .env ]; then docker compose down; fi
