@@ -1,12 +1,14 @@
 # Helios
 
-Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Aufgaben bleiben später in Todoist führend; lokale KI bietet prüfbare Vorschläge.
+Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Todoist bleibt für Aufgaben führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E3 in Abnahme, persistente Tagesplanung und Fokus, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
+**Stand: E3, persistente Tagesplanung und Fokus, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
 
 E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollziehbaren Vorschlägen, bewusster Bestätigung, sicherem Operationsjournal und kontextgetrennter Historie. Unteraufgaben behalten ihre Hierarchie.
 
 Geplant: Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+
+Vor dem Einsatz mit echten Plänen muss die verschlüsselte externe Sicherung gemäss Backup-Runbook eingerichtet und geprüft sein; das gewählte NAS-Ziel ist noch zu konkretisieren.
 
 Details: [Architektur](docs/architecture/planning-focus.md), [API](docs/integrations/planning-api.md), [Prüfbericht](docs/development/e3-verification.md).
 

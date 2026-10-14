@@ -1,6 +1,6 @@
 # E3 – Prüfbericht
 
-Stand: 14. Oktober 2026. E3 ist **in Implementierung und Abnahme**. Branch: feat/e3-planning-focus, Ausgangspunkt aktuelles develop nach E2. Die Planungsimplementierung und additive Migration 0005 liegen vor. Persönliche Entwicklungsdaten wurden noch nicht migriert; PR-/CI-Integration stehen aus. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
+Stand: 14. Oktober 2026. E3 ist **implementiert und automatisiert geprüft; die externe Backup-Betriebsvoraussetzung für echte Pläne bleibt offen**. Branch: feat/e3-planning-focus, Ausgangspunkt aktuelles develop nach E2. Die Planungsimplementierung und additive Migration 0005 liegen vor. Die lokale Entwicklungsumgebung wurde nach neuer verschlüsselter Sicherung additiv migriert. [PR #13](https://github.com/biit-hub/helios/pull/13) führt die Integration nach develop; ein Merge erfolgt ausschliesslich mit erfolgreichen Pflichtchecks. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
 
 ## Quellen
 
@@ -42,7 +42,7 @@ Der Benutzer hat Option 1 ausdrücklich bestätigt. Die Implementierung erhält 
 
 ## Weitere offene Prüfungen
 
-Plan-/Revisionsschema, deterministische Auswahl, Operationsjournal, Fokusansicht und Beobachtungen sind implementiert. Bisher tatsächlich bestanden: Lint/Typecheck, 42 Unit-/UI-/Vertragstests und 70 PostgreSQL-Integrationstests, Produktionsbuild, Secretprüfung und Produktionsaudit ohne bekannte Schwachstellen. Der gezielte E3-Browserablauf mit eigenem neuen Browserprozess und die vollständige Browsersuite sind bestanden: 7 bestanden, 3 bewusst übersprungene Wiederholungen im Mobilprojekt. E3 ist ein Desktoppilot; die mobile Morgenroutine folgt später. Beide Images wurden mit Trivy auf Secrets und behebbare HIGH/CRITICAL-Befunde geprüft: jeweils null Funde. Gitleaks prüfte 31 Commits ohne Leaks. CI steht noch aus. Rate Limits, Timeouts, unbekannte Ergebnisse und konkurrierende Planbestätigungen wurden nicht live provoziert. Diese Fälle sind mit kontrollierten Fakes und persistenter Wiederaufnahme geprüft; ein Timeout führt nicht zu blindem Replay.
+Plan-/Revisionsschema, deterministische Auswahl, Operationsjournal, Fokusansicht und Beobachtungen sind implementiert. Bisher tatsächlich bestanden: Lint/Typecheck, 42 Unit-/UI-/Vertragstests und 70 PostgreSQL-Integrationstests, Produktionsbuild, Secretprüfung und Produktionsaudit ohne bekannte Schwachstellen. Der gezielte E3-Browserablauf mit eigenem neuen Browserprozess und die vollständige Browsersuite sind bestanden: 7 bestanden, 3 bewusst übersprungene Wiederholungen im Mobilprojekt. E3 ist ein Desktoppilot; die mobile Morgenroutine folgt später. Beide Images wurden mit Trivy auf Secrets und behebbare HIGH/CRITICAL-Befunde geprüft: jeweils null Funde. Gitleaks prüfte zuletzt 35 Commits ohne Leaks. Linux-CI, Docker, CodeQL und Sonar sind am Implementierungsstand 9da7dda erfolgreich; siehe die nachstehenden Nachweise. Rate Limits, Timeouts, unbekannte Ergebnisse und konkurrierende Planbestätigungen wurden nicht live provoziert. Diese Fälle sind mit kontrollierten Fakes und persistenter Wiederaufnahme geprüft; ein Timeout führt nicht zu blindem Replay.
 
 Für echte lokale Pläne bleibt das Backupminimum aus O-10 relevant. Der bestehende verschlüsselte lokale E2-Sicherungsstand ersetzt keine bestätigte externe Backupablage.
 
@@ -55,7 +55,7 @@ Der bisherige Worker hatte nur das interne Docker-Netz und konnte Todoist nicht 
 - Geprüft: drei unabhängige Kontexte, zwei lokale Tage, wenige Aufgaben, bewusste Teilmengen/Idempotenz, Fokus ohne Reorder, Historie, neue dringende Tasks ohne Umplanung, MFA/Origin/Scope, abgelaufene/widerrufene Ausführungsberechtigung, Teilerfolg/Backoff, unbekannte Wirkung, Reconciliation nach Absturz und konkurrierende Worker.
 - Bereits nachgewiesene Wirkung bleibt auch nach Logout oder Token-/Kontextänderung erhalten; weitere Writes starten nicht. Hintergrundausführung erneuert keine Idleaktivität. Quellen mit Datums-/Dauerobjekten werden kanonisch verglichen: JSONB-Schlüsselreihenfolge führt nicht zu falschen Konflikten.
 - Die erste Browserprüfung deckte einen unpassenden exakten Labelselektor im neuen Test auf; dieser wurde auf die tatsächliche Combobox-Rolle korrigiert. Kein Sicherheitsguard wurde für Tests abgeschaltet.
-- Beide Linuximages wurden gebaut. Eigene synthetische Compose-Umgebung mit separatem Projekt, \_test-Datenbank und Loopbackport 3103: Migration, drei gesunde Dienste, pg-boss-Smokejob, Readiness E3 und anonymer Plan-GET HTTP 401 erfolgreich. Die persönliche Entwicklungsumgebung blieb dabei erhalten.
+- Beide Linuximages wurden gebaut. Eigene synthetische Compose-Umgebung mit separatem Projekt, \_test-Datenbank und Loopbackport 3103: Migration, drei gesunde Dienste, pg-boss-Smokejob, Readiness E3 und anonymer Plan-GET HTTP 401 erfolgreich. Die persönliche Entwicklungsumgebung blieb während der synthetischen Abnahme erhalten. Danach wurde sie gesichert und additiv auf E3 aktualisiert: bestehendes Konto und beide Kontexte erhalten, null echte Tagespläne oder Operationen angelegt; Web/Worker/PostgreSQL gesund, Readiness E3 und Worker-Smoke erfolgreich.
 
 ## Einschränkungen und verbleibende Abnahme
 
@@ -68,3 +68,13 @@ Für echte lokale Pläne wurde ein NAS als externes verschlüsseltes Backupziel 
 Die synthetische Fokusaufnahme wurde visuell geprüft: Kontext-Pills, aktive Kontextfarbe, klare Fokusaufgabe, Heute im Blick und getrennte Bestätigungsstände. Die Hierarchieausnahme wird im Einzeljournal ausdrücklich angezeigt.
 
 Zusätzlicher Absturzfall: Auch ein bereits als unknown persistierter Einzelschritt darf nach einem Workerabsturz vor dem Abschluss der Journaltransaktion nicht automatisch erneut mutiert werden. Wiederanlauf liest zuerst nach; nur ausdrückliche Wiederaufnahme erlaubt nach erneuter Quellenprüfung einen noch nötigen Move. Beide Marker sending/unknown sind durch PostgreSQL-Tests abgedeckt.
+
+## CI- und Qualitätsnachweis
+
+Implementierungsstand 9da7dda845ce8dc13d393a09eb0ffd1851257921: [PR-CI mit Tests und Docker](https://github.com/biit-hub/helios/actions/runs/38636593492), [CodeQL](https://github.com/biit-hub/helios/actions/runs/38636593993). Die Linux-Logs bestätigen dieselben 42 Unit-/UI-, 70 PostgreSQL- und 7 Browsererfolge bei 3 absichtlich ausgelassenen Mobilwiederholungen. Auch Secretprüfung, Produktionsaudit, Gitleaks, Linuximages, Trivy und Compose-Smoke bestehen. Der zusätzliche Push-Lauf ist ebenfalls erfolgreich.
+
+Sonar Quality Gate bestanden: 0 neue Bugs, 0 neue Vulnerabilities, 0 neue Security Hotspots; neue Duplikation 2,46 Prozent. 22 nicht blockierende Wartbarkeitshinweise im PR bleiben sichtbar. Der anfängliche kritische Sortierhinweis wurde durch einen ausdrücklichen Vergleich behoben; duplizierte HTTP-Adapter und Browser-Setupabläufe wurden durch gemeinsame Bausteine ersetzt. Keine Qualitäts- oder Sicherheitsregel wurde dafür abgeschwächt. Die vollständige lokale Browsersuite bestand auch nach diesem Refactoring erneut.
+
+Die final aktivierten lokalen Web-/Workerimages wurden nochmals separat gescannt: jeweils 0 Secret-Funde und 0 behebbare HIGH/CRITICAL-Funde. Die synthetischen PostgreSQL-/Compose-Testumgebungen und deren selbst erzeugte Daten sind nach der Abnahme entfernt; die persönliche Entwicklungsumgebung bleibt bestehen.
+
+Die abschliessende Dokumentationsrevision ändert keine Runtimefunktion. Deren eigene Pflichtchecks müssen vor dem Merge ebenfalls erfolgreich sein; der aktuelle Status ist am verlinkten PR nachvollziehbar. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.

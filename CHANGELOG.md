@@ -1,6 +1,6 @@
 # Changelog
 
-## E3 – Tagesplanung und Fokus (in Abnahme)
+## E3 – Tagesplanung und Fokus
 
 - Persistente Tagesvorschläge und bestätigte Pläne je Kontext/Tag, Auswahlgründe und geschützte Historie.
 - Operationsjournal, nachgewiesene Abschnittswechsel, Teilerfolge, Quellenkonflikte und sichere Wiederaufnahme.
