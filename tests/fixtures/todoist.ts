@@ -1,3 +1,4 @@
+import type { TodoistTask } from "@helios/contracts";
 export const token = "synthetic-todoist-fixture-only";
 export const projects = [
   {
@@ -36,7 +37,7 @@ export const projects = [
     is_deleted: false,
   },
 ];
-export const tasks = [
+export const tasks: TodoistTask[] = [
   {
     id: "task:parent/alpha",
     project_id: projects[0]!.id,
