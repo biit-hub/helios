@@ -10,6 +10,7 @@ const config = [
       "**/dist/**",
       "**/node_modules/**",
       "playwright-report/**",
+      "private/**",
       "test-results/**",
       "**/next-env.d.ts",
     ],
