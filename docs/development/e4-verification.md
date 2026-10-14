@@ -1,6 +1,6 @@
 # E4 – Aufgabenverwaltung und Wartestatus: Prüfbericht
 
-Stand: 15. Oktober 2026. Umsetzung auf `feat/e4-task-management` von aktuellem `develop` (2e1be65). E1/E2 abgenommen, E3 technisch integriert; **die manuelle E3-Abnahme bleibt bewusst verschoben und offen**. E4 darf unabhängig davon entwickelt werden. Dieser Bericht unterscheidet bestandene Prüfungen von noch laufenden Abschlussprüfungen. Noch kein E4-PR/Merge oder Entwicklungsupgrade behauptet.
+Stand: 15. Oktober 2026. Umsetzung auf `feat/e4-task-management` von aktuellem `develop` (2e1be65). E1/E2 abgenommen, E3 technisch integriert; **die manuelle E3-Abnahme bleibt bewusst verschoben und offen**. E4 darf unabhängig davon entwickelt werden. [PR #15](https://github.com/biit-hub/helios/pull/15) zielt auf develop. Integration ausschliesslich nach erneut grünem finalem Prüfstand; kein main-Merge oder Release.
 
 ## Verbindliche Grundlagen und Entscheidungen
 
@@ -32,11 +32,11 @@ Ausschliesslich eigene synthetische Aufgaben/Abschnitte angelegt. Nur diese Date
 | Wiederholung: Close und derselbe Close-Key erneut                   | Je HTTP 204; Termin springt bei jedem Aufruf weiter. Dieselbe Aufgaben-ID, nächste Instanz aktiv, Abschnitt bleibt Abgeschlossen. Darum instanzbezogener Nachweis und kein Close-Replay. |
 | Elternaufgabe löschen                                               | HTTP 204; angehängte synthetische Unteraufgabe anschliessend HTTP 404. Wirkung vor Freigabe anzeigen.                                                                                    |
 
-## Implementierung und bisherige Tests
+## Implementierung und automatisierte Abnahme
 
 Migration 0006 erweitert die bestehenden plan_operations um kind/context_id/payload/result und erlaubt plan_id=null ausschliesslich für den neuen fachlichen Gebrauch. Dieselben Journal-/Schritttabellen, derselbe Worker und derselbe Advisory-Lock; keine zweite unabhängige Schreibpipeline. E3-Planoperationen behalten ihren Ablauf. Die neue Readiness prüft E4-Spalten.
 
-51 Unit-/UI-/Vertragstests bestanden. Vollständige PostgreSQL-Suite: 100 bestanden. Abschliessende gezielte E4-Suite: 30 bestanden. Darunter: Eingang ohne Projektwahl, Quellenkonflikte, Felder/Clearing, Kommentare, Wartedetails, native Moves, normale/wiederholende Abschlüsse, Delete, Session-/Origin-/Kontextschutz, Rate Limit, unbekannte Ergebnisse und Absturzmarker. E3/E4-Regressionen prüfen unveränderte Planhistorie bei nicht mehr ausführbarem Fokus, neue Kinder zwischen Move und Close sowie Sitzungswiderruf zwischen Schritten. Die gezielte E4-Browserprüfung besteht. Ein vollständiger Browserlauf bestand sechs Szenarien und fand einen veralteten E3-Literalwert im Healthvertrag (zwei Smokefehler); Vertrag und Erwartungen sind auf E4 korrigiert. Der vollständige Wiederholungslauf und Docker-/CI-Abnahme laufen.
+51 Unit-/UI-/Vertragstests bestanden. Vollständige finale PostgreSQL-Suite: 101 bestanden; davon 31 E4-Fälle. Darunter: Eingang ohne Projektwahl, Quellenkonflikte, Felder/Clearing, Kommentare, Wartedetails, native Moves, normale/wiederholende Abschlüsse, Delete, Session-/Origin-/Kontextschutz, Rate Limit, unbekannte Ergebnisse und Absturzmarker. E3/E4-Regressionen prüfen unveränderte Planhistorie bei nicht mehr ausführbarem Fokus, neue Kinder zwischen Move und Close sowie Sitzungswiderruf zwischen Schritten. Vollständiger Playwrightlauf: 8 bestanden, 4 absichtliche ausgelassene Mobilwiederholungen. Ein vorheriger Lauf fand einen veralteten E3-Literalwert im Healthvertrag (zwei Smokefehler); Vertrag und Erwartungen sind auf E4 korrigiert. Abschliessender Browserlauf vollständig grün.
 
 Bisher behoben: frische Browser-Testdatenbank musste vor Workerstart migriert werden; reine E2-Abrufpause durfte nicht als externes Todoist-Rate-Limit für Mutationen behandelt werden. Sicherheitsguards und echte Rate-Limit-Pausen bleiben erhalten.
 
@@ -59,3 +59,15 @@ Lokale verschlüsselte E4-Restore-Probe bestanden: sieben Migrationen, zwei auss
 Der synthetische Aufgaben-Screenshot wurde visuell geprüft: bestehende warme Gestaltung, getrennte Datumsfelder, Such-/Statusfilter, Wartedetails und persistentes Einzeljournal. Build, Lint, Typprüfung, Produktionsaudit und Secretprüfung bestehen lokal.
 
 Schlussprüfung: Projektwechsel mit privaten fun-Aufgaben oder fun-Kindern in nicht private Zielprojekte wird vor dem Write gesperrt. Neue Regression ergänzt; keine automatische Labelbereinigung.
+
+## Finaler Container-, Sicherheits- und Qualitätsnachweis
+
+Beide Linuximages aus Implementierungscommit 5d77bec gebaut und abschliessend mit Trivy auf Secrets sowie behebbare HIGH/CRITICAL-Schwachstellen gescannt: jeweils 0 Funde. Die pnpm-deploy-Ausgabe enthielt eine tsx-Bin-Warnung; tatsächliche Migration, Workerstart, Health und Smokejob aus dem fertigen Image bestanden. Kein defekter Worker behauptet oder ignoriert.
+
+Eigene synthetische Compose-Umgebung: Migration 0006, drei gesunde Dienste, pg-boss-Smokejob, Readiness E4, anonyme Tasks-/Work-/Protected-Routen jeweils 401. Produktionsaudit ohne bekannte Schwachstellen, Secretprüfung bestanden; Gitleaks prüfte die vollständige Git-Historie ohne Funde. db:generate ohne Drift. Keine Prüfregeln oder Ausschlüsse abgeschwächt.
+
+[PR-CI](https://github.com/biit-hub/helios/actions/runs/38651207875) und [CodeQL](https://github.com/biit-hub/helios/actions/runs/38651207871). CodeQL/analyze und Sonar-Quality-Gate am Implementierungsstand 5d77bec erfolgreich. Sonar: 0 neue Bugs, 0 neue Vulnerabilities, 0 neue Security Hotspots, 2,116 Prozent neue Duplikation. 91 sichtbare nicht blockierende Wartbarkeitshinweise bleiben offen, darunter zehn als kritisch eingestufte Code-Smells (vor allem kognitive Komplexität). Dies sind keine Sicherheitsbefunde. Die finale Dokumentationsrevision unterliegt vor Integration erneut sämtlichen Pflichtchecks.
+
+Die lokale Entwicklungsumgebung wurde nach frischer separater age-Sicherung von Datenbank und Konfiguration additiv auf E4 aktualisiert. Kein Produktivdeployment. Bestehendes Konto, Kontexte, Tagespläne und Historie wurden anhand von Anzahl und Hashes unverändert nachgewiesen; keine ausstehenden Operationen übernommen. Web, Worker und PostgreSQL gesund, Readiness E4, Worker-Smoke bestanden. Keine persönlichen Sicherungsdaten in Tests restauriert, keine echten Tagespläne durch den Agenten angelegt. Altprojekt unverändert.
+
+Spätere manuelle Abnahme: [Aufgaben bedienen und prüfen](../runbooks/tasks.md). Die manuelle E3-Abnahme bleibt ausdrücklich offen. E5 wird nicht begonnen.
