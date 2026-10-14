@@ -69,6 +69,25 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
       .then((r) => r.json())
       .then((v) => v.contexts),
   ).toHaveLength(1);
+  // A normal login does not grant permission to replace integration credentials.
+  await page.getByLabel("Neuer Todoist-API-Token").fill(token);
+  await page
+    .getByRole("button", { name: "Token verschlüsselt speichern", exact: true })
+    .click();
+  const connection = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Todoist verbinden" }) });
+  await expect(connection.getByRole("alert")).toHaveText(
+    "Bitte zuerst Passwort und neuen Authenticator-Code bestätigen.",
+  );
+  await expect(
+    page.getByRole("button", {
+      name: "Verbindung prüfen & Projekte laden",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect(page.getByLabel("Neuer Todoist-API-Token")).toHaveValue(token);
+  await connection.getByRole("link", { name: /Passwort und neuen/ }).click();
   await page.getByLabel("Aktuelles Passwort", { exact: true }).fill(password);
   await page
     .getByLabel("Neuer Authenticator-Code", { exact: true })
@@ -84,6 +103,10 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
     .getByRole("button", { name: "Token verschlüsselt speichern", exact: true })
     .click();
   await expect(page.getByLabel("Neuer Todoist-API-Token")).toHaveValue("");
+  await expect(
+    connection.getByText(/Token verschlüsselt gespeichert/),
+  ).toBeVisible();
+  await expect(connection.getByRole("alert")).toHaveCount(0);
   await page
     .getByRole("button", {
       name: "Verbindung prüfen & Projekte laden",

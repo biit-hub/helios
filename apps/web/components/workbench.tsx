@@ -295,7 +295,7 @@ function StepUp({ onError }: Readonly<{ onError: (v: string) => void }>) {
     [busy, setBusy] = useState(false),
     [ok, setOk] = useState(false);
   return (
-    <section className="card settings-panel auth-card">
+    <section id="sensitive-changes" className="card settings-panel auth-card">
       <h2>Sensible Änderungen bestätigen</h2>
       <p>
         Tokenwechsel und Projektzuordnungen benötigen Passwort und einen neuen
@@ -364,7 +364,9 @@ function Connection({
   pause: boolean;
   action: Action;
 }>) {
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(""),
+    [tokenError, setTokenError] = useState(""),
+    [tokenSaved, setTokenSaved] = useState(false);
   const i = data.integration;
   return (
     <section className="card settings-panel auth-card">
@@ -394,13 +396,29 @@ function Connection({
           und Web/Worker neu starten.
         </p>
       )}
+      <p id="token-requirements" className="help">
+        Vor dem Speichern{" "}
+        <a href="#sensitive-changes">
+          Passwort und neuen Authenticator-Code bestätigen
+        </a>
+        . Die Bestätigung gilt fünf Minuten.
+      </p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          setTokenError("");
+          setTokenSaved(false);
           try {
             await action("token-save", { revision: i.revision, token });
             setToken("");
-          } catch {}
+            setTokenSaved(true);
+          } catch (e) {
+            setTokenError(
+              e instanceof Error
+                ? e.message
+                : "Token konnte nicht gespeichert werden.",
+            );
+          }
         }}
       >
         <label>
@@ -410,6 +428,7 @@ function Connection({
             autoComplete="off"
             value={token}
             maxLength={512}
+            aria-describedby="token-requirements token-feedback"
             required
             onChange={(e) => setToken(e.target.value)}
           />
@@ -417,6 +436,19 @@ function Connection({
         <button type="submit" disabled={busy || !i.keyAvailable}>
           Token verschlüsselt speichern
         </button>
+        <div id="token-feedback">
+          {tokenError && (
+            <p role="alert" className="form-error">
+              {tokenError}
+            </p>
+          )}
+          {tokenSaved && (
+            <p role="status">
+              Token verschlüsselt gespeichert. Du kannst jetzt die Verbindung
+              prüfen und Projekte laden.
+            </p>
+          )}
+        </div>
       </form>
       <p className="help">
         {i.hasToken

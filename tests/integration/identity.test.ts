@@ -280,8 +280,8 @@ describe("real PostgreSQL identity lifecycle", () => {
     const enrolled = await enroll();
     const valid = await service.requireActive(headers(enrolled.cookie));
     await db.pool.query(
-      "UPDATE auth_session_policy SET absolute_expires_at=now()-interval '1 second' WHERE session_id=$1",
-      [valid.current.session.id],
+      "UPDATE auth_session_policy SET absolute_expires_at=$2 WHERE session_id=$1",
+      [valid.current.session.id, new Date(Date.now() - 1000)],
     );
     await expect(
       service.requireActive(headers(enrolled.cookie)),
@@ -293,8 +293,8 @@ describe("real PostgreSQL identity lifecycle", () => {
         normal.current.session.createdAt.getTime(),
     ).toBeLessThanOrEqual(12 * 3600000 + 2000);
     await db.pool.query(
-      "UPDATE auth_session_policy SET last_seen_at=now()-interval '31 minutes' WHERE session_id=$1",
-      [normal.current.session.id],
+      "UPDATE auth_session_policy SET last_seen_at=$2 WHERE session_id=$1",
+      [normal.current.session.id, new Date(Date.now() - 31 * 60000)],
     );
     await expect(
       service.requireActive(headers(second.cookie)),
@@ -304,8 +304,8 @@ describe("real PostgreSQL identity lifecycle", () => {
     const t = await service.requireActive(headers(trusted.cookie));
     const before = t.policy.absoluteExpiresAt.getTime();
     await db.pool.query(
-      "UPDATE auth_session_policy SET last_seen_at=now()-interval '1 day' WHERE session_id=$1",
-      [t.current.session.id],
+      "UPDATE auth_session_policy SET last_seen_at=$2 WHERE session_id=$1",
+      [t.current.session.id, new Date(Date.now() - 86400000)],
     );
     const after = await service.requireActive(headers(trusted.cookie));
     expect(after.policy.absoluteExpiresAt.getTime()).toBe(before);
@@ -313,8 +313,8 @@ describe("real PostgreSQL identity lifecycle", () => {
       30 * 86400000 + 2000,
     );
     await db.pool.query(
-      "UPDATE auth_session_policy SET absolute_expires_at=now()-interval '1 second' WHERE session_id=$1",
-      [t.current.session.id],
+      "UPDATE auth_session_policy SET absolute_expires_at=$2 WHERE session_id=$1",
+      [t.current.session.id, new Date(Date.now() - 1000)],
     );
     await expect(
       service.requireActive(headers(trusted.cookie)),
