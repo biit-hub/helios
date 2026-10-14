@@ -11,6 +11,7 @@ import type {
   TaskView,
   CommentView,
 } from "@helios/contracts";
+import { PlanningPanel } from "./planning";
 import { Logout } from "./identity-forms";
 async function request(path: string, body?: unknown, signal?: AbortSignal) {
   const r = await fetch(path, {
@@ -28,9 +29,11 @@ async function request(path: string, body?: unknown, signal?: AbortSignal) {
 const at = (value: string | null) =>
   value ? new Date(value).toLocaleString("de-CH") : "Noch nicht abgerufen";
 export function Workbench({
+  planning,
   settings = false,
   mobile = false,
 }: Readonly<{
+  planning?: "focus" | "plan";
   settings?: boolean;
   mobile?: boolean;
 }>) {
@@ -80,7 +83,7 @@ export function Workbench({
     };
   }, []);
   useEffect(() => {
-    if (!selected || settings || mobile) return;
+    if (!selected || settings || mobile || planning) return;
     const abort = new AbortController();
 
     request(
@@ -93,7 +96,7 @@ export function Workbench({
         if (e.name !== "AbortError") setError(e.message);
       });
     return () => abort.abort();
-  }, [selected, settings, mobile, refreshId]);
+  }, [selected, settings, mobile, planning, refreshId]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -166,7 +169,22 @@ export function Workbench({
         </header>
         {!mobile && (
           <nav className="work-nav" aria-label="Hauptnavigation">
-            <Link aria-current={!settings ? "page" : undefined} href="/">
+            <Link
+              aria-current={planning === "focus" ? "page" : undefined}
+              href={"/?context=" + selected}
+            >
+              Fokus
+            </Link>
+            <Link
+              aria-current={planning === "plan" ? "page" : undefined}
+              href={"/plan?context=" + selected}
+            >
+              Tagesplan
+            </Link>
+            <Link
+              aria-current={!settings && !planning ? "page" : undefined}
+              href={"/tasks?context=" + selected}
+            >
               Aufgaben
             </Link>
             <Link
@@ -184,21 +202,27 @@ export function Workbench({
               ? "DEIN ARBEITSRAUM"
               : mobile
                 ? "DEINE KONTEXTE"
-                : "LESEND MIT TODOIST VERBUNDEN"}
+                : planning
+                  ? "DEIN TAG, DEIN FOKUS"
+                  : "LESEND MIT TODOIST VERBUNDEN"}
           </div>
           <h1>
             {settings
               ? "Alles am richtigen Platz."
               : mobile
                 ? "Für wen startest du heute?"
-                : (current?.name ?? "Deine Aufgaben")}
+                : planning
+                  ? "Ein guter nächster Schritt."
+                  : (current?.name ?? "Deine Aufgaben")}
           </h1>
           <p className="lead">
             {settings
               ? "Arbeitgeber und Privat bewusst einrichten. Jeder Kontext bleibt eigenständig."
               : mobile
                 ? "Die gemeinsame Morgenroutine folgt in einer späteren Etappe."
-                : "Ein ruhiger Überblick. Aufgabeninhalte werden hier ausschliesslich gelesen."}
+                : planning
+                  ? "Eine bewusste Auswahl und ein guter nächster Schritt. Jeder Kontext bleibt eigenständig."
+                  : "Ein ruhiger Überblick. Aufgabeninhalte werden hier ausschliesslich gelesen."}
           </p>
           {error && (
             <p role="alert" className="form-error">
@@ -256,7 +280,10 @@ export function Workbench({
               <Problems snapshot={snapshot} busy={busy} action={action} />
             </>
           )}
-          {snapshot && !settings && !mobile && (
+          {planning && current && (
+            <PlanningPanel key={current.id} context={current} mode={planning} />
+          )}
+          {snapshot && !settings && !mobile && !planning && (
             <TaskOverview
               snapshot={snapshot}
               current={current}
@@ -372,7 +399,8 @@ function Connection({
     <section className="card settings-panel auth-card">
       <h2>Todoist verbinden</h2>
       <p>
-        Helios verwendet den API-Token ausschliesslich für lesende Abrufe. Er
+        Helios liest mit dem API-Token deine Aufgaben. Erst nach bewusster
+        Tagesplanbestätigung sind die vorgesehenen Abschnittswechsel erlaubt. Er
         wird verschlüsselt auf deinem Server gespeichert.
       </p>
       <p role="status">

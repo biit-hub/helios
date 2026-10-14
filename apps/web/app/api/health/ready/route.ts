@@ -13,12 +13,14 @@ export async function GET() {
     await database.pool.query("SELECT 1 FROM technical_probes LIMIT 1");
     await database.pool.query("SELECT 1 FROM auth_user LIMIT 1");
     await database.pool.query("SELECT read_claim FROM integrations LIMIT 1");
+    await database.pool.query("SELECT revision FROM daily_plans LIMIT 1");
+    await database.pool.query("SELECT status FROM plan_operations LIMIT 1");
     const r = await database.pool.query(
       "SELECT 1 FROM worker_heartbeats WHERE seen_at > now() - interval '35 seconds' LIMIT 1",
     );
     if (!r.rowCount) throw new Error("Worker unavailable");
     return Response.json(
-      { status: "ok", service: "web", stage: "E2" },
+      { status: "ok", service: "web", stage: "E3" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {

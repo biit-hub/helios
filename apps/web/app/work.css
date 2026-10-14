@@ -263,3 +263,42 @@ legend {
     display: block;
   }
 }
+.focus-hero {
+  margin-bottom: 26px;
+  padding: 44px;
+  background: var(--soft);
+  border: 1px solid var(--border);
+}
+.focus-hero h2 {
+  font-size: 38px;
+  max-width: 800px;
+  margin: 20px 0;
+}
+.planning .card {
+  margin: 24px 0;
+}
+.today-list {
+  padding-left: 24px;
+}
+.today-entry {
+  padding: 20px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.today-entry h3 {
+  margin: 8px 0;
+}
+.today-entry label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.planning input[type="checkbox"] {
+  width: auto;
+}
+.planning .panel-heading input {
+  margin-left: 10px;
+  font: inherit;
+}
+.operation-panel li {
+  margin: 12px 0;
+}
