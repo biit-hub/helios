@@ -28,16 +28,16 @@ export function Foundation({ mobile = false }: { mobile?: boolean }) {
           nächsten sinnvollen Schritt begleiten.
         </p>
         <section className="card" aria-labelledby="foundation-title">
-          <span className="pill">E1.1 · Projektgrundlage</span>
-          <h2 id="foundation-title">Die Grundlage steht.</h2>
+          <span className="pill">E1.2 · Sicherer Zugang</span>
+          <h2 id="foundation-title">Willkommen in deinem Arbeitsraum.</h2>
           <p>
             Webanwendung, Datenbank und Hintergrundverarbeitung bilden den
             Anfang. Aufgaben und persönliche Daten werden hier noch nicht
             angezeigt.
           </p>
           <p className="notice">
-            Die Anmeldung folgt in E1.2. Diese Vorschau enthält keine
-            Benutzerkonten.
+            Dein Zugang ist geschützt. Aufgabenverbindungen und Tagesplanung
+            folgen in den nächsten Etappen.
           </p>
         </section>
         <div className="grid">

@@ -9,3 +9,5 @@ export const workerHeartbeats = pgTable("worker_heartbeats", {
   id: uuid("id").primaryKey(),
   seenAt: timestamp("seen_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export * from "./identity/schema";

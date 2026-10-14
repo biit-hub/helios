@@ -28,3 +28,5 @@ Worker/Push/Sync zuerst ausschalten; RESTORE_MODE=true. In ein **neues** isolier
 Vor Wiederaufnahme: Sessions/Challenges widerrufen; externe Todoistzustände lesend abgleichen; in-flight/unknown Operationen und Versandnachweise prüfen. Alte pg-boss-Jobs/Schedules dürfen nicht blind wieder anlaufen. Nach fehlenden Versandnachweisen für einen vergangenen Zeitraum keine Pushnachholung automatisch erlauben. Erst durch kontrollierte Freigabe Jobs neu einreihen. Die zukünftigen Fachmodule müssen diese Restorebarriere testen; E1.1 besitzt nur den technischen Job.
 
 Bei verlorenem age-/Integrations-/TOTP-Schlüssel können Daten nicht einfach rekonstruiert werden. RPO/RTO, externes Ziel, Retention und Schlüsselhinterlegung bleiben vor Nutzung echter Pläne zu entscheiden.
+
+E1.2 ergänzt AUTH_SECRET und die Authentifizierungstabellen als geschützte Sicherungsbestandteile. Nach Restore mit RESTORE_MODE arbeiten und den [lokalen administrativen Recoveryablauf](identity-recovery.md) abschliessen, bevor Zugriffe wieder freigegeben werden. Restaurierte Sessions, Challenges und Recoverycodes dürfen nicht ungeprüft erneut gültig werden.

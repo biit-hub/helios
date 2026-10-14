@@ -2,7 +2,7 @@
 
 ## Unterstützter Stand
 
-Helios ist eine unveröffentlichte Entwicklungsgrundlage (E1.1). Noch keine Authentifizierung, keine produktive Freigabe. Nur localhost verwenden. Stabile unterstützte Versionen werden beim ersten ausdrücklich beauftragten Release benannt.
+Helios ist eine unveröffentlichte Entwicklungsgrundlage (E1.2). Authentifizierung ist mit E1.2 implementiert; weiterhin keine produktive Freigabe. Nur localhost verwenden. Stabile unterstützte Versionen werden beim ersten ausdrücklich beauftragten Release benannt.
 
 ## Vertrauliche Meldungen
 

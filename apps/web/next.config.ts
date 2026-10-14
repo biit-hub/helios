@@ -4,6 +4,7 @@ const config: NextConfig = {
   outputFileTracingRoot: process.cwd() + "/../..",
   transpilePackages: ["@helios/backend", "@helios/contracts", "@helios/ui"],
   poweredByHeader: false,
+  serverExternalPackages: ["argon2", "better-auth"],
   async headers() {
     return [
       {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@helios/ui/styles.css";
+import "./identity.css";
 export const metadata: Metadata = {
   title: "Helios – Ein ruhiger Start",
   description:
