@@ -1,5 +1,11 @@
 # Changelog
 
+## E2 – Kontexte und Todoist lesen
+
+- Dynamische Arbeitgeber und ein Privatkontext mit sechs bestätigten Themes, Pills, revisionsgeschützten Projektzuordnungen und erhaltener Historie.
+- Verschlüsselte Todoist-Credentials, GET-only API-v1-Adapter, vollständiger Projektkatalog, Aufgaben-/Kommentarlesesicht und nachvollziehbare Aktualität/Probleme.
+- E1.2-Guards für alle neuen Zugriffe; Step-up, CSRF, Scope-, Generation- und Abruf-Claim-Prüfung, additive Migrationen und isolierte Vertrags-/PostgreSQL-/Browserprüfungen.
+
 Alle relevanten Änderungen werden hier dokumentiert. SemVer gilt für ausdrücklich beauftragte Releases; GitHub generiert zusätzliche Release Notes aus PRs.
 
 ## Unreleased

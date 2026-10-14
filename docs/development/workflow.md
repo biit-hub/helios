@@ -27,6 +27,12 @@ Für Webentwicklung `pnpm dev`; für Worker lokale DATABASE_URL/HELIOS_ENV setze
 
 ## Branches, CI und Releases
 
-main enthält zunächst nur einen Bootstraphinweis; E1.1 bleibt auf develop bis zum ausdrücklich beauftragten ersten Release. Kurze feat/_, fix/_, docs/_, chore/_ Branches von develop, PR nach develop, Conventional Commits. GitHub CI prüft Lint/Typecheck/Unit/Integration/Build/Browser/Secrets/Abhängigkeiten/Images; CodeQL separat. Keine automatische Mergefreigabe für sicherheitskritische oder destruktive Änderungen.
+main enthält zunächst nur einen Bootstraphinweis; der Entwicklungsstand bleibt auf develop bis zum ausdrücklich beauftragten ersten Release. Kurze feat/_, fix/_, docs/_, chore/_ Branches von develop, PR nach develop, Conventional Commits. GitHub CI prüft Lint/Typecheck/Unit/Integration/Build/Browser/Secrets/Abhängigkeiten/Images; CodeQL separat. Keine automatische Mergefreigabe für sicherheitskritische oder destruktive Änderungen.
 
 [Releaseprozess](release.md) verlangt ausdrücklichen menschlichen Auftrag. Die Versionsnummer 0.1.0-dev.0 ist nur ein Workspace-Metadatenwert, kein veröffentlichtes Release.
+
+## E2-Vertragstests
+
+Unit- und PostgreSQL-Tests injizieren einen GET-only-Vertragsreader; Browserprüfungen starten zusätzlich den isolierten synthetischen Todoist-HTTP-Server auf 127.0.0.1:3102. Konfiguration verlangt HELIOS_ENV=test, eine \_test-Datenbank und die explizite Loopback-Testorigin. Echte Tokens werden nie an diesen Server gegeben. Die Desktop-Szenarien provisionieren jeweils ein eigenes synthetisches Konto im dedizierten Testbestand; die Mobileprojekte wiederholen nur die unabhängigen Schutzprüfungen, mobile Kontext-Pills werden in einem eigenen Kontext des Szenarios getestet.
+
+Die Migrationsprüfung erstellt in der isolierten PostgreSQL-Testinstanz eine neue, eindeutig benannte \_test-Datenbank, provisioniert dort ein E1.2-Konto und prüft den additiven E2-Upgrade. Sie löscht ausschliesslich diese von ihr neu erzeugte Datenbank. Kein vorhandener Entwicklungs-/Produktionsbestand wird überschrieben.

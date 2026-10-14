@@ -13,3 +13,5 @@ CSP mit pro Request zufälligem Nonce und dynamischer SSR; produktive Skripte/St
 Die Fassade verlangt korrekten Origin für jede Mutation, validiert Fetch-Metadata/Host, begrenzt JSON auf 8 KiB und lehnt unbekannte Methoden/Aktionen ab. Der kanonische Origin wird nie aus manipulierten Proxyheaders gewonnen. Rate-Limits liegen in PostgreSQL und überstehen Neustarts; keine unendliche Kontosperre.
 
 Keine Defaultbenutzer/Passwörter/produktiven Testaccounts. Fehler sind generisch, Logs bestehen nur aus Ereigniscodes; keine Passwörter, Rohfehler, Codes, QR-URIs, Cookies oder Setupnachweise. Adminausgabe nur interaktiv und mit explizitem Einmalcontainer ohne Logtreiber. Lokale Dateirechte/NTFS-Zugriff auf private .env und Backupidentitäten beschränken.
+
+E2-Fachzugriffe verwenden denselben transaktionsgebundenen Guard. Integrationsverschlüsselung nutzt einen eigenen INTEGRATION_KEY; siehe [Kontexte/Todoist](../architecture/contexts-todoist.md) und [Einrichtung](todoist-setup.md).
