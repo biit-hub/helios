@@ -21,7 +21,7 @@ pnpm audit --prod
 docker compose -f infra/compose.test.yaml down
 ```
 
-Test-Compose verwendet flüchtigen Speicher, ausschliesslich das neue Projekt helios-test und einen Loopbackport. Integrationstests migrieren diese isolierte Datenbank. Playwright zuerst mit `pnpm exec playwright install chromium` installieren. E2E_BASE_URL prüft einen bereits laufenden Produktionsbuild; sonst startet Playwright Next dev lokal.
+Test-Compose verwendet flüchtigen Speicher, ausschliesslich das neue Projekt helios-test und einen Loopbackport. Integrationstests migrieren diese isolierte Datenbank. Playwright zuerst mit `pnpm exec playwright install chromium` installieren. Browserprüfungen verlangen HELIOS_ENV=test und eine dedizierte \_test-Datenbank; sie fallen niemals auf Dev/Prod zurück. Nach pnpm build startet Playwright den gebauten Standalone-Server auf 127.0.0.1:3101. Fixtures werden ausschliesslich in der Testdatenbank lokal provisioniert. E2E_BASE_URL ist nur für einen ausdrücklich isolierten Testserver vorgesehen. Der ausführliche Lebenszyklus läuft einmal im Desktopprojekt mit zusätzlichem mobilem Browserkontext; die gleichen Schutz-/Smokechecks laufen auch im Mobileprojekt.
 
 Für Webentwicklung `pnpm dev`; für Worker lokale DATABASE_URL/HELIOS_ENV setzen und `pnpm dev:worker`. Vollständigen lokalen Betrieb bevorzugt über Compose. Generierte Migrationen: `pnpm db:generate`, SQL reviewen, dann `pnpm db:migrate` mit passender privater Konfiguration. Kein drizzle push auf echten Daten.
 

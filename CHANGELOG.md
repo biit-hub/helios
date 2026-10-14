@@ -6,6 +6,11 @@ Alle relevanten Änderungen werden hier dokumentiert. SemVer gilt für ausdrück
 
 ### Added
 
+- E1.2: lokaler Einzelkonto-Bootstrap, echte Passwort-/TOTP-Anmeldung und Recovery mit kontrollierter Neueinrichtung.
+- Argon2id, verschlüsselte TOTP-/Recovery-Daten, harte Sitzungsfristen, unmittelbarer DB-Widerruf und gemeinsame Step-up-Guards.
+- Geschützte Desktop-/Mobilshell, Login-/Setup-/Sicherheitsansichten, sichere Redirects, CSRF-/Origin-Schutz und nonce-basierte CSP.
+- Echte Auth-/Konkurrenztests, Browserlebenszyklus, lokales Recovery-CLI und erweiterte Betriebsanleitungen.
+
 - E1.1: eigenständiger TypeScript-Workspace mit Next.js, Node-Worker, PostgreSQL, Drizzle und pg-boss.
 - Responsive Helios-Startseite und mobiler Grundbereich ohne vorgetäuschte Anmeldung.
 - Typisierte Konfiguration, Healthchecks, Migrationen und technischer idempotenter Testjob.

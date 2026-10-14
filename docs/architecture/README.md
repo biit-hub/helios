@@ -20,3 +20,7 @@ Workerheartbeat wird alle zehn Sekunden geschrieben. Web-Readiness prüft migrie
 ## Designstand
 
 [Bestätigter Sites-Prototyp V2](https://helios-2-prototyp.greenbream.chatgpt.site) ist die Desktopreferenz. E1.1 übernimmt die warme Helios-Marke mit cremefarbenen Flächen und Orange, zeigt aber keine erfundenen Aufgaben/Anmeldung. Mobile ist nur ein vorbereiteter eigener Bereich; endgültige Routinegestaltung folgt in E11. Keine Behauptung vollständiger Designkonformität des Gerüsts.
+
+## E1.2
+
+Die [Authentifizierungsarchitektur](authentication.md) implementiert Better Auth, Argon2id, obligatorisches TOTP, Recovery und die festgelegten Sitzungsfristen. Die Shell ist jetzt geschützt. Öffentlicher HTTPS-Betrieb bleibt bis zur separaten Abnahme gesperrt.

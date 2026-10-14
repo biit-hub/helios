@@ -1,6 +1,6 @@
 # Helios – Arbeitsregeln
 
-- Aufträge, freigegebenes Lastenheft und ADRs beachten; aktuelle Ergänzungen gehen historischen Planungsmarkierungen vor. E1.1 endet vor echter Authentifizierung.
+- Aufträge, freigegebenes Lastenheft und ADRs beachten; aktuelle Ergänzungen gehen historischen Planungsmarkierungen vor. E1.1 und E1.2 sind getrennte Etappen; E2 benötigt einen neuen Auftrag.
 - Eigenständiges öffentliches Repository. Keine echten Secrets, privaten Pfade, Dumps, produktiven Konfigurationen oder realen Daten veröffentlichen. Altprojekt und dessen Container/Volumes unverändert lassen.
 - develop integriert; feat/_, fix/_, docs/_, chore/_ über PR nach develop. Conventional Commits. Keine Featurecommits auf main. Keine stabilen Releases ohne ausdrücklichen menschlichen Auftrag.
 - Fachlogik im frameworkfreien packages/backend; Browser nur contracts/ui. Next ist UI/HTTP-Adapter, Worker führt lange Arbeit aus. Keine unnötigen Dienste.
@@ -9,3 +9,10 @@
 - SQL-Migrationen reviewen, kein Produktions-Schema-Push. Tests nur mit isolierter \_test-Datenbank und synthetischen Daten. Restore blockiert Jobs bis kontrollierter Freigabe.
 - Vor PR: pnpm lint, pnpm typecheck, pnpm test, pnpm test:integration, pnpm build, pnpm test:e2e, pnpm security:secrets, pnpm audit --prod und Compose-/Imagesmoke. Nicht ausführbare Checks ehrlich im Prüfbericht dokumentieren.
 - Dokumentation/Changelog gehören zu jeder Änderung. Keine unbegründeten Erfolgsaussagen. Keine automatische Merge-/Release-/Produktionsaktion bei riskanten Änderungen.
+
+- Better Auth 1.7.7 wird ausschliesslich intern über die Helios-Fassade aufgerufen; den rohen Handler niemals mounten. Signup ist nur im lokalen Bootstrap aktiviert. Kein öffentliches MFA-Abschalten, Passwortreset oder TOTP-Generator.
+- Alle Fachzugriffe müssen createIdentityService(...).requireActive(...) bzw. die internen zentralen Guards benutzen; MFA-/Trust-/Fristfelder niemals aus Clientdaten übernehmen. Guardobjekte oder rohe Better-Auth-Antworten niemals an Browser serialisieren.
+- Beim Enrollment-Cookiewechsel die tatsächlich neu validierte Sitzung verwenden, nicht ein möglicherweise veraltetes Tokenfeld der Bibliotheksantwort.
+- Jede Identitätsmutation nutzt dieselbe PostgreSQL-Transaktion samt Single-User-Advisory-Lock. Erwartete Authfehler müssen Fehlversuchszähler persistieren; unerwartete Fehler rollen zurück.
+- Tests verwenden künstliche Zugangsdaten und \_test-Datenbanken; kontrollierte Testuhr statt deaktivierter Replay-/Fristregeln. Browserfixtures dürfen niemals auf Dev/Prod zurückfallen.
+- Admin-CLI nur interaktiv; Passwörter nicht als Argumente/Env/Logs. Einmaligen Setupnachweis nur lokal zeigen. Für Einmal-Admincontainer compose.admin.yaml mit Logtreiber none verwenden, niemals diesen Override mit up starten.

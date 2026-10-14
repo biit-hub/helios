@@ -2,9 +2,9 @@
 
 Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Aufgaben bleiben später in Todoist führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E1.1, technische Grundlage, kein stabiles Release.** Implementiert sind eine responsive Startseite und ein eigener mobiler Bereich, typisierte Verträge, PostgreSQL/Drizzle-Migrationen, separater pg-boss-Worker, ein idempotenter technischer Testjob und Healthchecks. Es gibt noch keine Anmeldung und keine produktiven Daten.
+**Stand: E1.2, Authentifizierungsgrundlage, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Dazu PostgreSQL/Drizzle, pg-boss-Worker, Testjob und Healthchecks aus E1.1.
 
-Geplant: E1.2 Benutzername/Passwort mit verpflichtendem TOTP und Recovery; danach Kontexte, Todoist-Lesesicht, Tagespläne/Fokus/Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. E1.1 darf bis zur Sicherheitsabnahme von E1.2 ausschliesslich lokal betrieben werden.
+Geplant: Kontexte, Todoist-Lesesicht, Tagespläne/Fokus/Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Keine fachlichen Todoist-Ansichten oder produktiven Integrationen eingerichtet. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
 
 ## Schnellstart mit Docker Compose
 
@@ -16,6 +16,7 @@ cd helios
 git checkout develop
 pnpm install --frozen-lockfile
 pnpm config:init
+pnpm config:auth
 docker compose up -d postgres
 docker compose build
 docker compose run --rm --no-deps worker node_modules/.bin/tsx packages/backend/src/migrate.ts
@@ -23,22 +24,42 @@ docker compose up -d web worker
 docker compose exec worker node_modules/.bin/tsx apps/worker/src/smoke.ts
 ```
 
-Öffne [Helios lokal](http://127.0.0.1:3100) oder [das mobile Grundlayout](http://127.0.0.1:3100/mobile). Es wird kein Konto angelegt. Die echte Ersteinrichtung folgt in E1.2. Der Testjob schreibt ausschliesslich eine synthetische UUID in die neue Datenbank.
+Öffne [Helios lokal](http://127.0.0.1:3100) oder [das mobile Grundlayout](http://127.0.0.1:3100/mobile). Ohne Anmeldung führt die Anwendung zum echten Login. Es wird kein Defaultkonto angelegt. Die Einrichtung erfolgt wie nachstehend über das lokale CLI. Der Testjob schreibt ausschliesslich eine synthetische UUID in die neue Datenbank.
 
 Compose verwendet das Projekt `helios-dev`, ein eigenes Volume und ein internes Netzwerk. Nur Web bindet an Loopback. PostgreSQL und Worker haben keine Hostports. Keine Helios-1.0-Volumes oder bestehenden NPM-Container verwenden.
+
+## Lokales Konto einrichten
+
+Nachdem alle Dienste gesund sind, in einem interaktiven Terminal ausführen:
+
+```sh
+docker compose -f compose.yaml -f infra/compose.admin.yaml run --rm --no-deps -it worker node_modules/.bin/tsx packages/backend/src/identity/cli.ts bootstrap
+```
+
+Benutzername wählen und ein Passwort mit mindestens zwölf Zeichen verborgen eingeben. Das CLI zeigt einmalig einen zehn Minuten gültigen Setupnachweis. Der Admincontainer verwendet keinen Docker-Logtreiber; den Nachweis nicht anderweitig protokollieren.
+
+[Einrichtung öffnen](http://127.0.0.1:3100/setup), Nachweis und Passwort im Formular eingeben. In einer üblichen Authenticator-App (z. B. 2FAS, Aegis, Google oder Microsoft Authenticator) ein TOTP-Konto hinzufügen, den lokalen QR-Code scannen und den sechsstelligen Code bestätigen. Recovery-Codes werden danach einmalig angezeigt. Sicher aufbewahren und die Sicherung bestätigen; erst dann wird die Anwendung freigeschaltet. Kein QR-Webdienst, keine E-Mailregistrierung und keine Cloudverbindung erforderlich.
+
+Normale Sitzungen enden nach maximal zwölf Stunden oder 30 Minuten ohne geschützten Serverzugriff; vertrauenswürdige Sitzungen nach maximal 30 Tagen absolut. Jede neue Anmeldung verlangt wieder Passwort und TOTP. Sicherheitsaktionen benötigen eine erneute Bestätigung innerhalb von fünf Minuten. Bereits verbrauchte Authenticator-Codes werden nicht erneut akzeptiert; nach dem Login für Step-up den nächsten 30-Sekunden-Code abwarten.
+
+Details: [Einrichtung](docs/runbooks/authentication.md), [Recovery](docs/runbooks/identity-recovery.md), [Sicherheitskonfiguration](docs/runbooks/identity-security.md).
 
 ## Konfiguration
 
 `pnpm config:init` legt einmalig eine ignorierte `.env` mit zufälligem Datenbankpasswort an. Es überschreibt keine Datei. [.env.example](.env.example) enthält nur Platzhalter. Unix-Dateirechte werden auf 0600 gesetzt; auf Windows den Zugriff über NTFS auf den eigenen Benutzer begrenzen. Niemals `docker compose config` mit aufgelösten Secrets veröffentlichen. Passwortänderungen aktualisieren keine bereits initialisierte PostgreSQL-Rolle automatisch.
 
-| Variable                      | Bedeutung                                                        |
-| ----------------------------- | ---------------------------------------------------------------- |
-| HELIOS_ENV                    | development, test oder production; unabhängig von NODE_ENV       |
-| DATABASE_URL                  | Private PostgreSQL-Verbindungsadresse; Compose-Hostname postgres |
-| POSTGRES_DB / USER / PASSWORD | Initialisierung der neuen PostgreSQL-Datenbank                   |
-| WEB_PORT                      | Lokaler Loopbackport, Standard 3100                              |
-| WORKER_ENABLED                | Exakt true/false, zum Anhalten der Verarbeitung                  |
-| RESTORE_MODE                  | true blockiert Worker und technischen Job beim Restore           |
+| Variable                      | Bedeutung                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| HELIOS_ENV                    | development, test oder production; unabhängig von NODE_ENV                                |
+| DATABASE_URL                  | Private PostgreSQL-Verbindungsadresse; Compose-Hostname postgres                          |
+| POSTGRES_DB / USER / PASSWORD | Initialisierung der neuen PostgreSQL-Datenbank                                            |
+| WEB_PORT                      | Lokaler Loopbackport, Standard 3100                                                       |
+| WORKER_ENABLED                | Exakt true/false, zum Anhalten der Verarbeitung                                           |
+| RESTORE_MODE                  | true blockiert Worker, geschützte Authzugriffe und Mutationen beim Restore                |
+| AUTH_SECRET                   | Privater zufälliger Signatur-/Verschlüsselungsschlüssel, nicht rotieren ohne Recoveryplan |
+| AUTH_ORIGIN                   | Exakter kanonischer Browserorigin, z. B. http://127.0.0.1:3100 lokal                      |
+
+`pnpm config:auth` ergänzt nur fehlende AUTH_SECRET/AUTH_ORIGIN in der ignorierten lokalen .env, ohne bestehende Werte zu ersetzen. AUTH_SECRET enthält mindestens 32 zufällige Bytes als Hex und schützt Cookie-Signaturen sowie TOTP-/Recovery-Verschlüsselung. Verlust dieses Schlüssels erfordert lokale Recovery. AUTH_ORIGIN ist der exakte Browserorigin; in Entwicklung HTTP nur auf Loopback, in Produktion ausschliesslich HTTPS.
 
 Testdatenbanken müssen auf `_test` enden. Produktion braucht getrennte Konfiguration, Schlüssel und Compose-Projektnamen. Die [Produktionsvorlage](infra/compose.production.example.yaml) bereitet NPM vor; sie ist noch keine Deploymentfreigabe. Keine echten Todoist-, TermiHub- oder Ollama-Zugangsdaten erforderlich.
 
@@ -52,7 +73,7 @@ Backups, Wiederherstellung und Fehlerdiagnose: [Betrieb](docs/runbooks/operation
 
 ## Entwicklung und Mitwirkung
 
-Siehe [Entwicklung](docs/development/workflow.md), [CONTRIBUTING](CONTRIBUTING.md), [Architektur](docs/architecture/README.md), [Anforderungen](docs/requirements/README.md) und [Prüfbericht](docs/development/e1.1-verification.md). Normale Fehler gehören in GitHub Issues, Sicherheitslücken vertraulich in [Private Vulnerability Reporting](https://github.com/biit-hub/helios/security/advisories/new).
+Siehe [Entwicklung](docs/development/workflow.md), [CONTRIBUTING](CONTRIBUTING.md), [Architektur](docs/architecture/README.md), [Anforderungen](docs/requirements/README.md) und [E1.1-Prüfbericht](docs/development/e1.1-verification.md) und [E1.2-Prüfbericht](docs/development/e1.2-verification.md). Normale Fehler gehören in GitHub Issues, Sicherheitslücken vertraulich in [Private Vulnerability Reporting](https://github.com/biit-hub/helios/security/advisories/new).
 
 ## Struktur
 
