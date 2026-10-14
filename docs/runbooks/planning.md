@@ -1,6 +1,6 @@
 # Tagesplanung und Fokus prüfen
 
-1. Vor Nutzung echter lokaler Pläne Datenbank und getrennte Schlüssel verschlüsselt extern sichern (O-10). Worker stoppen, additive Migration 0005 ausführen, passende Web-/Workerimages starten.
+1. In E3 lokal verschlüsselte Backups von Datenbank und separat geschützter Konfiguration/Schlüsseln erstellen und die Wiederherstellung mit isolierten synthetischen Daten prüfen (O-10, Entwicklungsfreigabe vom 14. Oktober 2026). Keine NAS-Anbindung erforderlich. Worker stoppen, additive Migration 0005 ausführen, passende Web-/Workerimages starten.
 2. Mit Passwort und TOTP anmelden. Einen Kontext bewusst einem Nicht-Eingangsprojekt zuordnen. Den Abschnitt In Arbeit vorher selbst in Todoist einrichten, falls Abschnittswechsel gewünscht sind.
 3. Unter Aufgaben den Kontext wählen und Aufgaben aktualisieren. Unter Fokus/Tagesplan die Tagesvorschau erstellen. Quellen dürfen höchstens fünf Minuten alt sein.
 4. Aufgaben und Auswahlgründe prüfen, bei Bedarf einzelne Vorschläge abwählen. Eine leere Vorschau ist erlaubt, eine leere Bestätigung nicht.

@@ -1,6 +1,6 @@
 # E3 – Prüfbericht
 
-Stand: 14. Oktober 2026. E3 ist **implementiert und automatisiert geprüft; die externe Backup-Betriebsvoraussetzung für echte Pläne bleibt offen**. Branch: feat/e3-planning-focus, Ausgangspunkt aktuelles develop nach E2. Die Planungsimplementierung und additive Migration 0005 liegen vor. Die lokale Entwicklungsumgebung wurde nach neuer verschlüsselter Sicherung additiv migriert. [PR #13](https://github.com/biit-hub/helios/pull/13) führt die Integration nach develop; ein Merge erfolgt ausschliesslich mit erfolgreichen Pflichtchecks. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
+Stand: 14. Oktober 2026. E3 ist **implementiert, automatisiert geprüft und nach develop integriert**. Die Benutzerfreigabe vom 14. Oktober 2026 erlaubt für E3 lokale verschlüsselte Backups mit isolierten Restore-Proben; eine NAS-Anbindung ist keine E3-Voraussetzung. Branch: feat/e3-planning-focus, Ausgangspunkt aktuelles develop nach E2. Die Planungsimplementierung und additive Migration 0005 liegen vor. Die lokale Entwicklungsumgebung wurde nach neuer verschlüsselter Sicherung additiv migriert. [PR #13](https://github.com/biit-hub/helios/pull/13) wurde nach erfolgreichen Pflichtchecks nach develop gemergt (398f2b990e55105cdf63a239a6f26f40cda46a44). Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
 
 ## Quellen
 
@@ -44,7 +44,7 @@ Der Benutzer hat Option 1 ausdrücklich bestätigt. Die Implementierung erhält 
 
 Plan-/Revisionsschema, deterministische Auswahl, Operationsjournal, Fokusansicht und Beobachtungen sind implementiert. Bisher tatsächlich bestanden: Lint/Typecheck, 42 Unit-/UI-/Vertragstests und 70 PostgreSQL-Integrationstests, Produktionsbuild, Secretprüfung und Produktionsaudit ohne bekannte Schwachstellen. Der gezielte E3-Browserablauf mit eigenem neuen Browserprozess und die vollständige Browsersuite sind bestanden: 7 bestanden, 3 bewusst übersprungene Wiederholungen im Mobilprojekt. E3 ist ein Desktoppilot; die mobile Morgenroutine folgt später. Beide Images wurden mit Trivy auf Secrets und behebbare HIGH/CRITICAL-Befunde geprüft: jeweils null Funde. Gitleaks prüfte zuletzt 35 Commits ohne Leaks. Linux-CI, Docker, CodeQL und Sonar sind am Implementierungsstand 9da7dda erfolgreich; siehe die nachstehenden Nachweise. Rate Limits, Timeouts, unbekannte Ergebnisse und konkurrierende Planbestätigungen wurden nicht live provoziert. Diese Fälle sind mit kontrollierten Fakes und persistenter Wiederaufnahme geprüft; ein Timeout führt nicht zu blindem Replay.
 
-Für echte lokale Pläne bleibt das Backupminimum aus O-10 relevant. Der bestehende verschlüsselte lokale E2-Sicherungsstand ersetzt keine bestätigte externe Backupablage.
+O-10 wurde für E3 durch die ausdrückliche Benutzerfreigabe präzisiert: lokale verschlüsselte Sicherungen und isolierte Restore-Proben genügen. Die Produktionsanforderung an getrennten Speicher bleibt für die spätere Installation bestehen.
 
 Der bisherige Worker hatte nur das interne Docker-Netz und konnte Todoist nicht per DNS erreichen. Für die beaufsichtigten Vertragstests wurde er vorübergehend an das vorhandene ausgehende Webnetz angeschlossen. E3 verwendet stattdessen ein eigenes ausgehendes Worker-Netz ohne andere Dienste oder Hostports. Der temporäre Testanschluss ans Frontendnetz wurde zurückgenommen.
 
@@ -63,7 +63,7 @@ Keine native Exactly-once-Garantie oder gemeinsame Todoist-/PostgreSQL-Atomarit�
 
 Die Hauptauswahl ist bewusst klein und deterministisch; keine KI-, Fortschritts- oder Abhängigkeitsinformationen werden erfunden. E4/E5/E8 und mobile Morgenroutine bleiben ausserhalb des Umfangs. E3 bietet keine zeitblockbasierte Planung und keine prozentuale Tagesfüllung.
 
-Für echte lokale Pläne wurde ein NAS als externes verschlüsseltes Backupziel gewählt; der genaue Zielpfad ist noch angefragt. Bis zur Einrichtung und Prüfung der externen Sicherung gilt keine Freigabe zur Nutzung mit echten Tagesplänen. Synthetische Tests und die separate Compose-Abnahme sind davon unabhängig.
+Die NAS-Pfadfrage ist für E3 zurückgestellt und blockiert die Entwicklung nicht. Für die spätere Produktion sind automatische verschlüsselte Sicherungen auf Synology im logischen Ordner `Backups/Helios` vorgesehen. Vollständiger Zielpfad und Zugang werden erst bei der Produktivinstallation konfiguriert; keine Zugangsdaten werden vorausgesetzt.
 
 Die synthetische Fokusaufnahme wurde visuell geprüft: Kontext-Pills, aktive Kontextfarbe, klare Fokusaufgabe, Heute im Blick und getrennte Bestätigungsstände. Die Hierarchieausnahme wird im Einzeljournal ausdrücklich angezeigt.
 
@@ -77,4 +77,12 @@ Sonar Quality Gate bestanden: 0 neue Bugs, 0 neue Vulnerabilities, 0 neue Securi
 
 Die final aktivierten lokalen Web-/Workerimages wurden nochmals separat gescannt: jeweils 0 Secret-Funde und 0 behebbare HIGH/CRITICAL-Funde. Die synthetischen PostgreSQL-/Compose-Testumgebungen und deren selbst erzeugte Daten sind nach der Abnahme entfernt; die persönliche Entwicklungsumgebung bleibt bestehen.
 
-Die abschliessende Dokumentationsrevision ändert keine Runtimefunktion. Deren eigene Pflichtchecks müssen vor dem Merge ebenfalls erfolgreich sein; der aktuelle Status ist am verlinkten PR nachvollziehbar. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
+Die abschliessende Dokumentationsrevision von PR #13 bestand ebenfalls sämtliche Pflichtchecks vor dem Merge. Diese nachfolgende Präzisierung der Backupvorgabe ändert keine Runtimefunktion. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
+
+## Lokale verschlüsselte Restore-Probe nach Backupfreigabe
+
+Am 14. Oktober 2026 ausschliesslich im separaten tmpfs-Testprojekt durchgeführt: zwei neue leere \_test-Datenbanken, alle sechs SQL-Migrationen bis einschliesslich 0005 und synthetische Auth-/Kontext-/E3-Daten. Der Customformat-Dump wurde mit age verschlüsselt lokal abgelegt, authentifiziert ausschliesslich im Speicher entschlüsselt und mit pg_restore in die neue Zieldatenbank eingespielt. Es wurden keine unverschlüsselten Dumpdateien geschrieben und keine persönlichen Sicherungsdaten in die Testumgebung übernommen.
+
+Sieben Tabellen wurden vollständig vor/nach Restore verglichen: auth_user, contexts sowie alle fünf E3-Tabellen. Planreihenfolge, Fokus, Revision/Historie, Beobachtung, partielles Journal und unknown-Schritt samt stabiler Request-ID blieben identisch. Anschliessende verbotene Änderungen an Historie und nicht mehr im Entwurf befindlichen Planquellen wurden von den restaurierten DB-Triggern zurückgewiesen; der Datenvergleich blieb identisch. Kein Worker, keine Wiederaufnahme alter Operationen, keine externen Aufrufe. Die eigene flüchtige Testinstanz wurde danach entfernt; verschlüsseltes Testarchiv und getrennt verwahrte Testidentität bleiben privat.
+
+Dies weist die lokale E3-Datenwiederherstellung nach. Es ist kein Nachweis einer NAS-Automation, einer produktiven vollständigen Auth-Recovery oder zugesicherter RPO/RTO.

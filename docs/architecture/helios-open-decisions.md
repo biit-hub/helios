@@ -107,14 +107,14 @@ Externe Machbarkeitspruefungen und Bibliothekstests stehen im [Implementierungsp
 
 ## O-10 - Backupziel, RPO/RTO und Aufbewahrung
 
-| Punkt              | Entscheidung                                                                                                                                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sachverhalt        | Konsistentes Backup/Restore ist Pflicht. Speicherziel, akzeptierter Datenverlust/Wiederanlauf, Aufbewahrung und Schluesselhinterlegung fehlen.                                                                                  |
-| Optionen           | A: taeglicher verschluesselter Dump auf getrenntem Speicher, RPO 24 h/RTO 4 h, sieben taegliche/vier woechentliche Sicherungen. B: kleinere Verlustgrenze mit haeufigeren Dumps oder WAL-/PITR-Konzept und mehr Betriebspflege. |
-| Vorteile/Nachteile | A einfach und ausreichend, falls ein Tag lokale Datenverlust akzeptiert wird. B engerer Verlustrahmen, mehr Speicher-/Restore-/Monitoringkomplexitaet.                                                                          |
-| Empfehlung         | A plus Backup vor jedem Release und regelmaessiger isolierter Restore. Ziel getrennt vom Host, verschluesselte Secretmitnahme gesondert sichern; kein automatischer Operations-/Pushreplay nach Restore.                        |
-| Auswirkungen       | Backupjob/-runbook, Restoregate, Speicher-/Schluesselrechte und Problemstatus. Keine Sicherung nur als zweiter Ordner auf demselben Datentraeger.                                                                               |
-| Faellig            | Vor E3-Nutzung mit echten lokalen Plaenen; Betriebsdetails vor E13.                                                                                                                                                             |
+| Punkt              | Entscheidung                                                                                                                                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sachverhalt        | Konsistentes Backup/Restore ist Pflicht. Speicherziel, akzeptierter Datenverlust/Wiederanlauf, Aufbewahrung und Schluesselhinterlegung fehlen.                                                                                   |
+| Optionen           | A: taeglicher verschluesselter Dump auf getrenntem Speicher, RPO 24 h/RTO 4 h, sieben taegliche/vier woechentliche Sicherungen. B: kleinere Verlustgrenze mit haeufigeren Dumps oder WAL-/PITR-Konzept und mehr Betriebspflege.  |
+| Vorteile/Nachteile | A einfach und ausreichend, falls ein Tag lokale Datenverlust akzeptiert wird. B engerer Verlustrahmen, mehr Speicher-/Restore-/Monitoringkomplexitaet.                                                                           |
+| Empfehlung         | A plus Backup vor jedem Release und regelmaessiger isolierter Restore. Ziel getrennt vom Host, verschluesselte Secretmitnahme gesondert sichern; kein automatischer Operations-/Pushreplay nach Restore.                         |
+| Auswirkungen       | Backupjob/-runbook, Restoregate, Speicher-/Schluesselrechte und Problemstatus. Keine Sicherung nur als zweiter Ordner auf demselben Datentraeger.                                                                                |
+| Faellig            | Produktion: NAS-Zielpfad/Zugang, Automation und Betriebsdetails bei Produktivinstallation festlegen. E3: lokale verschluesselte Backups plus isolierte Restore-Proben genuegen (Benutzerfreigabe 14.10.2026); keine NAS-Pflicht. |
 
 ## O-11 - Aufbewahrung und mobile Offline-Entwuerfe
 

@@ -2,6 +2,8 @@
 
 ## E3 – Tagesplanung und Fokus
 
+- Backupvorgabe präzisiert: lokale verschlüsselte Sicherungen und isolierter E3-Restore für die Entwicklung; konfigurierbare automatische Synology-Sicherung erst für die Produktivinstallation vorgesehen.
+
 - Persistente Tagesvorschläge und bestätigte Pläne je Kontext/Tag, Auswahlgründe und geschützte Historie.
 - Operationsjournal, nachgewiesene Abschnittswechsel, Teilerfolge, Quellenkonflikte und sichere Wiederaufnahme.
 - Freigegebener Hierarchieerhalt, Fokus ohne Reorder, Heute im Blick und neutrale Beobachtungen.
