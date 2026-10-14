@@ -22,6 +22,20 @@
       "when": 1791995830930,
       "tag": "0002_sleepy_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792001723300,
+      "tag": "0003_fixed_living_mummy",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792002033296,
+      "tag": "0004_colorful_wraith",
+      "breakpoints": true
     }
   ]
 }

@@ -18,7 +18,7 @@ export const DURATIONS = {
 };
 export function safeReturnTo(value: unknown) {
   return typeof value === "string" &&
-    ["/", "/mobile", "/settings/security"].includes(value)
+    ["/", "/mobile", "/settings/security", "/settings/contexts"].includes(value)
     ? value
     : "/";
 }
