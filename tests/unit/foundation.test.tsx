@@ -7,7 +7,7 @@ describe("technical foundation", () => {
   it("shows scope without fake login", () => {
     render(<Foundation />);
     expect(screen.getByRole("heading", { level: 1 })).toBeVisible();
-    expect(screen.getByText(/Anmeldung folgt in E1.2/)).toBeVisible();
+    expect(screen.getByText(/Dein Zugang ist geschützt/)).toBeVisible();
     expect(
       screen.queryByRole("button", { name: /anmelden/i }),
     ).not.toBeInTheDocument();

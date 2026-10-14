@@ -1,26 +1,41 @@
 import { test, expect } from "@playwright/test";
-test("foundation and mobile layout are usable", async ({ page }) => {
+test("unauthenticated desktop and mobile shells redirect to real login", async ({
+  page,
+  request,
+}) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByText(/Anmeldung folgt in E1.2/)).toBeVisible();
-  await page.getByRole("link", { name: /Mobiles Grundlayout/ }).click();
-  await expect(page).toHaveURL(/mobile/);
-  await expect(
-    page.getByRole("link", { name: /Desktop-Grundlayout/ }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/login/);
+  await expect(page.getByLabel("Benutzername")).toBeVisible();
+  await page.goto("/mobile");
+  await expect(page).toHaveURL(/login\?returnTo=%2Fmobile/);
+  const denied = await request.get("/api/protected");
+  expect(denied.status()).toBe(401);
+  expect(await denied.json()).toEqual({ error: { code: "AUTH_REQUIRED" } });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
 });
-test("liveness exposes no configuration", async ({ request }) => {
+test("liveness reveals no configuration; raw auth routes and CSRF are blocked", async ({
+  request,
+}) => {
   const r = await request.get("/api/health/live");
   expect(r.status()).toBe(200);
   expect(await r.json()).toEqual({
     status: "ok",
     service: "web",
-    stage: "E1.1",
+    stage: "E1.2",
   });
-  expect(r.headers()["cache-control"]).toBe("no-store");
+  expect(
+    (await request.post("/api/auth/sign-up/email", { data: {} })).status(),
+  ).toBe(404);
+  expect(
+    (
+      await request.post("/api/identity/login", {
+        headers: { Origin: "https://attacker.invalid" },
+        data: { username: "synthetic_user", password: "synthetic" },
+      })
+    ).status(),
+  ).toBe(403);
 });
