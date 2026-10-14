@@ -8,7 +8,7 @@ E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollzieh
 
 Geplant: Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
 
-Vor dem Einsatz mit echten Plänen muss die verschlüsselte externe Sicherung gemäss Backup-Runbook eingerichtet und geprüft sein; das gewählte NAS-Ziel ist noch zu konkretisieren.
+Für die aktuelle E3-Entwicklung genügen lokale verschlüsselte Backups und isolierte Restore-Proben gemäss [Backup-Runbook](docs/runbooks/backup-restore.md). Eine NAS-Anbindung ist keine E3-Voraussetzung. Für die spätere Produktion sind automatische verschlüsselte Sicherungen auf einem Synology-NAS vorgesehen; Zielpfad und Zugang werden erst bei der Produktivinstallation konfiguriert.
 
 Details: [Architektur](docs/architecture/planning-focus.md), [API](docs/integrations/planning-api.md), [Prüfbericht](docs/development/e3-verification.md).
 
