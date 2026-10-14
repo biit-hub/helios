@@ -1,3 +1,4 @@
+import "./work.css";
 import type { Metadata } from "next";
 import "@helios/ui/styles.css";
 import "./identity.css";
