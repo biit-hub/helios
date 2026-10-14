@@ -532,3 +532,18 @@ it("accepts a deliberately entered full recurrence rule without clearing it thro
     "every week starting 2026-11-01",
   );
 });
+
+it("does not move private fun tasks or their children into an employer project", async () => {
+  const c = await prepare();
+  await work.handle(
+    "context-save",
+    headers(),
+    employer("Synthetic employer", projects[1]!.id),
+  );
+  f.state.tasks[0]!.labels = ["fun"];
+  const op = await change(c, "move", { projectId: projects[1]!.id });
+  await executor().runNext();
+  expect((await result(op.operationId)).code).toBe("FUN_PRIVATE_ONLY");
+  expect(f.control.calls).toHaveLength(0);
+  expect(f.state.tasks[0]!.project_id).toBe(c.projectId);
+});

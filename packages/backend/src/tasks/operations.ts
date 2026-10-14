@@ -11,6 +11,7 @@ import {
   taskProjections,
   integrationProblems,
   integrations,
+  contexts,
 } from "../work/schema";
 import type { Database } from "../planning/store";
 import {
@@ -242,10 +243,35 @@ export function createTaskExecutor(
       return true;
     }
     async function checkFun(token: string) {
-      const labels = command.fields?.labels;
+      const labels =
+        command.fields?.labels ??
+        (command.action === "move" ? payload.source?.labels : undefined);
+      if (
+        command.action === "move" &&
+        command.projectId &&
+        [payload.source, ...payload.children].some((t) =>
+          t?.labels.includes("fun"),
+        )
+      ) {
+        const [target] = await database.db
+          .select()
+          .from(contexts)
+          .where(
+            and(
+              eq(contexts.userId, op.userId),
+              eq(contexts.projectId, command.projectId),
+              eq(contexts.active, true),
+            ),
+          );
+        if (target?.kind !== "private")
+          throw new WorkFault("FUN_PRIVATE_ONLY", 409);
+      }
       if (!labels) return;
       const desired = labels.includes("fun");
-      let parent = command.parentId ?? payload.source?.parent_id;
+      let parent =
+        command.action === "move" && !command.parentId
+          ? null
+          : (command.parentId ?? payload.source?.parent_id);
       const seen = new Set<string>();
       while (parent) {
         if (seen.has(parent)) throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
@@ -270,7 +296,11 @@ export function createTaskExecutor(
       body?: Record<string, unknown>,
     ) {
       await authorize();
-      if (["create", "update"].includes(kind)) await checkFun(token);
+      if (
+        ["create", "update"].includes(kind) ||
+        (kind === "move" && command.action === "move")
+      )
+        await checkFun(token);
       if (payload.source) await fresh(token);
       await save({
         pending: {

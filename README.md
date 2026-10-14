@@ -80,7 +80,7 @@ Testdatenbanken müssen auf `_test` enden. Produktion braucht getrennte Konfigur
 
 Unter Einstellungen den Privatkontext benennen und Arbeitgeber frei hinzufügen. Kupfer, Meerblau, Waldgrün, Pflaume, Terrakotta und Gold entsprechen dem bestätigten V2-Design. Sichtbare Kontext-Pills wechseln die Lesesicht; Konfiguration bleibt serverseitig gespeichert.
 
-Todoist-Token nach frischer Passwort-/TOTP-Bestätigung hinterlegen, Verbindung prüfen, bestehendes Projekt auswählen und speichern. Pro aktivem Kontext genau ein Projekt, keine aktive Doppelzuordnung. Danach Aufgaben bewusst aktualisieren. Eingang und fremde Projekte werden nicht automatisch verarbeitet; keine Todoist-Schreibaktionen, keine Hintergrund-KI. TermiHub ist nur als optionale Referenz vorbereitet.
+Todoist-Token nach frischer Passwort-/TOTP-Bestätigung hinterlegen, Verbindung prüfen, bestehendes Projekt auswählen und speichern. Pro aktivem Kontext genau ein Projekt, keine aktive Doppelzuordnung. Danach Aufgaben bewusst aktualisieren. Eingang und fremde Projekte werden nicht automatisch verarbeitet. Das Verbinden und Aktualisieren führt keine Todoist-Schreibaktionen aus; Aufgabenänderungen benötigen die bewusste E4-Bestätigung. Keine Hintergrund-KI. TermiHub ist nur als optionale Referenz vorbereitet.
 
 Vollständige [Einrichtungsanleitung](docs/runbooks/todoist-setup.md), [API-Vertrag und Grenzen](docs/integrations/todoist.md), [Architektur](docs/architecture/contexts-todoist.md) und [E2-Prüfbericht](docs/development/e2-verification.md). INTEGRATION_KEY über pnpm config:integrations ergänzen und bei Backups separat sichern.
 

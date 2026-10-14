@@ -3,6 +3,7 @@
 ## E4 – Aufgabenverwaltung und Wartestatus
 
 - Bewusste Formularerfassung, Bearbeitung, native Moves, Kommentare, Warten, Abschluss und Löschung über das erweiterte bestehende Operationsjournal.
+- Änderungen bestehender Wiederholungen erfordern ausdrückliche Entfernungsbestätigung oder einen bewusst eingegebenen vollständigen Wiederholungstext; nachgelesene Regel statt blossem HTTP-Erfolg.
 - Verlustarme Wartedetails, Nachfasshinweise, Hierarchiebestätigung und instanzsicherer Wiederholungsabschluss nach bestätigter Policy.
 - Suche/Statusfilter, Originaleingaben und notwendige E3-Fokusintegration ohne Änderung bestätigter Reihenfolgen.
 - Manuelle E3-Abnahme weiterhin bewusst verschoben und offen; E4-Abschlussprüfungen siehe Prüfbericht.
