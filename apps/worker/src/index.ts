@@ -5,10 +5,11 @@ import {
   prepareQueue,
   registerSmokeHandler,
   workerHeartbeats,
-  loadConfig,
+  loadWorkConfig,
+  createPlanExecutor,
   log,
 } from "@helios/backend";
-const config = loadConfig();
+const config = loadWorkConfig();
 if (!config.WORKER_ENABLED || config.RESTORE_MODE) {
   log("info", "worker_disabled");
   process.exit(0);
@@ -16,6 +17,18 @@ if (!config.WORKER_ENABLED || config.RESTORE_MODE) {
 const database = createDatabase(config.DATABASE_URL);
 const boss = createQueue(config.DATABASE_URL);
 const id = randomUUID();
+const executor = createPlanExecutor(database, config);
+let operationsBusy = false;
+const operationsTimer = setInterval(() => {
+  if (operationsBusy) return;
+  operationsBusy = true;
+  void executor
+    .runNext()
+    .catch(() => log("error", "plan_operation_failed"))
+    .finally(() => {
+      operationsBusy = false;
+    });
+}, 3000);
 let timer: ReturnType<typeof setInterval> | undefined;
 let shuttingDown = false;
 async function heartbeat() {
@@ -31,6 +44,7 @@ async function shutdown(code = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   clearInterval(timer);
+  clearInterval(operationsTimer);
   await boss.stop({ graceful: true, timeout: 10000 });
   await database.close();
   process.exit(code);

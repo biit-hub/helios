@@ -815,6 +815,14 @@ export function createWorkService(
 }
 const workErrorMessages: Record<string, string> = {
   ...problemMessages,
+  PLAN_CONFLICT:
+    "Der Plan oder seine Todoist-Quelle wurde geändert. Bitte neu laden und den Konflikt prüfen.",
+  PLAN_LOCKED:
+    "Dieser Plan wurde bereits zur Bestätigung übergeben. Er wird nicht automatisch ersetzt.",
+  PLAN_DAY_CHANGED:
+    "Der lokale Kalendertag hat gewechselt. Bitte den aktuellen Tag laden.",
+  SOURCE_STALE:
+    "Bitte zuerst die Aufgaben des gewählten Kontexts aktualisieren.",
   REVISION_CONFLICT:
     "Die Daten wurden zwischenzeitlich geändert. Neu laden und erneut prüfen.",
   PROJECT_ALREADY_ASSIGNED:

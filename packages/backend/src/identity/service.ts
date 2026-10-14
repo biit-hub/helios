@@ -376,7 +376,7 @@ export function createIdentityService(
     async withActive<T>(
       headers: Headers,
       options: { mutation?: boolean; stepUp?: boolean },
-      fn: (db: Db, userId: string) => Promise<T>,
+      fn: (db: Db, userId: string, sessionId: string) => Promise<T>,
     ): Promise<T> {
       if (config.RESTORE_MODE) throw new AuthFault("RESTORE_BLOCKED", 503);
       assertRequest(headers, config, options.mutation ?? false);
@@ -387,7 +387,51 @@ export function createIdentityService(
           baseHeaders(headers, config),
           options.stepUp ?? false,
         );
-        return fn(db, value.current.user.id);
+        return fn(db, value.current.user.id, value.current.session.id);
+      });
+    },
+    // Internal worker guard: session IDs come only from persisted, guarded user intent.
+    // Background execution must never renew idle activity or manufacture cookies.
+    async withOperationSession<T>(
+      sessionId: string,
+      userId: string,
+      fn: (db: Db) => Promise<T>,
+    ): Promise<T> {
+      if (config.RESTORE_MODE) throw new AuthFault("RESTORE_BLOCKED", 503);
+      return transaction(database, config, async (db) => {
+        const [session] = await db
+          .select()
+          .from(s.session)
+          .where(
+            and(eq(s.session.id, sessionId), eq(s.session.userId, userId)),
+          );
+        const [policy] = await db
+          .select()
+          .from(s.sessionPolicy)
+          .where(eq(s.sessionPolicy.sessionId, sessionId));
+        const [state] = await db
+          .select()
+          .from(s.identityState)
+          .where(eq(s.identityState.userId, userId));
+        const [user] = await db
+          .select()
+          .from(s.user)
+          .where(eq(s.user.id, userId));
+        if (
+          !session ||
+          session.expiresAt <= new Date() ||
+          !policy ||
+          !state ||
+          !user
+        )
+          throw new AuthFault();
+        assertSessionPolicy(
+          policy,
+          state.status,
+          user.twoFactorEnabled,
+          new Date(),
+        );
+        return fn(db);
       });
     },
     async requireActive(headers: Headers, stepUp = false) {

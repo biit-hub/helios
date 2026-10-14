@@ -45,7 +45,16 @@ async function request(
 }
 function go(path: string) {
   window.location.assign(
-    ["/", "/login", "/setup", "/mobile", "/settings/security"].includes(path)
+    [
+      "/",
+      "/tasks",
+      "/plan",
+      "/login",
+      "/setup",
+      "/mobile",
+      "/settings/security",
+      "/settings/contexts",
+    ].includes(path)
       ? path
       : "/login",
   );

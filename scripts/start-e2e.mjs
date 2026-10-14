@@ -22,11 +22,17 @@ await new Promise((resolve, reject) => {
   fixture.once("error", reject);
   fixture.once("exit", (code) => reject(new Error("Fixture exited " + code)));
 });
+const worker = spawn(
+  process.execPath,
+  ["node_modules/tsx/dist/cli.mjs", "apps/worker/src/index.ts"],
+  { stdio: ["ignore", "inherit", "inherit"], env: process.env },
+);
 const child = spawn(process.execPath, [server], {
   stdio: "inherit",
   env: { ...process.env, PORT: origin.port || "3101", HOSTNAME: "127.0.0.1" },
 });
 process.on("SIGTERM", () => {
+  worker.kill("SIGTERM");
   child.kill("SIGTERM");
   fixture.kill("SIGTERM");
 });
@@ -35,6 +41,7 @@ process.on("SIGINT", () => {
   fixture.kill("SIGTERM");
 });
 child.on("exit", (code) => {
+  worker.kill("SIGTERM");
   fixture.kill("SIGTERM");
   process.exit(code ?? 1);
 });

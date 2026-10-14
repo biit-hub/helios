@@ -55,6 +55,8 @@ export const todoistTaskSchema = z.object({
 });
 export type TodoistTask = z.infer<typeof todoistTaskSchema>;
 export const problemMessages = {
+  plan_operation_failed:
+    "Eine Tagesplanbestätigung ist teilweise oder ungeklärt. Den Operationsstand im Tagesplan prüfen.",
   task_unavailable:
     "Die Aufgabe ist nicht mehr zugänglich. Ihr externer Zustand ist unbekannt.",
   key_unavailable:

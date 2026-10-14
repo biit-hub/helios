@@ -4,8 +4,7 @@ import "@helios/ui/styles.css";
 import "./identity.css";
 export const metadata: Metadata = {
   title: "Helios – Ein ruhiger Start",
-  description:
-    "Lokale Tagesplanung und Morgenroutine. Technische Grundlage E1.1.",
+  description: "Eine bewusste Tagesauswahl und ein ruhiger nächster Schritt.",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

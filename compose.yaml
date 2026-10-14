@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?Run pnpm config:init}
       HELIOS_ENV: ${HELIOS_ENV:-development}
+      PLAN_TIMEZONE: ${PLAN_TIMEZONE:-Europe/Zurich}
       RESTORE_MODE: ${RESTORE_MODE:-false}
       AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
       AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
@@ -46,12 +47,13 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?Run pnpm config:init}
       HELIOS_ENV: ${HELIOS_ENV:-development}
+      PLAN_TIMEZONE: ${PLAN_TIMEZONE:-Europe/Zurich}
       WORKER_ENABLED: ${WORKER_ENABLED:-true}
       RESTORE_MODE: ${RESTORE_MODE:-false}
       AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
       AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
       INTEGRATION_KEY: ${INTEGRATION_KEY:-}
-    networks: [backend]
+    networks: [backend, todoist-egress]
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck:
@@ -63,5 +65,7 @@ services:
 networks:
   backend: { internal: true }
   frontend: {}
+  # Dedicated outbound access for the operations worker; no web membership or host ports.
+  todoist-egress: {}
 volumes:
   postgres-data:

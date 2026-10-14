@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { fixture } from "./todoist";
+import { planningFixture as fixture } from "./planning";
 if (
   process.env.HELIOS_ENV !== "test" ||
   !new URL(process.env.DATABASE_URL ?? "").pathname.endsWith("_test")
@@ -36,11 +36,48 @@ const server = createServer(async (req, res) => {
       )
         throw new Error("Invalid fixture mode");
       f.state.mode = data.mode;
+      if (data.scenario === "planning") {
+        const template = structuredClone(f.state.tasks[1]!);
+        const ids = ["project:private/alpha", "project:work/beta"];
+        f.state.tasks = ids.flatMap((project_id, n) =>
+          Array.from({ length: n ? 2 : 3 }, (_, i) => ({
+            ...template,
+            id: "plan-" + n + "-" + i,
+            project_id,
+            parent_id: null,
+            content: "Synthetischer Schritt " + n + "-" + i,
+            priority: 4 - i,
+            section_id: "section:open",
+            due: null,
+            deadline: null,
+          })),
+        );
+        const parent = {
+          ...template,
+          id: "plan-epic",
+          project_id: ids[0]!,
+          parent_id: null,
+          content: "Synthetisches Vorhaben",
+          labels: ["epic"],
+          section_id: "section:open",
+        };
+        f.state.tasks.push(parent, {
+          ...template,
+          id: "plan-child",
+          project_id: ids[0]!,
+          parent_id: parent.id,
+          content: "Synthetische Unteraufgabe",
+          section_id: "section:open",
+        });
+      }
       res.end("{}");
       return;
     }
+    let body = "";
+    for await (const chunk of req) body += chunk;
     const response = await f.fetcher(new URL(req.url ?? "/", origin), {
       method: req.method,
+      body: body || undefined,
       headers: { Authorization: req.headers.authorization ?? "" },
     });
     res.statusCode = response.status;
