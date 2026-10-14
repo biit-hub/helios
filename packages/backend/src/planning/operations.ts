@@ -218,7 +218,8 @@ export function createPlanExecutor(
       await cache(base.p, base.i, task, "In Arbeit");
       return;
     }
-    if (step.status === "sending") throw new WorkFault("OUTCOME_UNKNOWN", 409);
+    if (op.status === "running" && step.attempts > 0)
+      throw new WorkFault("OUTCOME_UNKNOWN", 409);
     await authorize(op, base.i.revision);
     await updateStep(step, {
       status: "sending",

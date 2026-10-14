@@ -528,23 +528,27 @@ it("rejects stale sources and wrong calendar days without Ollama dependencies", 
   ).rejects.toThrow();
   expect(f.calls.every((c) => !c.url.includes("ollama"))).toBe(true);
 });
-it("reconciles a crashed sending step without an automatic second mutation", async () => {
-  const v = await proposal(1);
-  await confirm(v);
-  await db.pool.query(
-    "UPDATE plan_operation_steps SET status='sending',attempts=1,target_section_id='section:active'",
-  );
-  await db.pool.query("UPDATE plan_operations SET status='running'");
-  await executor().runNext();
-  const after = await plans().snapshot(headers(), v.plan!.contextId);
-  expect(after.operation!.steps[0]!.status).toBe("unknown");
-  expect(f.calls.filter((c) => c.method === "POST")).toHaveLength(0);
-  await resume(after);
-  await executor().runNext();
-  expect(
-    (await plans().snapshot(headers(), v.plan!.contextId)).plan!.status,
-  ).toBe("confirmed");
-});
+it.each(["sending", "unknown"])(
+  "reconciles a crashed %s step without an automatic second mutation",
+  async (status) => {
+    const v = await proposal(1);
+    await confirm(v);
+    await db.pool.query(
+      "UPDATE plan_operation_steps SET status=$1,attempts=1,target_section_id='section:active'",
+      [status],
+    );
+    await db.pool.query("UPDATE plan_operations SET status='running'");
+    await executor().runNext();
+    const after = await plans().snapshot(headers(), v.plan!.contextId);
+    expect(after.operation!.steps[0]!.status).toBe("unknown");
+    expect(f.calls.filter((c) => c.method === "POST")).toHaveLength(0);
+    await resume(after);
+    await executor().runNext();
+    expect(
+      (await plans().snapshot(headers(), v.plan!.contextId)).plan!.status,
+    ).toBe("confirmed");
+  },
+);
 it("serializes competing workers so a queued plan is executed once", async () => {
   const v = await proposal();
   await confirm(v);

@@ -9,7 +9,7 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
 }, info) => {
   test.skip(
     info.project.name !== "desktop",
-    "Single-user scenario runs once and includes its own mobile context.",
+    "E3-Desktoppilot läuft einmal; die mobile Morgenroutine folgt in einer späteren Etappe.",
   );
   execFileSync(
     process.execPath,
