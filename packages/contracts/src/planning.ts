@@ -49,6 +49,7 @@ export type OperationView = {
   steps: StepView[];
 };
 export type PlanningView = {
+  availability?: Record<string, boolean>;
   day: string;
   timezone: string;
   plan: PlanView | null;

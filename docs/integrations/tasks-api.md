@@ -1,0 +1,17 @@
+# E4 – Aufgaben- und Operationsvertrag
+
+GET /api/tasks benötigt aktive Sitzung und vollständige MFA. Ohne Parameter liefert es die letzten 30 eigenen Aufgabenoperationen mit Status, bestätigten Originaleingaben, Fehlercode, Retryzeit und nachgewiesenen Einzeleffekten. Mit contextId/taskId liest es die aktuelle Aufgabe, native Kinder, Kommentare, sichere HTTP(S)-Links, Wartedetails und Quellenfingerprint. Mit bewusst gewähltem projectId lädt es zulässige Abschnitte und Elternoptionen; kein KI-Scan.
+
+POST /api/tasks/submit verwendet den zentralen HTTP-Guard vor Parsing, kanonischen Origin, JSON, 64 KiB Grenze und fünf Sekunden Lesefrist. Eingabe: key (UUID), action, contextId oder null bei Eingang/frei gewählter Erfassung; je nach Aktion taskId/basis, fields, projectId/sectionId/parentId, comment oder waiting. Unbekannte Felder werden abgewiesen. HTTP 202 bedeutet ausschliesslich Aufnahme ins persistente Journal.
+
+Aktionen: create, update, move, comment, wait, close, delete, sections. Title-only ohne explizite Projektwahl erzeugt im nativen Eingang; der Kontext wird nicht still als Projektwahl behandelt. Titel/Beschreibung/Priorität/Labels sowie getrennte geplante Daten/Uhrzeit, Deadline, Dauer und bewusster Todoist-Wiederholungstext sind begrenzte erlaubte Felder. Update übermittelt nur gewählte Felder, Move ist eine gesonderte native Operation. Fehlende Werte sind unverändert, null leert die vorgesehenen Datums-/Dauerfelder. fun ist nur für den bewusst gewählten Privatkontext zulässig.
+
+close/delete brauchen acknowledgeDestructive. Betroffene Hierarchien brauchen zusätzlich acknowledgeHierarchy; Aufgaben und aktuelle Kinder gehören zum Quellenfingerprint. Der F1-Epicabschluss mit offenen Kindern wird nicht vorweggenommen. sections legt nur nach eigener bewusster Aktion fehlende eindeutige Kanban-Abschnitte im zugeordneten verwalteten Projekt an, niemals im Eingang.
+
+POST /api/tasks/resume mit operationId autorisiert dieselbe eigene fehlgeschlagene/teilweise/ungeklärte Operation neu. Backoff bleibt verbindlich. Kein erneuter Create/Comment/Close bei unbekannter Wirkung. Payload, Credentialgeneration, Integration-/Kontextrevision, Sitzung und Intent werden serverseitig verwaltet. Derselbe Key mit anderem Body ist ein Konflikt.
+
+Journalstatus: queued/running → succeeded, failed, partial oder unknown. Persistente Checkpoints behalten Eingaben, vor dem Senden gespeicherte Request-IDs und nachgewiesene Effekte. Vor jedem Write zentrale Sitzungs-/Scopeprüfung und aktuelle Quelle. Nach Wiederanlauf zuerst nachlesen; eine verlorene Antwort ist kein Beweis für fehlende Wirkung. Feldwerte werden per GET geprüft; HTTP 200 genügt nicht. Teilerfolg bleibt sichtbar, die zentrale Problemübersicht unterscheidet geprüft von behoben.
+
+Wiederholung: Move nach Abgeschlossen → Close der bestätigten Instanz → nachgewiesener späterer Due-Zeitpunkt → Move der aktiven Folgeinstanz nach Offen. Ein unbekannter Close wird niemals zur nächsten Instanz wiederholt.
+
+E3-Integration: bestätigte Einträge/Reihenfolge/Historie bleiben bestehen. Aktuelle Ausführbarkeit wird separat aus Projektionen und Vorfahrenstatus abgeleitet. Laufende/ungeklärte Änderungen markieren betroffene Projektionen zunächst unknown; Wartet/Abgeschlossen oder verschobene/gelöschte Aufgaben sind keine Fokus-Empfehlungen. Kein automatisches Reorder oder neue Tagesauswahl.

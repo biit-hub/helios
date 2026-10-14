@@ -55,6 +55,8 @@ export const todoistTaskSchema = z.object({
 });
 export type TodoistTask = z.infer<typeof todoistTaskSchema>;
 export const problemMessages = {
+  task_operation_failed:
+    "Eine Aufgabenänderung ist fehlgeschlagen oder ungeklärt. Den Operationsstand in der Aufgabenverwaltung prüfen.",
   plan_operation_failed:
     "Eine Tagesplanbestätigung ist teilweise oder ungeklärt. Den Operationsstand im Tagesplan prüfen.",
   task_unavailable:
@@ -116,6 +118,7 @@ export type WorkSnapshot = {
   }[];
 };
 export type TaskView = {
+  waiting?: { who: string; subject: string; followUp: string | null } | null;
   data: TodoistTask;
   state: "active" | "completed" | "deleted" | "unknown";
   sectionName: string | null;

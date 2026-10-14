@@ -1,0 +1,467 @@
+import { z } from "zod";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { createHash, randomUUID } from "node:crypto";
+import { symmetricDecrypt } from "better-auth/crypto";
+import { and, eq, desc, inArray } from "drizzle-orm";
+import { taskCommand, taskFields } from "@helios/contracts";
+import type {
+  TaskCommand,
+  TaskInspection,
+  TodoistTask,
+} from "@helios/contracts";
+import { createIdentityService } from "../identity/service";
+import { WorkFault } from "../work/service";
+import { createTodoistReader } from "../work/todoist";
+import type { TodoistReader } from "../work/todoist";
+import type { WorkConfig } from "../work/config";
+import {
+  integrations,
+  contexts,
+  projectCatalog,
+  taskProjections,
+} from "../work/schema";
+import { planOperations, planSteps } from "../planning/schema";
+import type { Database, Db } from "../planning/store";
+import { readWaiting } from "./waiting";
+export type TaskPayload = {
+  command: TaskCommand;
+  projectId: string;
+  contextRevision: number | null;
+  credentialVersion: string;
+  integrationRevision: number;
+  source: TodoistTask | null;
+  children: TodoistTask[];
+};
+export function canonical(v: unknown): string {
+  if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
+  if (v && typeof v === "object")
+    return (
+      "{" +
+      Object.entries(v)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, x]) => JSON.stringify(k) + ":" + canonical(x))
+        .join(",") +
+      "}"
+    );
+  return JSON.stringify(v) ?? "null";
+}
+export const fingerprint = (v: unknown) =>
+  createHash("sha256").update(canonical(v)).digest("hex");
+export function descendants(rows: TodoistTask[], taskId: string) {
+  const ids = new Set([taskId]);
+  let change = true;
+  while (change) {
+    change = false;
+    for (const row of rows)
+      if (row.parent_id && ids.has(row.parent_id) && !ids.has(row.id)) {
+        ids.add(row.id);
+        change = true;
+      }
+  }
+  return rows
+    .filter((t) => t.id !== taskId && ids.has(t.id))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+export async function taskScope(
+  db: Db,
+  userId: string,
+  contextId: string | null,
+) {
+  const [i] = await db
+    .select()
+    .from(integrations)
+    .where(eq(integrations.userId, userId));
+  if (!i?.enabled || !i.encryptedToken)
+    throw new WorkFault("CONTEXT_INCOMPLETE", 409);
+  const [c] = contextId
+    ? await db
+        .select()
+        .from(contexts)
+        .where(and(eq(contexts.id, contextId), eq(contexts.userId, userId)))
+    : [];
+  if (contextId && (!c?.active || !c.projectId))
+    throw new WorkFault("CONTEXT_NOT_FOUND", 404);
+  return { i, c };
+}
+export async function tokenFor(
+  i: typeof integrations.$inferSelect,
+  config: WorkConfig,
+) {
+  if (!config.INTEGRATION_KEY || !i.encryptedToken)
+    throw new WorkFault("KEY_UNAVAILABLE", 503);
+  try {
+    return await symmetricDecrypt({
+      key: config.INTEGRATION_KEY,
+      data: i.encryptedToken,
+    });
+  } catch {
+    throw new WorkFault("KEY_UNAVAILABLE", 503);
+  }
+}
+export async function allowedProject(
+  db: Db,
+  i: typeof integrations.$inferSelect,
+  id: string,
+) {
+  const [p] = await db
+    .select()
+    .from(projectCatalog)
+    .where(
+      and(
+        eq(projectCatalog.integrationId, i.id),
+        eq(projectCatalog.projectId, id),
+        eq(projectCatalog.credentialVersion, i.credentialVersion),
+        eq(projectCatalog.available, true),
+      ),
+    );
+  if (!p) throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+  return p;
+}
+export function createTaskService(
+  database: Database,
+  config: WorkConfig,
+  reader: TodoistReader = createTodoistReader(fetch, config.TODOIST_ORIGIN),
+) {
+  const identity = createIdentityService(database, config);
+  async function inspect(
+    h: Headers,
+    contextId: string,
+    taskId: string,
+  ): Promise<TaskInspection> {
+    const scope = await identity.withActive(h, {}, (db, user) => {
+      z.uuid().parse(contextId);
+      z.string().min(1).max(200).parse(taskId);
+      return taskScope(db, user, contextId);
+    });
+    if (!scope.c?.projectId) throw new WorkFault("CONTEXT_INCOMPLETE", 409);
+    const token = await tokenFor(scope.i, config);
+    const task = await reader.task(token, taskId);
+    if (task.project_id !== scope.c.projectId)
+      throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+    const [rows, sections, comments] = await Promise.all([
+      reader.tasks(token, task.project_id),
+      reader.sections(token, task.project_id),
+      reader.comments(token, task.id),
+    ]);
+    const children = descendants(rows, task.id);
+    await identity.withActive(h, {}, async (db, user) => {
+      const now = await taskScope(db, user, contextId);
+      if (
+        now.i.credentialVersion !== scope.i.credentialVersion ||
+        now.i.revision !== scope.i.revision ||
+        now.c?.revision !== scope.c?.revision
+      )
+        throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+    });
+    return {
+      task,
+      basis: fingerprint({ task, children }),
+      children: children.map(({ id, content }) => ({ id, content })),
+      sections,
+      comments,
+      waiting: readWaiting(task.description),
+      links: descriptionLinks(task.description),
+    };
+  }
+  async function enqueue(h: Headers, raw: unknown) {
+    const command = taskCommand.parse(raw);
+    const hash = fingerprint(command);
+    const base = await identity.withActive(
+      h,
+      { mutation: true },
+      async (db, user) => {
+        const [old] = await db
+          .select()
+          .from(planOperations)
+          .where(
+            and(
+              eq(planOperations.userId, user),
+              eq(planOperations.key, command.key),
+            ),
+          );
+        if (old) {
+          if (old.requestHash !== hash || old.kind !== "task")
+            throw new WorkFault("REVISION_CONFLICT", 409);
+          return { old };
+        }
+        const scope = await taskScope(db, user, command.contextId);
+        let projectId = scope.c?.projectId ?? null;
+        if (command.action === "create") {
+          taskFields.parse(command.fields);
+          if (command.contextId && command.projectId !== scope.c?.projectId)
+            throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+          if (command.projectId) projectId = command.projectId;
+          else {
+            const [inbox] = await db
+              .select()
+              .from(projectCatalog)
+              .where(
+                and(
+                  eq(projectCatalog.integrationId, scope.i.id),
+                  eq(projectCatalog.inbox, true),
+                  eq(projectCatalog.available, true),
+                  eq(
+                    projectCatalog.credentialVersion,
+                    scope.i.credentialVersion,
+                  ),
+                ),
+              );
+            projectId = inbox?.projectId ?? null;
+          }
+        }
+        if (!projectId) throw new WorkFault("CONTEXT_INCOMPLETE", 409);
+        await allowedProject(db, scope.i, projectId);
+        if (
+          (command.fields?.labels ?? []).includes("fun") &&
+          scope.c?.kind !== "private"
+        )
+          throw new WorkFault("FUN_PRIVATE_ONLY", 400);
+        return { scope, projectId };
+      },
+    );
+    if ("old" in base && base.old) return { operationId: base.old.id };
+    if (!("scope" in base) || !base.scope)
+      throw new WorkFault("INVALID_REQUEST");
+    const { scope, projectId } = base;
+    const token = await tokenFor(scope.i, config);
+    const project = await reader.project(token, projectId);
+    if (project.is_archived || project.is_deleted)
+      throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+    let source: TodoistTask | null = null,
+      children: TodoistTask[] = [];
+    if (!["create", "sections"].includes(command.action)) {
+      if (!command.taskId || !command.basis || !scope.c)
+        throw new WorkFault("INVALID_REQUEST");
+      source = await reader.task(token, command.taskId);
+      if (source.project_id !== projectId || source.is_deleted)
+        throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+      children = descendants(await reader.tasks(token, projectId), source.id);
+      if (fingerprint({ task: source, children }) !== command.basis)
+        throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+      if (source.checked && command.action !== "delete")
+        throw new WorkFault("TASK_ALREADY_CLOSED", 409);
+    }
+    if (command.action === "sections" && (!scope.c || project.inbox_project))
+      throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+    if (command.action === "comment" && !command.comment)
+      throw new WorkFault("INVALID_REQUEST");
+    if (
+      command.action === "update" &&
+      (!command.fields || Object.keys(command.fields).length === 0)
+    )
+      throw new WorkFault("INVALID_REQUEST");
+    if (command.action === "wait" && !command.waiting)
+      throw new WorkFault("INVALID_REQUEST");
+    if (
+      ["close", "delete"].includes(command.action) &&
+      !command.acknowledgeDestructive
+    )
+      throw new WorkFault("CONFIRMATION_REQUIRED", 409);
+    if (
+      source &&
+      ["move", "close", "delete", "wait"].includes(command.action) &&
+      (source.parent_id || children.length) &&
+      !command.acknowledgeHierarchy
+    )
+      throw new WorkFault("HIERARCHY_CONFIRMATION_REQUIRED", 409);
+    if (
+      source?.labels.includes("epic") &&
+      children.length &&
+      command.action === "close"
+    )
+      throw new WorkFault("EPIC_CHILDREN_POLICY", 409);
+    const payload: TaskPayload = {
+      command,
+      projectId,
+      contextRevision: scope.c?.revision ?? null,
+      credentialVersion: scope.i.credentialVersion,
+      integrationRevision: scope.i.revision,
+      source,
+      children,
+    };
+    return identity.withActive(
+      h,
+      { mutation: true },
+      async (db, user, session) => {
+        const now = await taskScope(db, user, command.contextId);
+        if (
+          now.i.credentialVersion !== payload.credentialVersion ||
+          now.i.revision !== payload.integrationRevision ||
+          (now.c?.revision ?? null) !== payload.contextRevision
+        )
+          throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+        const [old] = await db
+          .select()
+          .from(planOperations)
+          .where(
+            and(
+              eq(planOperations.userId, user),
+              eq(planOperations.key, command.key),
+            ),
+          );
+        if (old) {
+          if (old.requestHash !== hash)
+            throw new WorkFault("REVISION_CONFLICT", 409);
+          return { operationId: old.id };
+        }
+        const id = randomUUID();
+        await db.insert(planOperations).values({
+          id,
+          userId: user,
+          sessionId: session,
+          planId: null,
+          kind: "task",
+          contextId: command.contextId,
+          payload: payload as unknown as Record<string, unknown>,
+          key: command.key,
+          requestHash: hash,
+          selectedIds: command.taskId ? [command.taskId] : [],
+          expectedRevision: 0,
+          status: "queued",
+          intentExpiresAt: new Date(Date.now() + 600000),
+        });
+        await db.insert(planSteps).values({
+          id: randomUUID(),
+          operationId: id,
+          taskId: command.taskId ?? command.action,
+          requestId: randomUUID(),
+        });
+        if (command.taskId && command.action !== "comment")
+          await db
+            .update(taskProjections)
+            .set({ state: "unknown" })
+            .where(
+              and(
+                eq(taskProjections.integrationId, now.i.id),
+                eq(
+                  taskProjections.credentialVersion,
+                  payload.credentialVersion,
+                ),
+                inArray(taskProjections.taskId, [
+                  command.taskId,
+                  ...(["move", "close", "delete", "wait"].includes(
+                    command.action,
+                  )
+                    ? children.map((c) => c.id)
+                    : []),
+                ]),
+              ),
+            );
+        return { operationId: id };
+      },
+    );
+  }
+  async function operations(h: Headers) {
+    return identity.withActive(h, {}, async (db, user) => {
+      const rows = await db
+        .select()
+        .from(planOperations)
+        .where(
+          and(eq(planOperations.userId, user), eq(planOperations.kind, "task")),
+        )
+        .orderBy(desc(planOperations.createdAt))
+        .limit(30);
+      return rows.map((r) => ({
+        id: r.id,
+        status: r.status,
+        code: r.code,
+        retryAt: r.retryAt?.toISOString() ?? null,
+        result: r.result,
+        input: (r.payload as unknown as TaskPayload)?.command,
+        contextId: r.contextId,
+      }));
+    });
+  }
+  return {
+    inspect,
+    async options(h: Headers, projectId: string) {
+      const scope = await identity.withActive(h, {}, async (db, user) => {
+        z.string().min(1).max(200).parse(projectId);
+        const s = await taskScope(db, user, null);
+        await allowedProject(db, s.i, projectId);
+        return s;
+      });
+      const token = await tokenFor(scope.i, config);
+      const project = await reader.project(token, projectId);
+      if (project.is_archived || project.is_deleted)
+        throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+      const [sections, tasks] = await Promise.all([
+        reader.sections(token, projectId),
+        reader.tasks(token, projectId),
+      ]);
+      await identity.withActive(h, {}, async (db, user) => {
+        const now = await taskScope(db, user, null);
+        if (
+          now.i.credentialVersion !== scope.i.credentialVersion ||
+          now.i.revision !== scope.i.revision
+        )
+          throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+      });
+      return {
+        sections,
+        parents: tasks
+          .filter((t) => !t.checked && !t.is_deleted)
+          .map((t) => ({ id: t.id, content: t.content })),
+      };
+    },
+    operations,
+    async handle(action: string, h: Headers, input: unknown) {
+      await identity.withActive(h, { mutation: true }, async () => {});
+      if (action === "submit") return enqueue(h, input);
+      if (action === "resume") {
+        const id = (input as { operationId?: unknown })?.operationId;
+        z.uuid().parse(id);
+        if (typeof id !== "string") throw new WorkFault("INVALID_REQUEST");
+        return identity.withActive(
+          h,
+          { mutation: true },
+          async (db, user, session) => {
+            const [op] = await db
+              .select()
+              .from(planOperations)
+              .where(
+                and(
+                  eq(planOperations.id, id),
+                  eq(planOperations.userId, user),
+                  eq(planOperations.kind, "task"),
+                ),
+              );
+            if (!op || !["failed", "partial", "unknown"].includes(op.status))
+              throw new WorkFault("REVISION_CONFLICT", 409);
+            if (op.retryAt && op.retryAt > new Date())
+              throw new WorkFault("RETRY_LATER", 429);
+            await db
+              .update(planOperations)
+              .set({
+                status: "queued",
+                sessionId: session,
+                intentExpiresAt: new Date(Date.now() + 600000),
+                updatedAt: new Date(),
+              })
+              .where(eq(planOperations.id, id));
+            return { operationId: id };
+          },
+        );
+      }
+      throw new WorkFault("NOT_FOUND", 404);
+    },
+  };
+}
+
+function descriptionLinks(description: string) {
+  const found: { url: string; label: string }[] = [];
+  function visit(node: unknown) {
+    if (!node || typeof node !== "object") return;
+    const v = node as {
+      type?: string;
+      url?: string;
+      children?: unknown[];
+      value?: string;
+    };
+    if (v.type === "link" && v.url && /^https?:\/\//i.test(v.url))
+      found.push({ url: v.url, label: v.url });
+    for (const child of v.children ?? []) visit(child);
+  }
+  visit(fromMarkdown(description));
+  return found;
+}

@@ -96,6 +96,8 @@ Externe Machbarkeitspruefungen und Bibliothekstests stehen im [Implementierungsp
 
 ## O-09 - Fuehrende Speicherung der Wartedetails
 
+Bestaetigt am 15. Oktober 2026: Option A, Abschnitt `## Helios – Wartedetails` mit Wartet auf/Gegenstand/Nachfassen am; bestehende Beschreibung bytegetreu erhalten. Todoist-Abschnitt Wartet fuehrt. Nachfassen nur als Hinweis.
+
 | Punkt              | Entscheidung                                                                                                                                                                                                                                                    |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sachverhalt        | Wartet-Abschnitt ist Todoiststatus. Empfaenger/Gegenstand/Nachfassdatum koennen erfasst werden; deren Speicherort ist nicht konkret festgelegt.                                                                                                                 |
