@@ -1,0 +1,6 @@
+# Only for one-off interactive admin commands; never use this override with up.
+services:
+  worker:
+    logging:
+      driver: none
+    restart: "no"

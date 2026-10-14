@@ -21,6 +21,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Run pnpm config:init}
       HELIOS_ENV: ${HELIOS_ENV:-development}
       RESTORE_MODE: ${RESTORE_MODE:-false}
+      AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
+      AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
     ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
     networks: [backend, frontend]
     depends_on:
@@ -45,6 +47,8 @@ services:
       HELIOS_ENV: ${HELIOS_ENV:-development}
       WORKER_ENABLED: ${WORKER_ENABLED:-true}
       RESTORE_MODE: ${RESTORE_MODE:-false}
+      AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
+      AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
     networks: [backend]
     depends_on:
       postgres: { condition: service_healthy }
