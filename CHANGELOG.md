@@ -1,5 +1,11 @@
 # Changelog
 
+## E3 – Tagesplanung und Fokus (in Abnahme)
+
+- Persistente Tagesvorschläge und bestätigte Pläne je Kontext/Tag, Auswahlgründe und geschützte Historie.
+- Operationsjournal, nachgewiesene Abschnittswechsel, Teilerfolge, Quellenkonflikte und sichere Wiederaufnahme.
+- Freigegebener Hierarchieerhalt, Fokus ohne Reorder, Heute im Blick und neutrale Beobachtungen.
+
 ## E2 – Kontexte und Todoist lesen
 
 - Tokenformular: Sicherheitsvoraussetzung und Fehler direkt am Eingabefeld anzeigen; erfolgreiches Speichern ausdrücklich bestätigen.

@@ -2,9 +2,13 @@
 
 Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Aufgaben bleiben später in Todoist führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E2, Kontexte und lesende Todoist-Anbindung, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
+**Stand: E3 in Abnahme, persistente Tagesplanung und Fokus, kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
 
-Geplant: Tagespläne/Fokus/Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Todoist-Inhalte werden in E2 ausschliesslich gelesen; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollziehbaren Vorschlägen, bewusster Bestätigung, sicherem Operationsjournal und kontextgetrennter Historie. Unteraufgaben behalten ihre Hierarchie.
+
+Geplant: Reserve, lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+
+Details: [Architektur](docs/architecture/planning-focus.md), [API](docs/integrations/planning-api.md), [Prüfbericht](docs/development/e3-verification.md).
 
 ## Schnellstart mit Docker Compose
 
@@ -55,6 +59,7 @@ Details: [Einrichtung](docs/runbooks/authentication.md), [Recovery](docs/runbook
 | DATABASE_URL                  | Private PostgreSQL-Verbindungsadresse; Compose-Hostname postgres                                  |
 | POSTGRES_DB / USER / PASSWORD | Initialisierung der neuen PostgreSQL-Datenbank                                                    |
 | WEB_PORT                      | Lokaler Loopbackport, Standard 3100                                                               |
+| PLAN_TIMEZONE                 | IANA-Zeitzone für Plantage, Standard Europe/Zurich                                                |
 | WORKER_ENABLED                | Exakt true/false, zum Anhalten der Verarbeitung                                                   |
 | RESTORE_MODE                  | true blockiert Worker, geschützte Authzugriffe und Mutationen beim Restore                        |
 | AUTH_SECRET                   | Privater zufälliger Signatur-/Verschlüsselungsschlüssel, nicht rotieren ohne Recoveryplan         |

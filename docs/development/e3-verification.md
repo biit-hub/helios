@@ -1,6 +1,6 @@
 # E3 – Prüfbericht
 
-Stand: 14. Oktober 2026. E3 ist **nicht abgeschlossen**. Branch: feat/e3-planning-focus, Ausgangspunkt aktuelles develop nach E2. Noch keine E3-Planungsimplementierung, Migration, lokale Datenmigration oder PR-Integration. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
+Stand: 14. Oktober 2026. E3 ist **in Implementierung und Abnahme**. Branch: feat/e3-planning-focus, Ausgangspunkt aktuelles develop nach E2. Die Planungsimplementierung und additive Migration 0005 liegen vor. Persönliche Entwicklungsdaten wurden noch nicht migriert; PR-/CI-Integration stehen aus. Kein main-Merge, Release, Docker-Hub-Push, Produktivdeployment oder E4.
 
 ## Quellen
 
@@ -38,12 +38,33 @@ Dem Benutzer wurden deshalb zwei mögliche E3-Policies vorgelegt:
 1. Unteraufgaben bleiben planbar; ihr Todoist-Abschnitt folgt weiter der Oberaufgabe. Die bestätigte Tagesauswahl wird als Helios-Plan gespeichert, ohne einen abweichenden externen Kanbanstatus zu erfinden. Abschnittsmutationen sind nur dort zulässig, wo keine unbestätigten Unteraufgaben mitverändert werden. Diese Ausnahme zu LH-021 benötigt ausdrückliche fachliche Freigabe.
 2. Unteraufgaben werden vorläufig nicht automatisch in E3 eingeplant. Auch Hauptaufgaben mit nicht ausgewählten Kindern benötigen einen konservativen Ausschluss oder eine gesonderte bewusste Freigabe für den gesamten betroffenen Bestand.
 
-Die Entscheidung steht bei Erstellung dieses Berichts aus. Gemäss E3-Auftrag wird die davon abhängige Implementierung angehalten. E3 wird nicht als fertig oder abgenommen gemeldet.
+Der Benutzer hat Option 1 ausdrücklich bestätigt. Die Implementierung erhält Unteraufgabenhierarchien und verschiebt auch keine Container mit aktiven Kindern ungefragt. Die Ausnahme wird vor der Planbestätigung und im Einzeljournal erklärt.
 
 ## Weitere offene Prüfungen
 
-Plan-/Revisionsschema, deterministische Auswahl, Operationsjournal, Fokusansicht, Beobachtungen und zugehörige automatisierte Unit-/PostgreSQL-/Browser-/CI-/Dockerprüfungen sind noch nicht implementiert und daher nicht als bestanden ausgewiesen. Rate Limits, Timeouts, unbekannte Ergebnisse und konkurrierende Planbestätigungen wurden nicht live provoziert. Sie müssen mit kontrollierten Fakes und persistenter Wiederaufnahme geprüft werden; insbesondere darf ein Timeout niemals einen blinden erneuten Move auslösen.
+Plan-/Revisionsschema, deterministische Auswahl, Operationsjournal, Fokusansicht und Beobachtungen sind implementiert. Bisher tatsächlich bestanden: Lint/Typecheck, 42 Unit-/UI-/Vertragstests und 70 PostgreSQL-Integrationstests, Produktionsbuild, Secretprüfung und Produktionsaudit ohne bekannte Schwachstellen. Der gezielte E3-Browserablauf mit eigenem neuen Browserprozess und die vollständige Browsersuite sind bestanden: 7 bestanden, 3 bewusst übersprungene Wiederholungen im Mobilprojekt. E3 ist ein Desktoppilot; die mobile Morgenroutine folgt später. Beide Images wurden mit Trivy auf Secrets und behebbare HIGH/CRITICAL-Befunde geprüft: jeweils null Funde. Gitleaks prüfte 31 Commits ohne Leaks. CI steht noch aus. Rate Limits, Timeouts, unbekannte Ergebnisse und konkurrierende Planbestätigungen wurden nicht live provoziert. Diese Fälle sind mit kontrollierten Fakes und persistenter Wiederaufnahme geprüft; ein Timeout führt nicht zu blindem Replay.
 
 Für echte lokale Pläne bleibt das Backupminimum aus O-10 relevant. Der bestehende verschlüsselte lokale E2-Sicherungsstand ersetzt keine bestätigte externe Backupablage.
 
-Der bisherige Worker hatte nur das interne Docker-Netz und konnte Todoist nicht per DNS erreichen. Für die beaufsichtigten Vertragstests wurde er vorübergehend an das vorhandene ausgehende Webnetz angeschlossen. Die spätere Operationsausführung benötigt ausdrücklich ausgehenden Netzwerkzugang ohne neue Hostports; dies ist noch kein implementierter E3-Worker.
+Der bisherige Worker hatte nur das interne Docker-Netz und konnte Todoist nicht per DNS erreichen. Für die beaufsichtigten Vertragstests wurde er vorübergehend an das vorhandene ausgehende Webnetz angeschlossen. E3 verwendet stattdessen ein eigenes ausgehendes Worker-Netz ohne andere Dienste oder Hostports. Der temporäre Testanschluss ans Frontendnetz wurde zurückgenommen.
+
+## Implementierung und zusätzliche Nachweise
+
+- daily_plans, plan_history, plan_operations, plan_operation_steps und planning_observations; Unique Kontext/Tag, serverseitige Revisionen und DB-Trigger für unveränderliche bestätigte Quellen sowie append-only Historie. Eine leere Vorschau ist erlaubt, eine leere Bestätigung nicht.
+- GET /api/plans und geschützte POST-Fassade für propose/confirm/focus/resume. Externe Writes ausschliesslich durch das dauerhafte Workerjournal; HTTP 202 ist keine vollständige Speicherung.
+- Geprüft: drei unabhängige Kontexte, zwei lokale Tage, wenige Aufgaben, bewusste Teilmengen/Idempotenz, Fokus ohne Reorder, Historie, neue dringende Tasks ohne Umplanung, MFA/Origin/Scope, abgelaufene/widerrufene Ausführungsberechtigung, Teilerfolg/Backoff, unbekannte Wirkung, Reconciliation nach Absturz und konkurrierende Worker.
+- Bereits nachgewiesene Wirkung bleibt auch nach Logout oder Token-/Kontextänderung erhalten; weitere Writes starten nicht. Hintergrundausführung erneuert keine Idleaktivität. Quellen mit Datums-/Dauerobjekten werden kanonisch verglichen: JSONB-Schlüsselreihenfolge führt nicht zu falschen Konflikten.
+- Die erste Browserprüfung deckte einen unpassenden exakten Labelselektor im neuen Test auf; dieser wurde auf die tatsächliche Combobox-Rolle korrigiert. Kein Sicherheitsguard wurde für Tests abgeschaltet.
+- Beide Linuximages wurden gebaut. Eigene synthetische Compose-Umgebung mit separatem Projekt, \_test-Datenbank und Loopbackport 3103: Migration, drei gesunde Dienste, pg-boss-Smokejob, Readiness E3 und anonymer Plan-GET HTTP 401 erfolgreich. Die persönliche Entwicklungsumgebung blieb dabei erhalten.
+
+## Einschränkungen und verbleibende Abnahme
+
+Keine native Exactly-once-Garantie oder gemeinsame Todoist-/PostgreSQL-Atomarität. Direkte Cloudänderungen zwischen Lesen und Schreiben können nur nachgeprüft werden. Ein grundlegend geänderter Quellenstand wird nicht durch Überschreiben einer teilweise extern wirksamen Revision repariert. Historie bleibt nachvollziehbar.
+
+Die Hauptauswahl ist bewusst klein und deterministisch; keine KI-, Fortschritts- oder Abhängigkeitsinformationen werden erfunden. E4/E5/E8 und mobile Morgenroutine bleiben ausserhalb des Umfangs. E3 bietet keine zeitblockbasierte Planung und keine prozentuale Tagesfüllung.
+
+Für echte lokale Pläne wurde ein NAS als externes verschlüsseltes Backupziel gewählt; der genaue Zielpfad ist noch angefragt. Bis zur Einrichtung und Prüfung der externen Sicherung gilt keine Freigabe zur Nutzung mit echten Tagesplänen. Synthetische Tests und die separate Compose-Abnahme sind davon unabhängig.
+
+Die synthetische Fokusaufnahme wurde visuell geprüft: Kontext-Pills, aktive Kontextfarbe, klare Fokusaufgabe, Heute im Blick und getrennte Bestätigungsstände. Die Hierarchieausnahme wird im Einzeljournal ausdrücklich angezeigt.
+
+Zusätzlicher Absturzfall: Auch ein bereits als unknown persistierter Einzelschritt darf nach einem Workerabsturz vor dem Abschluss der Journaltransaktion nicht automatisch erneut mutiert werden. Wiederanlauf liest zuerst nach; nur ausdrückliche Wiederaufnahme erlaubt nach erneuter Quellenprüfung einen noch nötigen Move. Beide Marker sending/unknown sind durch PostgreSQL-Tests abgedeckt.

@@ -21,3 +21,7 @@
 - Domainmutationen über identity.withActive in derselben Transaktion autorisieren; externe Reads ausserhalb des Locks. Vor Übernahme Session, Revisionen, Credentialgeneration, Claim und Kontextscope erneut prüfen. Keine überholten Antworten nach Tokenwechsel/Deaktivierung/Widerruf speichern.
 - INTEGRATION_KEY separat von AUTH_SECRET und DB sichern; Token nur authentifiziert/mit Step-up entgegennehmen, nie zurückgeben. Testorigin nur unter test/\_test und Loopback; keine produktiven Fixture-Endpunkte.
 - E2-Unit/Integration/E2E ausschliesslich synthetisch. Live-Verträge mit einem separaten Testaccount bewusst freigeben und Ergebnisse von Dokumentations-/Fixtureprüfungen unterscheiden. TermiHub-Referenzen sind lokal; keine erfundenen Endpunkte.
+
+- E3 ist beauftragt: unabhängige Tagespläne, revisionsgeschützte Bestätigung, persistenter Fokus ohne Reorder. E4 bleibt gesperrt.
+- E3-Hierarchieausnahme bestätigt: Unteraufgaben bleiben planbar und behalten ihren Todoist-Abschnitt. Container mit aktiven Kindern nicht still verschieben. Lokale Tagesauswahl ist kein zweiter Kanbanstatus.
+- Planmoves nur über persistentes Operationsjournal und Worker, Sitzung/MFA/Scope vor noch nicht gestarteten Schritten prüfen. Nach Timeout/crash zuerst reconciliieren; unknown nicht automatisch replayen. Historie append-only, kein false confirmed bei Teilerfolg.
