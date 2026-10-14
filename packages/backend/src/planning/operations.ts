@@ -1,3 +1,5 @@
+import { createTaskExecutor } from "../tasks/operations";
+import type { TaskWriter } from "../tasks/todoist";
 import { eq, and, or, sql } from "drizzle-orm";
 import { createHash, randomUUID } from "node:crypto";
 import { symmetricDecrypt } from "better-auth/crypto";
@@ -31,7 +33,9 @@ export function createPlanExecutor(
   config: WorkConfig,
   reader: TodoistReader = createTodoistReader(fetch, config.TODOIST_ORIGIN),
   mover: TodoistMover = createTodoistMover(fetch, config.TODOIST_ORIGIN),
+  taskWriter?: TaskWriter,
 ) {
+  const executeTask = createTaskExecutor(database, config, reader, taskWriter);
   const identity = createIdentityService(database, config);
   async function authorize(op: Operation, integrationRevision?: number) {
     return identity.withOperationSession(
@@ -41,7 +45,7 @@ export function createPlanExecutor(
         const [p] = await db
           .select()
           .from(dailyPlans)
-          .where(eq(dailyPlans.id, op.planId));
+          .where(eq(dailyPlans.id, op.planId!));
         store.expected(p, op.expectedRevision);
         const c = await store.scope(db, op.userId, p.contextId);
         const i = await store.connected(db, op.userId, c);
@@ -328,7 +332,7 @@ export function createPlanExecutor(
       const [p] = await db
         .select()
         .from(dailyPlans)
-        .where(eq(dailyPlans.id, op.planId));
+        .where(eq(dailyPlans.id, op.planId!));
       store.expected(p, op.expectedRevision);
       const steps = await db
         .select()
@@ -416,7 +420,8 @@ export function createPlanExecutor(
           .update(planOperations)
           .set({ status: "running", updatedAt: new Date() })
           .where(eq(planOperations.id, op.id));
-        await execute(op);
+        if (op.kind === "task") await executeTask(op);
+        else await execute(op);
         return true;
       } finally {
         if (locked) await client.query("SELECT pg_advisory_unlock(1748013)");

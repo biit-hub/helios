@@ -10,7 +10,7 @@ import {
 import type { PlanningView } from "@helios/contracts";
 import { createIdentityService } from "../identity/service";
 import { WorkFault } from "../work/service";
-import { taskProjections } from "../work/schema";
+import { taskProjections, integrations } from "../work/schema";
 import { dailyPlans, planOperations, planSteps } from "./schema";
 import { candidates, localDay } from "./selection";
 import * as store from "./store";
@@ -23,6 +23,44 @@ export function planningTimezone(env: NodeJS.ProcessEnv = process.env) {
     throw new Error("Invalid planning timezone");
   }
   return tz;
+}
+function availability(
+  rows: (typeof taskProjections.$inferSelect)[],
+  projectId: string,
+  day: string,
+) {
+  const byId = new Map(rows.map((r) => [r.taskId, r]));
+  return Object.fromEntries(
+    rows.map((row) => {
+      let current: typeof row | undefined = row;
+      const seen = new Set<string>();
+      let available = true;
+      while (current) {
+        if (
+          seen.has(current.taskId) ||
+          current.state !== "active" ||
+          current.projectId !== projectId ||
+          current.data.checked ||
+          current.data.is_deleted ||
+          ["Wartet", "Abgeschlossen"].includes(current.sectionName ?? "")
+        ) {
+          available = false;
+          break;
+        }
+        seen.add(current.taskId);
+        if (!current.data.parent_id) break;
+        current = byId.get(current.data.parent_id);
+        if (!current) available = false;
+      }
+      if (
+        row.data.due?.date &&
+        row.data.due.date.slice(0, 10) > day &&
+        (!row.data.deadline || row.data.deadline.date > day)
+      )
+        available = false;
+      return [row.taskId, available];
+    }),
+  );
 }
 export function createPlanningService(
   database: store.Database,
@@ -50,10 +88,34 @@ export function createPlanningService(
         new Date(day).toISOString().slice(0, 10) !== day
       )
         throw new WorkFault("INVALID_REQUEST");
-      await store.scope(db, userId, contextId);
+      const c = await store.scope(db, userId, contextId);
       const p = await store.planFor(db, contextId, day);
       if (!p)
         return { day, timezone, plan: null, operation: null, history: [] };
+      const rows = await db
+        .select()
+        .from(taskProjections)
+        .where(
+          and(
+            eq(taskProjections.contextId, c.id),
+            eq(taskProjections.projectId, p.projectId),
+            eq(taskProjections.credentialVersion, p.credentialVersion),
+          ),
+        );
+      const [integration] = await db
+        .select()
+        .from(integrations)
+        .where(eq(integrations.userId, userId));
+      const matchingScope =
+        c.active &&
+        c.projectId === p.projectId &&
+        integration?.credentialVersion === p.credentialVersion;
+      const currentAvailability =
+        p.day === currentDay()
+          ? matchingScope
+            ? availability(rows, p.projectId, p.day)
+            : Object.fromEntries(p.entries.map((e) => [e.taskId, false]))
+          : undefined;
       const [op] = await db
         .select()
         .from(planOperations)
@@ -68,6 +130,7 @@ export function createPlanningService(
         day,
         timezone: p.timezone,
         plan: store.view(p),
+        availability: currentAvailability,
         operation: op
           ? {
               id: op.id,
@@ -264,7 +327,16 @@ export function createPlanningService(
             eq(taskProjections.state, "active"),
           ),
         );
-      if (!task || task.data.checked || task.data.is_deleted)
+      const rows = await db
+        .select()
+        .from(taskProjections)
+        .where(
+          and(
+            eq(taskProjections.contextId, c.id),
+            eq(taskProjections.credentialVersion, i.credentialVersion),
+          ),
+        );
+      if (!task || !availability(rows, p.projectId, p.day)[data.taskId])
         throw store.conflict();
       const updated = await store.change(db, p, { focusTaskId: data.taskId });
       await store.observe(db, updated, "focus_manually_changed", data.taskId);

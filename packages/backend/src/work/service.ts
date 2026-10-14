@@ -1,3 +1,4 @@
+import { readWaiting } from "../tasks/waiting";
 import { randomUUID, createHash } from "node:crypto";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -794,6 +795,13 @@ export function createWorkService(
         return {
           tasks: rows.map((t) => ({
             data: t.data,
+            waiting: (() => {
+              try {
+                return readWaiting(t.data.description);
+              } catch {
+                return null;
+              }
+            })(),
             state: t.state,
             sectionName: t.sectionName,
             retrievedAt: t.retrievedAt.toISOString(),
@@ -815,6 +823,25 @@ export function createWorkService(
 }
 const workErrorMessages: Record<string, string> = {
   ...problemMessages,
+  RECURRENCE_CONFIRMATION_REQUIRED:
+    "Die Datumsänderung würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext verwenden.",
+  TASK_SOURCE_CONFLICT:
+    "Todoist wurde zwischenzeitlich geändert. Eingaben erhalten und die aktuelle Quelle prüfen.",
+  TASK_SCOPE_CONFLICT:
+    "Kontext oder Projekt passen nicht mehr zur bestätigten Quelle.",
+  HIERARCHY_CONFIRMATION_REQUIRED:
+    "Die angezeigte Auswirkung auf Eltern und Kinder ausdrücklich bestätigen.",
+  CONFIRMATION_REQUIRED:
+    "Abschluss oder endgültige Löschung ausdrücklich bestätigen.",
+  FUN_EPIC_CONFLICT:
+    "Die fun-Kategorie würde innerhalb dieses Epics uneinheitlich. Die Kategorie zuerst für das gesamte Epic bewusst konsistent in Todoist bearbeiten.",
+  FUN_PRIVATE_ONLY:
+    "Das Label fun ist ausschliesslich für private Aufgaben vorgesehen.",
+  EPIC_CHILDREN_POLICY:
+    "Der gesonderte Epic-Abschluss mit offenen Kindern folgt in E8.",
+  WAITING_AMBIGUOUS:
+    "Der Wartedetails-Abschnitt ist mehrdeutig oder enthält unbekannten Inhalt. Bitte zuerst direkt in Todoist prüfen.",
+
   PLAN_CONFLICT:
     "Der Plan oder seine Todoist-Quelle wurde geändert. Bitte neu laden und den Konflikt prüfen.",
   PLAN_LOCKED:

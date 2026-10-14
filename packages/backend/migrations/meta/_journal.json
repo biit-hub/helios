@@ -43,6 +43,13 @@
       "when": 1792009116770,
       "tag": "0005_green_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792015603238,
+      "tag": "0006_typical_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

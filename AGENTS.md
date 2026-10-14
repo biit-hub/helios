@@ -23,6 +23,8 @@
 - E2-Unit/Integration/E2E ausschliesslich synthetisch. Live-Verträge mit einem separaten Testaccount bewusst freigeben und Ergebnisse von Dokumentations-/Fixtureprüfungen unterscheiden. TermiHub-Referenzen sind lokal; keine erfundenen Endpunkte.
 
 - E3-Backupfreigabe vom 14.10.2026: lokale verschlüsselte Sicherungen und isolierte Restore-Proben genügen. Synology erst bei Produktivinstallation; logischer Ordner Backups/Helios, tatsächlicher Zielpfad konfigurierbar, keine NAS-Zugangsdaten voraussetzen.
-- E3 ist beauftragt: unabhängige Tagespläne, revisionsgeschützte Bestätigung, persistenter Fokus ohne Reorder. E4 bleibt gesperrt.
+- E3 ist beauftragt: unabhängige Tagespläne, revisionsgeschützte Bestätigung, persistenter Fokus ohne Reorder. E4 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3-Abnahme bleibt bewusst verschoben und offen. E5/E6 bleiben gesperrt.
 - E3-Hierarchieausnahme bestätigt: Unteraufgaben bleiben planbar und behalten ihren Todoist-Abschnitt. Container mit aktiven Kindern nicht still verschieben. Lokale Tagesauswahl ist kein zweiter Kanbanstatus.
 - Planmoves nur über persistentes Operationsjournal und Worker, Sitzung/MFA/Scope vor noch nicht gestarteten Schritten prüfen. Nach Timeout/crash zuerst reconciliieren; unknown nicht automatisch replayen. Historie append-only, kein false confirmed bei Teilerfolg.
+
+- E4: dasselbe Operationsjournal und derselbe Workerlock; keine zweite Schreibpipeline. Unbekanntes Create/Comment/Recurring-Close niemals automatisch replayen. Wartedetails nach ausdrücklicher Freigabe nur im abgegrenzten Beschreibungsabschnitt „## Helios – Wartedetails“, fremden Text verlustfrei erhalten.

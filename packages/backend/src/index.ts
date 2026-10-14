@@ -17,3 +17,5 @@ export { loadWorkConfig } from "./work/config";
 
 export { createPlanningService, planningTimezone } from "./planning/service";
 export { createPlanExecutor } from "./planning/operations";
+
+export { createTaskService } from "./tasks/service";

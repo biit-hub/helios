@@ -28,3 +28,5 @@ Die [Authentifizierungsarchitektur](authentication.md) implementiert Better Auth
 E2: [Kontexte und Todoist-Lesesicht](contexts-todoist.md), [verifizierte API-Verträge](../integrations/todoist.md). Historische Planungsmarkierungen werden durch den E2-Auftrag und Prüfbericht konkretisiert.
 
 E3: [Tagesplanung und Fokus](planning-focus.md), Operationsjournal und ausdrücklich bestätigte Hierarchieausnahme.
+
+E4: [Aufgaben-/Operationsvertrag](../integrations/tasks-api.md), [Bedienung](../runbooks/tasks.md) und [tatsächlicher Prüfstand](../development/e4-verification.md). Erweiterung desselben E3-Journals; keine zweite Schreibpipeline. Manuelle E3-Abnahme bleibt offen.

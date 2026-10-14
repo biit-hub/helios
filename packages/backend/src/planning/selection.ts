@@ -23,7 +23,13 @@ export function taskBasis(t: TodoistTask) {
           t.description,
           t.priority,
           [...t.labels].sort((a, b) => a.localeCompare(b)),
-          t.due,
+          t.due
+            ? Object.fromEntries(
+                Object.entries(t.due).filter(
+                  ([key]) => key !== "string" && key !== "lang",
+                ),
+              )
+            : null,
           t.deadline,
           t.duration ?? null,
           t.checked,

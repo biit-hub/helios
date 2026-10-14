@@ -11,6 +11,7 @@ import type {
   TaskView,
   CommentView,
 } from "@helios/contracts";
+import { TaskManager, TaskCapture } from "./tasks";
 import { PlanningPanel } from "./planning";
 import { Logout } from "./identity-forms";
 async function request(path: string, body?: unknown, signal?: AbortSignal) {
@@ -204,7 +205,7 @@ export function Workbench({
                 ? "DEINE KONTEXTE"
                 : planning
                   ? "DEIN TAG, DEIN FOKUS"
-                  : "LESEND MIT TODOIST VERBUNDEN"}
+                  : "DEINE AUFGABEN, BEWUSST VERWALTET"}
           </div>
           <h1>
             {settings
@@ -222,7 +223,7 @@ export function Workbench({
                 ? "Die gemeinsame Morgenroutine folgt in einer späteren Etappe."
                 : planning
                   ? "Eine bewusste Auswahl und ein guter nächster Schritt. Jeder Kontext bleibt eigenständig."
-                  : "Ein ruhiger Überblick. Aufgabeninhalte werden hier ausschliesslich gelesen."}
+                  : "Ein ruhiger Überblick. Änderungen werden bewusst bestätigt und extern nachgewiesen."}
           </p>
           {error && (
             <p role="alert" className="form-error">
@@ -306,6 +307,7 @@ export function Workbench({
             </section>
           )}
         </main>
+        {snapshot && !mobile && <TaskCapture snapshot={snapshot} />}
         <footer>
           <span>
             Helios · Dein Zugang ist geschützt. · Todoist bleibt führend.
@@ -772,6 +774,20 @@ function TaskCard({
             ? " · Abschnitt-ID: " + t.section_id
             : ""}
       </p>
+      {task.sectionName === "Wartet" && task.waiting && (
+        <p className="status-notice">
+          Wartet auf {task.waiting.who}: {task.waiting.subject}
+          {task.waiting.followUp && (
+            <>
+              {" "}
+              · Nachfassen am {task.waiting.followUp}
+              {task.waiting.followUp <= new Date().toLocaleDateString("en-CA")
+                ? " · Nachfasshinweis fällig"
+                : ""}
+            </>
+          )}
+        </p>
+      )}
       <dl className="task-dates">
         <div>
           <dt>Geplant</dt>
@@ -932,8 +948,12 @@ function TaskOverview({
               </p>
             </section>
           )}
-          <div className="task-list">
-            {list.tasks.map((task) => (
+          <TaskManager
+            key={selected}
+            tasks={list.tasks}
+            context={current}
+            snapshot={snapshot}
+            renderTask={(task) => (
               <TaskCard
                 key={task.data.id}
                 task={task}
@@ -942,8 +962,8 @@ function TaskOverview({
                 disabled={busy || pause}
                 action={action}
               />
-            ))}
-          </div>
+            )}
+          />
         </>
       )}
     </>

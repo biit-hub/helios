@@ -67,9 +67,11 @@ export const planOperations = pgTable(
       .notNull()
       .references(() => user.id),
     sessionId: text("session_id").notNull(),
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => dailyPlans.id),
+    planId: uuid("plan_id").references(() => dailyPlans.id),
+    kind: text("kind").notNull().default("plan"),
+    contextId: uuid("context_id").references(() => contexts.id),
+    payload: jsonb("payload").$type<Record<string, unknown>>(),
+    result: jsonb("result").$type<Record<string, unknown>>(),
     key: uuid("idempotency_key").notNull(),
     requestHash: text("request_hash").notNull(),
     selectedIds: jsonb("selected_ids").$type<string[]>().notNull(),
