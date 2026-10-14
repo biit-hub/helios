@@ -302,3 +302,25 @@ legend {
 .operation-panel li {
   margin: 12px 0;
 }
+.planning .card.focus-hero {
+  background: var(--soft);
+  border-color: var(--border);
+  padding: 44px;
+}
+.planning .focus-hero h2 {
+  font-size: 38px;
+  line-height: 1.2;
+}
+.planning-focus .today-entry {
+  position: relative;
+  padding: 16px 180px 16px 4px;
+  min-height: 62px;
+}
+.planning-focus .today-entry > button {
+  position: absolute;
+  right: 0;
+  top: 10px;
+}
+.planning-focus .today-entry h3 {
+  font-size: 18px;
+}

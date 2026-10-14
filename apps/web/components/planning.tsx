@@ -119,7 +119,14 @@ export function PlanningPanel({
   const plan = data?.plan;
   const focus = plan?.entries.find((e) => e.taskId === plan.focusTaskId);
   return (
-    <div className="planning">
+    <div
+      className={
+        "planning" +
+        (mode === "focus" && plan?.status === "confirmed"
+          ? " planning-focus"
+          : "")
+      }
+    >
       {error && (
         <p role="alert" className="form-error">
           {error}

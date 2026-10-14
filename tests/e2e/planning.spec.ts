@@ -148,6 +148,7 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
     await row
       .getByRole("button", { name: "Kontext speichern", exact: true })
       .click();
+    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
   }
   async function refreshTasks() {
     await page.getByRole("link", { name: "Aufgaben", exact: true }).click();

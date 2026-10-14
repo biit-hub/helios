@@ -43,13 +43,13 @@ export function createPlanningService(
     contextId: string,
     day = currentDay(),
   ): Promise<PlanningView> {
-    planScope.parse({ contextId, day });
-    if (
-      Number.isNaN(Date.parse(day)) ||
-      new Date(day).toISOString().slice(0, 10) !== day
-    )
-      throw new WorkFault("INVALID_REQUEST");
     return identity.withActive(h, {}, async (db, userId) => {
+      planScope.parse({ contextId, day });
+      if (
+        Number.isNaN(Date.parse(day)) ||
+        new Date(day).toISOString().slice(0, 10) !== day
+      )
+        throw new WorkFault("INVALID_REQUEST");
       await store.scope(db, userId, contextId);
       const p = await store.planFor(db, contextId, day);
       if (!p)
@@ -328,6 +328,7 @@ export function createPlanningService(
   return {
     snapshot,
     async handle(action: string, h: Headers, input: unknown) {
+      await identity.withActive(h, { mutation: true }, async () => {});
       const handler = handlers.get(action);
       if (!handler) throw new WorkFault("NOT_FOUND", 404);
       return handler(h, input);

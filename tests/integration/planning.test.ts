@@ -655,3 +655,48 @@ it("compares dated source objects canonically after PostgreSQL JSONB key reorder
     "confirmed",
   );
 });
+it("confirms a deliberate subset in proposal order and records neutral rejected suggestions", async () => {
+  const v = await proposal();
+  const entries = v.plan!.entries;
+  await plans().handle("confirm", headers(), {
+    contextId: v.plan!.contextId,
+    day: v.day,
+    revision: v.plan!.revision,
+    key: crypto.randomUUID(),
+    taskIds: [entries[2]!.taskId, entries[0]!.taskId],
+  });
+  await executor().runNext();
+  const after = await plans().snapshot(headers(), v.plan!.contextId);
+  expect(after.plan!.entries.map((e) => e.taskId)).toEqual([
+    entries[0]!.taskId,
+    entries[2]!.taskId,
+  ]);
+  expect(f.calls.filter((c) => c.method === "POST")).toHaveLength(2);
+  expect(
+    (
+      await db.pool.query(
+        "SELECT task_id FROM planning_observations WHERE event='proposal_not_selected'",
+      )
+    ).rows[0].task_id,
+  ).toBe(entries[1]!.taskId);
+});
+it("does not execute expired intents or run any operation in restore mode", async () => {
+  const v = await proposal(1);
+  await confirm(v);
+  expect(
+    await createPlanExecutor(db, { ...config, RESTORE_MODE: true }).runNext(),
+  ).toBe(false);
+  advance(601000);
+  await executor().runNext();
+  const after = await plans().snapshot(headers(), v.plan!.contextId);
+  expect(after.operation!.code).toBe("INTENT_EXPIRED");
+  expect(f.calls.filter((c) => c.method === "POST")).toHaveLength(0);
+});
+it("authenticates before validating malformed plan requests", async () => {
+  await expect(
+    plans().snapshot(headers(""), "invalid", "invalid"),
+  ).rejects.toMatchObject({ code: "AUTH_FAILED", status: 401 });
+  await expect(
+    plans().handle("propose", headers(""), {}),
+  ).rejects.toMatchObject({ code: "AUTH_FAILED", status: 401 });
+});

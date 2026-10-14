@@ -1,4 +1,3 @@
-import { contextIdSchema } from "@helios/contracts";
 import { publicWorkError } from "@helios/backend";
 import { planning } from "../../../lib/planning";
 export const dynamic = "force-dynamic";
@@ -9,7 +8,7 @@ export async function GET(request: Request) {
   };
   try {
     const url = new URL(request.url);
-    const id = contextIdSchema.parse(url.searchParams.get("contextId"));
+    const id = url.searchParams.get("contextId") ?? "";
     return Response.json(
       await planning().snapshot(
         request.headers,
