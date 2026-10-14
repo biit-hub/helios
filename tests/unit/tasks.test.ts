@@ -80,3 +80,65 @@ it("bounds writes to allowlisted paths and does not retry an unknown response", 
   ).rejects.toThrow();
   expect(calls).toBe(1);
 });
+
+it("verifies actual UTC due.date values and does not accept an ignored duration as success", async () => {
+  const { matchesFields } =
+    await import("../../packages/backend/src/tasks/todoist");
+  const { tasks } = await import("../fixtures/todoist");
+  const t = {
+    ...tasks[1]!,
+    due: {
+      date: "2026-10-21T09:30:00Z",
+      timezone: "Europe/Zurich",
+      is_recurring: false,
+    },
+    duration: null,
+  };
+  expect(matchesFields(t, { due_datetime: "2026-10-21T11:30:00+02:00" })).toBe(
+    true,
+  );
+  expect(matchesFields(t, { duration: 25, duration_unit: "minute" })).toBe(
+    false,
+  );
+});
+it("matches labels without treating their source order as a content conflict", async () => {
+  const { matchesFields } =
+    await import("../../packages/backend/src/tasks/todoist");
+  const { tasks } = await import("../fixtures/todoist");
+  expect(
+    matchesFields({ ...tasks[1]!, labels: ["b", "a"] }, { labels: ["a", "b"] }),
+  ).toBe(true);
+});
+
+it("keeps historical E3 source hashes compatible with newly retained human recurrence text", async () => {
+  const { taskBasis } =
+    await import("../../packages/backend/src/planning/selection");
+  const { tasks } = await import("../fixtures/todoist");
+  const original = {
+    ...tasks[1]!,
+    due: { date: "2026-10-20", is_recurring: true },
+  };
+  expect(
+    taskBasis({
+      ...original,
+      due: { ...original.due, string: "every day", lang: "en" },
+    }),
+  ).toBe(taskBasis(original));
+});
+
+it("does not confuse an unchanged recurring rule with a successful rule edit", async () => {
+  const { matchesFields } =
+    await import("../../packages/backend/src/tasks/todoist");
+  const { tasks } = await import("../fixtures/todoist");
+  const task = {
+    ...tasks[1]!,
+    due: { date: "2026-11-01", string: "every week", is_recurring: true },
+  };
+  expect(matchesFields(task, { due_string: "every day" })).toBe(false);
+  expect(
+    matchesFields(task, { due_string: "every week starting 2026-11-01" }),
+  ).toBe(true);
+  expect(
+    matchesFields(task, { due_string: "every week starting 2026-11-02" }),
+  ).toBe(false);
+});

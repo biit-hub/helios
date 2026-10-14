@@ -1,165 +1,20 @@
-import {
-  beforeAll,
-  beforeEach,
-  afterEach,
-  afterAll,
-  it,
-  expect,
-  vi,
-} from "vitest";
-import { fileURLToPath } from "node:url";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { generateSync } from "otplib";
-import {
-  createDatabase,
-  bootstrapIdentity,
-  createIdentityService,
-  loadWorkConfig,
-  createWorkService,
-} from "@helios/backend";
-import { createTodoistReader } from "../../packages/backend/src/work/todoist";
-import { token, projects } from "../fixtures/todoist";
-import { taskFixture as fixture } from "../fixtures/tasks";
+import { beforeEach, it, expect } from "vitest";
 import { createTaskService, createPlanExecutor } from "@helios/backend";
+import { createTodoistReader } from "../../packages/backend/src/work/todoist";
 import { createTodoistMover } from "../../packages/backend/src/planning/todoist";
+import { projects } from "../fixtures/todoist";
+import { taskFixture as fixture } from "../fixtures/tasks";
+import { createWorkHarness } from "../fixtures/integration-work";
 import { createTaskWriter } from "../../packages/backend/src/tasks/todoist";
-import type { ContextInput } from "@helios/contracts";
-const config = loadWorkConfig({
-  ...process.env,
-  HELIOS_ENV: "test",
-  AUTH_SECRET: "e".repeat(64),
-  AUTH_ORIGIN: "http://127.0.0.1:3100",
-  INTEGRATION_KEY: "b".repeat(64),
-});
-const db = createDatabase(config.DATABASE_URL);
-const identity = createIdentityService(db, config);
-let f = fixture();
-let work = createWorkService(db, config, createTodoistReader(f.fetcher));
-let cookie = "",
-  secret = "";
-const password = "Synthetic passphrase 72!";
-function headers(c = cookie) {
-  return new Headers({
-    host: "127.0.0.1:3100",
-    origin: config.AUTH_ORIGIN,
-    "content-type": "application/json",
-    cookie: c,
-  });
-}
-function absorb(c: string, r: { cookies?: string[] }) {
-  const map = new Map(
-    c
-      .split(";")
-      .filter(Boolean)
-      .map((v) => {
-        const i = v.indexOf("=");
-        return [v.slice(0, i).trim(), v.slice(i + 1)];
-      }),
-  );
-  for (const raw of r.cookies ?? []) {
-    const v = raw.split(";")[0]!;
-    const i = v.indexOf("=");
-    if (/Max-Age=0/i.test(raw)) map.delete(v.slice(0, i));
-    else map.set(v.slice(0, i), v.slice(i + 1));
-  }
-  return [...map].map(([k, v]) => k + "=" + v).join("; ");
-}
-const advance = (ms = 16000) => vi.setSystemTime(new Date(Date.now() + ms));
-async function enroll() {
-  const boot = await bootstrapIdentity(db, config, "synthetic_user", password);
-  const setup = await identity.handle("setup", headers(""), {
-    token: boot.proof,
-    password,
-  });
-  expect(setup.status ?? 200).toBe(200);
-  cookie = absorb("", setup);
-  secret = new URL(setup.body.totpURI as string).searchParams.get("secret")!;
-  const verified = await identity.handle("verify-enrollment", headers(), {
-    code: generateSync({ secret }),
-  });
-  expect(verified.status ?? 200).toBe(200);
-  cookie = absorb(cookie, verified);
-  const activated = await identity.handle("activate", headers(), {
-    saved: true,
-  });
-  expect(activated.status ?? 200).toBe(200);
-  cookie = absorb(cookie, activated);
-}
-async function step() {
-  advance(30000);
-  const result = await identity.handle("step-up", headers(), {
-    password,
-    code: generateSync({ secret }),
-  });
-  expect(result.status ?? 200).toBe(200);
-}
-async function connect() {
-  await step();
-  const snap = await work.snapshot(headers());
-  await work.handle("token-save", headers(), {
-    revision: snap.integration.revision,
-    token,
-  });
-  await work.handle("catalog-refresh", headers(), {});
-  advance();
-  return work.snapshot(headers());
-}
-const input = (
-  c: {
-    id: string;
-    revision: number;
-    name: string;
-    theme: ContextInput["theme"];
-    active: boolean;
-    projectId: string | null;
-    termihubEmployerId: string | null;
-    termihubInstanceRef: string | null;
-  },
-  patch: Partial<ContextInput> = {},
-): ContextInput => ({
-  id: c.id,
-  revision: c.revision,
-  name: c.name,
-  theme: c.theme,
-  active: c.active,
-  projectId: c.projectId,
-  termihubEmployerId: c.termihubEmployerId,
-  termihubInstanceRef: c.termihubInstanceRef,
-  ...patch,
-});
-const employer = (
-  name = "Freier Arbeitgeber",
-  projectId: string | null = null,
-): ContextInput => ({
-  revision: 0,
-  name,
-  theme: "blue",
-  active: true,
-  projectId,
-  termihubEmployerId: "opaque:employer",
-  termihubInstanceRef: "local-reference",
-});
-beforeAll(() =>
-  migrate(db.db, {
-    migrationsFolder: fileURLToPath(
-      new URL("../../packages/backend/migrations", import.meta.url),
-    ),
-  }),
-);
-beforeEach(async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date());
-  await db.pool.query(
-    "TRUNCATE auth_user,auth_flows,auth_limits,auth_rate_limit,auth_verification,auth_totp_uses,security_events CASCADE",
-  );
-  f = fixture();
-  work = createWorkService(db, config, createTodoistReader(f.fetcher));
-  cookie = "";
-  await enroll();
-});
-afterEach(() => vi.useRealTimers());
-afterAll(() => db.close());
 
+const h = createWorkHarness(fixture);
+const { config, db, identity, headers, advance, connect, input, employer } = h;
+let f = h.f;
+let work = h.work;
+beforeEach(() => {
+  f = h.f;
+  work = h.work;
+});
 const tasks = () =>
   createTaskService(db, config, createTodoistReader(f.fetcher));
 const executor = () =>
@@ -622,4 +477,58 @@ it("does not replay a crash marker even if the worker restarts after an unrecord
   await executor().runNext();
   expect(f.control.calls).toHaveLength(n);
   expect((await result(op.operationId)).status).toBe("unknown");
+});
+
+it("preserves private epic fun consistency rather than silently modifying unrelated children", async () => {
+  const c = await prepare();
+  f.state.tasks[0]!.labels = ["epic"];
+  f.state.tasks.push({
+    ...structuredClone(f.state.tasks[0]!),
+    id: "epic-child",
+    parent_id: "synthetic-root",
+    labels: [],
+  });
+  const op = await change(c, "update", { fields: { labels: ["epic", "fun"] } });
+  await executor().runNext();
+  expect((await result(op.operationId)).code).toBe("FUN_EPIC_CONFLICT");
+  expect(f.control.calls).toHaveLength(0);
+});
+it("keeps a private fun label as an explicit choice on a normal task", async () => {
+  const c = await prepare();
+  const op = await change(c, "update", { fields: { labels: ["fun"] } });
+  await executor().runNext();
+  expect((await result(op.operationId)).status).toBe("succeeded");
+  expect(f.state.tasks[0]?.labels).toEqual(["fun"]);
+});
+
+it("requires explicit consent before a normal date removes a recurring rule", async () => {
+  const c = await prepare();
+  f.state.tasks[0]!.due = {
+    date: "2026-10-20",
+    is_recurring: true,
+    string: "every day",
+  };
+  await expect(
+    change(c, "update", { fields: { due: "2026-11-01" } }),
+  ).rejects.toMatchObject({ code: "RECURRENCE_CONFIRMATION_REQUIRED" });
+  expect(f.control.calls).toHaveLength(0);
+  const op = await change(c, "update", {
+    fields: { due: "2026-11-01" },
+    acknowledgeRecurrenceChange: true,
+  });
+  await executor().runNext();
+  expect((await result(op.operationId)).status).toBe("succeeded");
+  expect(f.state.tasks[0]!.due?.is_recurring).toBe(false);
+});
+it("accepts a deliberately entered full recurrence rule without clearing it through a date", async () => {
+  const c = await prepare();
+  const op = await change(c, "update", {
+    fields: { recurring: "every week starting 2026-11-01" },
+  });
+  await executor().runNext();
+  expect((await result(op.operationId)).status).toBe("succeeded");
+  expect(f.state.tasks[0]!.due?.is_recurring).toBe(true);
+  expect(f.control.calls[0]?.body?.due_string).toBe(
+    "every week starting 2026-11-01",
+  );
 });

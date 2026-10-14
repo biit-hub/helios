@@ -44,6 +44,8 @@ export const todoistTaskSchema = z.object({
       datetime: z.string().nullable().optional(),
       timezone: z.string().nullable().optional(),
       is_recurring: z.boolean().optional(),
+      string: z.string().optional(),
+      lang: z.string().optional(),
     })
     .nullable(),
   deadline: z.object({ date: z.string() }).nullable(),

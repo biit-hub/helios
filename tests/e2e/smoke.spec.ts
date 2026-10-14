@@ -37,7 +37,7 @@ test("liveness reveals no configuration; raw auth routes and CSRF are blocked", 
   expect(await r.json()).toEqual({
     status: "ok",
     service: "web",
-    stage: "E3",
+    stage: "E4",
   });
   expect(
     (await request.post("/api/auth/sign-up/email", { data: {} })).status(),

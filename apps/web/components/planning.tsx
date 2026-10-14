@@ -117,7 +117,12 @@ export function PlanningPanel({
     await action("confirm", { key: intent.current.key, taskIds: chosen });
   }
   const plan = data?.plan;
-  const focus = plan?.entries.find((e) => e.taskId === plan.focusTaskId);
+  const focus = plan?.entries.find(
+    (e) =>
+      e.taskId === plan.focusTaskId &&
+      (data?.availability === undefined ||
+        data.availability[e.taskId] === true),
+  );
   return (
     <div
       className={
@@ -194,6 +199,13 @@ export function PlanningPanel({
               </Link>
             </section>
           )}
+          {plan?.status === "confirmed" && !focus && (
+            <p className="status-notice">
+              Die gespeicherte Fokusaufgabe ist aktuell nicht als ausführbar
+              nachgewiesen. Planreihenfolge und Historie bleiben erhalten.
+              Aufgabenstand prüfen oder bewusst einen verfügbaren Fokus wählen.
+            </p>
+          )}
           {plan && (
             <>
               <section className="card">
@@ -253,7 +265,12 @@ export function PlanningPanel({
                           type="button"
                           className="secondary"
                           aria-pressed={plan.focusTaskId === entry.taskId}
-                          disabled={busy || plan.focusTaskId === entry.taskId}
+                          disabled={
+                            busy ||
+                            plan.focusTaskId === entry.taskId ||
+                            (data?.availability !== undefined &&
+                              data.availability[entry.taskId] !== true)
+                          }
                           onClick={() =>
                             void action("focus", { taskId: entry.taskId })
                           }

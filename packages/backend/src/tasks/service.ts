@@ -165,6 +165,8 @@ export function createTaskService(
   }
   async function enqueue(h: Headers, raw: unknown) {
     const command = taskCommand.parse(raw);
+    if (command.fields?.recurring && command.fields.due !== undefined)
+      throw new WorkFault("INVALID_REQUEST");
     const hash = fingerprint(command);
     const base = await identity.withActive(
       h,
@@ -241,6 +243,13 @@ export function createTaskService(
       if (source.checked && command.action !== "delete")
         throw new WorkFault("TASK_ALREADY_CLOSED", 409);
     }
+    if (
+      source?.due?.is_recurring &&
+      command.action === "update" &&
+      command.fields?.due !== undefined &&
+      !command.acknowledgeRecurrenceChange
+    )
+      throw new WorkFault("RECURRENCE_CONFIRMATION_REQUIRED", 409);
     if (command.action === "sections" && (!scope.c || project.inbox_project))
       throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
     if (command.action === "comment" && !command.comment)

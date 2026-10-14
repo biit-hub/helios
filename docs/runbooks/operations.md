@@ -11,3 +11,5 @@ E1.1 nur localhost. Startschritte stehen im [README](../../README.md). Migration
 NPM später: nur Web in ein ausdrücklich ausgewähltes existierendes Proxy-Netz aufnehmen; dort Serviceport 3000 ansprechen. Hostports von DB/Worker geschlossen lassen. HTTPS-Origin/Trusted-Proxies/Auth/CSRF/CSP werden mit E1.2 abgestimmt und getestet. Nicht den bestehenden Proxy oder Altcontainer verändern.
 
 Updates niemals mit blindem main-Pull vornehmen, solange kein stabiles Release existiert. Ausgangscommit/Image notieren, Backup erstellen, Worker stoppen, Migration prüfen, Images austauschen, Health/Job/Layout prüfen. Schema-Inkompatibilität verlangt einen geprüften Restore, keinen automatischen Downgrade.
+
+E4: Vor passenden Web-/Workerimages Migration 0006 ausführen. Readiness prüft kind/payload/result im bestehenden Journal. Ausstehende Aufgabenoperationen unter Aufgaben prüfen; HTTP 202 ist kein Nachweis. Bei unknown/Create/Comment/Close kein blindes Replay. Details: [Aufgabenverwaltung und Troubleshooting](tasks.md).

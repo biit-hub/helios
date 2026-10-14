@@ -118,7 +118,16 @@ export function matchesFields(
     if (key === "due_string") {
       if (value === "no date") {
         if (task.due) return false;
-      } else if (!task.due?.is_recurring) return false;
+      } else {
+        const normalize = (text: string) =>
+          text.trim().toLowerCase().replace(/\s+/g, " ");
+        const requested = normalize(String(value));
+        const start = requested.match(/^(.*?) starting (\d{4}-\d{2}-\d{2})$/);
+        if (!task.due?.is_recurring || !task.due.string) return false;
+        if (normalize(task.due.string) !== (start?.[1] ?? requested))
+          return false;
+        if (start && task.due.date.slice(0, 10) !== start[2]) return false;
+      }
       continue;
     }
     if (key === "due_date") {

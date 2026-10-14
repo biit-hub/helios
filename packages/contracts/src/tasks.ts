@@ -43,6 +43,7 @@ export const taskCommand = z.strictObject({
   waiting: waitingInput.optional(),
   acknowledgeHierarchy: z.boolean().default(false),
   acknowledgeDestructive: z.boolean().default(false),
+  acknowledgeRecurrenceChange: z.boolean().default(false),
 });
 export type TaskCommand = z.infer<typeof taskCommand>;
 export type TaskFields = z.infer<typeof taskFields>;

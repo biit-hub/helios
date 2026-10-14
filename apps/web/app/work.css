@@ -324,3 +324,144 @@ legend {
 .planning-focus .today-entry h3 {
   font-size: 18px;
 }
+.capture-button {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 20;
+  background: var(--accent, #a65c3c);
+  color: white;
+  border-radius: 30px;
+  padding: 15px 24px;
+  box-shadow: 0 6px 24px #412a1826;
+}
+.task-filters,
+.task-fields {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 24px 0;
+}
+.task-filters label {
+  flex: 1;
+  min-width: 190px;
+}
+.task-fields label {
+  flex: 1;
+  min-width: 180px;
+}
+.task-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #241d1680;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.task-dialog {
+  max-height: 90vh;
+  overflow: auto;
+  width: min(920px, 100%);
+  background: var(--surface, #fffdf8);
+  box-shadow: 0 12px 60px #241d1640;
+}
+.task-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0;
+}
+.task-dialog textarea {
+  min-height: 110px;
+}
+.task-dialog .check-label {
+  flex-direction: row;
+  align-items: start;
+}
+.task-dialog .check-label input {
+  width: auto;
+  margin-top: 5px;
+}
+.task-dialog button {
+  margin: 6px;
+}
+.task-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-source {
+  padding: 14px;
+  border: 1px solid #ddd4ca;
+  border-radius: 12px;
+}
+.task-dialog .danger {
+  color: #a02e22;
+  border-color: #a02e22;
+}
+.operation-list {
+  margin: 26px 0 70px;
+}
+.task-dialog fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.task-dialog:focus {
+  outline: none;
+}
+.task-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink, #293d4c);
+  font-size: 14px;
+  font-weight: 600;
+}
+.task-filters input,
+.task-filters select,
+.task-dialog input,
+.task-dialog select,
+.task-dialog textarea {
+  font: inherit;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9ccbc;
+  border-radius: 10px;
+  background: #fffefb;
+  color: #293d4c;
+  line-height: 1.45;
+}
+.task-dialog .check-label input {
+  width: 18px;
+  min-width: 18px;
+  padding: 0;
+}
+.task-filters input:focus,
+.task-dialog input:focus,
+.task-dialog textarea:focus,
+.task-dialog select:focus {
+  outline: 2px solid #b66b32;
+  outline-offset: 2px;
+}
+.task-entry {
+  margin-bottom: 24px;
+}
+.task-entry .task-card {
+  margin-bottom: 10px;
+}
+.task-entry .task-open {
+  background: transparent;
+  color: var(--accent, #9b4d18);
+  border: 1px solid #d9ccbc;
+  margin-top: 0;
+}
+.task-filters button {
+  align-self: end;
+}
+.task-dialog fieldset:disabled {
+  opacity: 0.7;
+}

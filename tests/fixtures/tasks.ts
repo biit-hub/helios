@@ -168,6 +168,16 @@ export function taskFixture() {
         ] as const)
           if (body && field in body) Object.assign(t, { [field]: body[field] });
         if (body?.due_string === "no date") t.due = null;
+        else if (body?.due_string)
+          t.due = {
+            date: "2026-11-01",
+            string: String(body.due_string).replace(
+              / starting \d{4}-\d{2}-\d{2}$/,
+              "",
+            ),
+            lang: "en",
+            is_recurring: true,
+          };
         if (body?.due_date)
           t.due = { date: String(body.due_date), is_recurring: false };
         if (body?.due_datetime)

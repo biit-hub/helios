@@ -11,6 +11,7 @@ export async function guardedDomainPost(
     ) => Promise<unknown>;
   },
   accepted: readonly string[] = [],
+  maxBytes = 8192,
 ) {
   const headers = {
     "Cache-Control": "no-store, private",
@@ -33,7 +34,7 @@ export async function guardedDomainPost(
         const { value, done } = await reader.read();
         if (done) break;
         size += value.length;
-        if (size > 8192) throw new AuthFault("INVALID_REQUEST", 413);
+        if (size > maxBytes) throw new AuthFault("INVALID_REQUEST", 413);
         chunks.push(value);
       }
       try {

@@ -1,5 +1,5 @@
 import { cpSync, existsSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 const source = "apps/web/.next/static";
 const server = "apps/web/.next/standalone/apps/web/server.js";
 if (!existsSync(server)) throw new Error("Run pnpm build before browser tests");
@@ -12,6 +12,12 @@ if (
   !new URL(process.env.DATABASE_URL ?? "").pathname.endsWith("_test")
 )
   throw new Error("E2E must use isolated tests");
+const migration = spawnSync(
+  process.execPath,
+  ["node_modules/tsx/dist/cli.mjs", "packages/backend/src/migrate.ts"],
+  { stdio: "inherit", env: process.env },
+);
+if (migration.status !== 0) throw new Error("Isolated E2E migration failed");
 const fixture = spawn(
   process.execPath,
   ["node_modules/tsx/dist/cli.mjs", "tests/fixtures/todoist-server.ts"],

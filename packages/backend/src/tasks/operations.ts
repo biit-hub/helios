@@ -534,7 +534,7 @@ export function createTaskExecutor(
       ? "succeeded"
       : progress.pending
         ? "unknown"
-        : progress.stage
+        : progress.stage || (progress.effects?.length ?? 0) > 0
           ? "partial"
           : "failed";
     await database.db.transaction(async (db) => {
