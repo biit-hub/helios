@@ -1,0 +1,11 @@
+name: Featurewunsch
+description: Problem und gewünschte Verbesserung
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: Welches Problem soll gelöst werden? }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Gewünschtes Verhalten und Alternativen }
+    validations: { required: true }

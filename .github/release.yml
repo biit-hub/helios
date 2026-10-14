@@ -1,0 +1,8 @@
+changelog:
+  categories:
+    - title: Neue Funktionen
+      labels: [enhancement]
+    - title: Fehlerkorrekturen
+      labels: [bug]
+    - title: Wartung und Dokumentation
+      labels: ["*"]
