@@ -72,7 +72,7 @@ export function calendarIdsFor(mappings: CalendarMapping[], contextId: string) {
         (m.mode === "context" && m.contextId === contextId),
     )
     .map((m) => m.calendarId)
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
 }
 export function mappingBasis(
   i: TermiIntegration,

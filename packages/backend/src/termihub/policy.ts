@@ -45,6 +45,22 @@ export function emptyOrientation(
     basis: null,
   };
 }
+function snapshotState(
+  data: NormalizedDay,
+  stale: boolean,
+  noWorkConfirmed: boolean,
+  warnings: string[],
+): CalendarOrientation["state"] {
+  if (stale) return "stale";
+  if (
+    warnings.includes("organization_unmapped") ||
+    warnings.includes("calendar_mapping_incomplete")
+  )
+    return "unmapped";
+  if (!data.complete) return "incomplete";
+  if (data.work.length) return "ready";
+  return noWorkConfirmed ? "no_work_confirmed" : "no_data";
+}
 export function snapshotOrientation(
   snapshot: SnapshotSource,
   connectionReady: boolean,
@@ -67,17 +83,7 @@ export function snapshotOrientation(
   const conflict = noWorkConfirmed && data.work.length > 0;
   if (conflict) warnings.push("no_work_decision_conflict");
   const reliable = !stale && data.complete && data.budget !== null && !conflict;
-  let state: CalendarOrientation["state"];
-  if (stale) state = "stale";
-  else if (
-    warnings.includes("organization_unmapped") ||
-    warnings.includes("calendar_mapping_incomplete")
-  )
-    state = "unmapped";
-  else if (!data.complete) state = "incomplete";
-  else if (!data.work.length)
-    state = noWorkConfirmed ? "no_work_confirmed" : "no_data";
-  else state = "ready";
+  const state = snapshotState(data, stale, noWorkConfirmed, warnings);
   return {
     snapshotId: snapshot.id,
     revision: snapshot.revision,

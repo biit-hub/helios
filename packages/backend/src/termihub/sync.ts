@@ -35,6 +35,11 @@ const terminalCodes = new Set([
   "TERMIHUB_TOO_LARGE",
   "TERMIHUB_REDIRECT",
 ]);
+function failureCode(e: unknown) {
+  if (e instanceof AuthFault) return "TERMIHUB_ACTOR_REVOKED";
+  if (e instanceof TermiHubFault || e instanceof WorkFault) return e.code;
+  return "TERMIHUB_RESPONSE";
+}
 export const requiresManualRetry = (state: string) => terminalCodes.has(state);
 const contextSignature = (cs: CalendarContext[]) =>
   JSON.stringify(
@@ -42,12 +47,119 @@ const contextSignature = (cs: CalendarContext[]) =>
       .map((c) => [c.id, c.revision])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   );
-async function activeContexts(db: Db, userId: string) {
+function activeContexts(db: Db, userId: string) {
   return db
     .select()
     .from(contexts)
     .where(and(eq(contexts.userId, userId), eq(contexts.active, true)));
 }
+async function current(
+  db: Db,
+  original: TermiIntegration,
+  request: TermiHubSyncRequest,
+  claim?: string,
+) {
+  const [i] = await db
+    .select()
+    .from(integrations)
+    .where(
+      and(
+        eq(integrations.id, original.id),
+        eq(integrations.userId, original.userId),
+        eq(integrations.type, "termihub"),
+      ),
+    );
+  if (
+    !i?.enabled ||
+    !i.encryptedToken ||
+    !i.baseUrl ||
+    i.credentialVersion !== request.credentialVersion ||
+    i.revision !== request.integrationRevision ||
+    i.syncRequest?.id !== request.id ||
+    (claim &&
+      (i.readClaim !== claim ||
+        !i.syncClaimUntil ||
+        i.syncClaimUntil <= new Date()))
+  )
+    throw new WorkFault("TERMIHUB_SOURCE_CHANGED", 409);
+  return i;
+}
+async function saveCatalog(
+  db: Db,
+  i: TermiIntegration,
+  source: TermiHubSource,
+  now: Date,
+) {
+  await db
+    .update(termihubCatalog)
+    .set({ available: false })
+    .where(
+      and(
+        eq(termihubCatalog.integrationId, i.id),
+        eq(termihubCatalog.kind, "calendar"),
+      ),
+    );
+  for (const calendar of source.calendars)
+    await db
+      .insert(termihubCatalog)
+      .values({
+        integrationId: i.id,
+        kind: "calendar",
+        itemId: calendar.id,
+        name: calendar.name,
+        calendarType: calendar.type,
+        enabled: calendar.enabled && calendar.visible,
+        available: true,
+        credentialVersion: i.credentialVersion,
+        retrievedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [
+          termihubCatalog.integrationId,
+          termihubCatalog.kind,
+          termihubCatalog.itemId,
+        ],
+        set: {
+          name: calendar.name,
+          calendarType: calendar.type,
+          enabled: calendar.enabled && calendar.visible,
+          available: true,
+          credentialVersion: i.credentialVersion,
+          retrievedAt: now,
+        },
+      });
+  const organizations = new Map(
+    source.work.map((work) => [work.organization.id, work.organization.name]),
+  );
+  // An absent organization in this bounded window is not deletion evidence.
+  for (const [itemId, name] of organizations)
+    await db
+      .insert(termihubCatalog)
+      .values({
+        integrationId: i.id,
+        kind: "organization",
+        itemId,
+        name,
+        enabled: true,
+        available: true,
+        credentialVersion: i.credentialVersion,
+        retrievedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [
+          termihubCatalog.integrationId,
+          termihubCatalog.kind,
+          termihubCatalog.itemId,
+        ],
+        set: {
+          name,
+          available: true,
+          credentialVersion: i.credentialVersion,
+          retrievedAt: now,
+        },
+      });
+}
+
 export function createTermiHubSync(
   database: ReturnType<typeof createDatabase>,
   config: WorkConfig,
@@ -62,112 +174,90 @@ export function createTermiHubSync(
     request.kind === "manual"
       ? identity.withOperationSession(request.sessionId!, i.userId, fn)
       : identity.withBackgroundUser(i.userId, fn);
-  async function current(
-    db: Db,
-    original: TermiIntegration,
+  async function releaseStale(
+    initial: TermiIntegration,
+    requestId: string,
+    claim: string,
+  ) {
+    try {
+      await identity.withBackgroundUser(initial.userId, async (db) => {
+        const [i] = await db
+          .select()
+          .from(integrations)
+          .where(eq(integrations.id, initial.id));
+        if (
+          i?.credentialVersion === initial.credentialVersion &&
+          i.revision === initial.revision &&
+          i.syncRequest?.id === requestId &&
+          i.readClaim === claim
+        )
+          await db
+            .update(integrations)
+            .set({
+              state: "saved",
+              readClaim: null,
+              syncClaimUntil: null,
+              syncRequest: null,
+              nextAllowedAt: null,
+            })
+            .where(eq(integrations.id, i.id));
+      });
+    } catch {
+      /* Disabled or recovering owners cannot receive results. */
+    }
+  }
+  async function failedRead(
+    initial: TermiIntegration,
     request: TermiHubSyncRequest,
-    claim?: string,
+    requestId: string,
+    claim: string,
+    captured: boolean,
+    e: unknown,
   ) {
-    const [i] = await db
-      .select()
-      .from(integrations)
-      .where(
-        and(
-          eq(integrations.id, original.id),
-          eq(integrations.userId, original.userId),
-          eq(integrations.type, "termihub"),
-        ),
-      );
-    if (
-      !i?.enabled ||
-      !i.encryptedToken ||
-      !i.baseUrl ||
-      i.credentialVersion !== request.credentialVersion ||
-      i.revision !== request.integrationRevision ||
-      i.syncRequest?.id !== request.id ||
-      (claim &&
-        (i.readClaim !== claim ||
-          !i.syncClaimUntil ||
-          i.syncClaimUntil <= new Date()))
-    )
-      throw new WorkFault("TERMIHUB_SOURCE_CHANGED", 409);
-    return i;
+    const code = failureCode(e);
+    const terminal =
+      code === "TERMIHUB_ACTOR_REVOKED" ||
+      terminalCodes.has(code) ||
+      request.attempts >= 3;
+    try {
+      await identity.withBackgroundUser(initial.userId, async (db) => {
+        const [i] = await db
+          .select()
+          .from(integrations)
+          .where(eq(integrations.id, initial.id));
+        if (
+          !i ||
+          i.credentialVersion !== initial.credentialVersion ||
+          i.revision !== initial.revision ||
+          i.syncRequest?.id !== requestId ||
+          (captured && i.readClaim !== claim)
+        )
+          return;
+        const delay =
+          e instanceof TermiHubFault && e.code === "TERMIHUB_RATE_LIMIT"
+            ? e.retryAfterSeconds * 1000
+            : 30000 * 2 ** Math.max(0, request.attempts - 1);
+        await db
+          .update(integrations)
+          .set({
+            state: code === "TERMIHUB_ACTOR_REVOKED" ? "saved" : code,
+            lastCheckedAt: new Date(),
+            readClaim: null,
+            syncClaimUntil: null,
+            ...(terminal ? { syncRequest: null } : {}),
+            nextAllowedAt: new Date(
+              Date.now() + (terminal ? SNAPSHOT_FRESH_MS : delay),
+            ),
+          })
+          .where(eq(integrations.id, i.id));
+        if (code !== "TERMIHUB_ACTOR_REVOKED")
+          await recordTermiHubProblem(db, i, code);
+      });
+    } catch {
+      /* An inactive/recovering user cannot receive derived results. */
+    }
   }
-  async function saveCatalog(
-    db: Db,
-    i: TermiIntegration,
-    source: TermiHubSource,
-    now: Date,
-  ) {
-    await db
-      .update(termihubCatalog)
-      .set({ available: false })
-      .where(
-        and(
-          eq(termihubCatalog.integrationId, i.id),
-          eq(termihubCatalog.kind, "calendar"),
-        ),
-      );
-    for (const calendar of source.calendars)
-      await db
-        .insert(termihubCatalog)
-        .values({
-          integrationId: i.id,
-          kind: "calendar",
-          itemId: calendar.id,
-          name: calendar.name,
-          calendarType: calendar.type,
-          enabled: calendar.enabled && calendar.visible,
-          available: true,
-          credentialVersion: i.credentialVersion,
-          retrievedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [
-            termihubCatalog.integrationId,
-            termihubCatalog.kind,
-            termihubCatalog.itemId,
-          ],
-          set: {
-            name: calendar.name,
-            calendarType: calendar.type,
-            enabled: calendar.enabled && calendar.visible,
-            available: true,
-            credentialVersion: i.credentialVersion,
-            retrievedAt: now,
-          },
-        });
-    const organizations = new Map(
-      source.work.map((work) => [work.organization.id, work.organization.name]),
-    );
-    // An absent organization in this bounded window is not deletion evidence.
-    for (const [itemId, name] of organizations)
-      await db
-        .insert(termihubCatalog)
-        .values({
-          integrationId: i.id,
-          kind: "organization",
-          itemId,
-          name,
-          enabled: true,
-          available: true,
-          credentialVersion: i.credentialVersion,
-          retrievedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [
-            termihubCatalog.integrationId,
-            termihubCatalog.kind,
-            termihubCatalog.itemId,
-          ],
-          set: {
-            name,
-            available: true,
-            credentialVersion: i.credentialVersion,
-            retrievedAt: now,
-          },
-        });
-  }
+
   async function run(
     integrationId: string,
     requestId: string,
@@ -291,7 +381,7 @@ export function createTermiHubSync(
           });
           data.warnings = [
             ...new Set([...data.warnings, ...source.warnings]),
-          ].sort();
+          ].sort((a, b) => a.localeCompare(b));
           const basis = mappingBasis(
             i,
             c,
@@ -301,27 +391,25 @@ export function createTermiHubSync(
           const sourceHash = createHash("sha256")
             .update(JSON.stringify({ basis, day: request.day, data }))
             .digest("hex");
-          await db
-            .insert(calendarSnapshots)
-            .values({
-              id: randomUUID(),
-              userId: i.userId,
-              integrationId: i.id,
-              contextId: c.id,
-              day: request.day,
-              timezone: request.timezone,
-              revision,
-              credentialVersion: i.credentialVersion,
-              integrationRevision: i.revision,
-              contextRevision: c.revision,
-              calendarIds: ids,
-              organizationId,
-              mappingBasis: basis,
-              sourceHash,
-              retrievedAt: now,
-              freshUntil: new Date(now.getTime() + SNAPSHOT_FRESH_MS),
-              data,
-            });
+          await db.insert(calendarSnapshots).values({
+            id: randomUUID(),
+            userId: i.userId,
+            integrationId: i.id,
+            contextId: c.id,
+            day: request.day,
+            timezone: request.timezone,
+            revision,
+            credentialVersion: i.credentialVersion,
+            integrationRevision: i.revision,
+            contextRevision: c.revision,
+            calendarIds: ids,
+            organizationId,
+            mappingBasis: basis,
+            sourceHash,
+            retrievedAt: now,
+            freshUntil: new Date(now.getTime() + SNAPSHOT_FRESH_MS),
+            data,
+          });
         }
         await db
           .update(integrations)
@@ -346,81 +434,17 @@ export function createTermiHubSync(
       return "synced";
     } catch (e) {
       if (e instanceof WorkFault && e.code === "TERMIHUB_SOURCE_CHANGED") {
-        try {
-          await identity.withBackgroundUser(initial.userId, async (db) => {
-            const [i] = await db
-              .select()
-              .from(integrations)
-              .where(eq(integrations.id, initial.id));
-            if (
-              i?.credentialVersion === initial.credentialVersion &&
-              i.revision === initial.revision &&
-              i.syncRequest?.id === requestId &&
-              i.readClaim === claim
-            )
-              await db
-                .update(integrations)
-                .set({
-                  state: "saved",
-                  readClaim: null,
-                  syncClaimUntil: null,
-                  syncRequest: null,
-                  nextAllowedAt: null,
-                })
-                .where(eq(integrations.id, i.id));
-          });
-        } catch {
-          /* Disabled or recovering owners cannot receive results. */
-        }
+        await releaseStale(initial, requestId, claim);
         return "discarded";
       }
-      const code =
-        e instanceof AuthFault
-          ? "TERMIHUB_ACTOR_REVOKED"
-          : e instanceof TermiHubFault || e instanceof WorkFault
-            ? e.code
-            : "TERMIHUB_RESPONSE";
-      const terminal =
-        code === "TERMIHUB_ACTOR_REVOKED" ||
-        terminalCodes.has(code) ||
-        request.attempts >= 3;
-      try {
-        await identity.withBackgroundUser(initial.userId, async (db) => {
-          const [i] = await db
-            .select()
-            .from(integrations)
-            .where(eq(integrations.id, initial.id));
-          if (
-            !i ||
-            i.credentialVersion !== initial.credentialVersion ||
-            i.revision !== initial.revision ||
-            i.syncRequest?.id !== requestId ||
-            (captured && i.readClaim !== claim)
-          )
-            return;
-          const delay =
-            e instanceof TermiHubFault && e.code === "TERMIHUB_RATE_LIMIT"
-              ? e.retryAfterSeconds * 1000
-              : 30000 * 2 ** Math.max(0, request.attempts - 1);
-          await db
-            .update(integrations)
-            .set({
-              state: code === "TERMIHUB_ACTOR_REVOKED" ? "saved" : code,
-              lastCheckedAt: new Date(),
-              readClaim: null,
-              syncClaimUntil: null,
-              ...(terminal ? { syncRequest: null } : {}),
-              nextAllowedAt: new Date(
-                Date.now() + (terminal ? SNAPSHOT_FRESH_MS : delay),
-              ),
-            })
-            .where(eq(integrations.id, i.id));
-          if (code !== "TERMIHUB_ACTOR_REVOKED")
-            await recordTermiHubProblem(db, i, code);
-        });
-      } catch {
-        /* An inactive/recovering user cannot receive derived results. */
-      }
+      await failedRead(
+        initial,
+        request,
+        requestId,
+        claim,
+        captured !== null,
+        e,
+      );
       return "failed";
     }
   }

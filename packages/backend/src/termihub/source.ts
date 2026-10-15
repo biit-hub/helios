@@ -41,7 +41,7 @@ export async function collectSource(
     ...new Set(contexts.flatMap((c) => calendarIdsFor(mappings, c.id))),
   ]
     .filter((id) => availableIds.has(id))
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
   const events = ids.length
     ? await reader.events(base, token, range, ids)
     : { data: [], meta: calendars.meta };

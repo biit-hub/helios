@@ -35,14 +35,16 @@ export function createTermiHubWorker(
 ) {
   const identity = createIdentityService(database, config),
     timezone = options.timezone ?? planningTimezone();
+  // Validate optional network settings only when this integration actually reads.
+  // A TermiHub-only configuration fault must not prevent Todoist jobs starting.
   const reader =
     options.reader ??
-    createTermiHubReader(
-      createTransport(
+    createTermiHubReader(async (...args) => {
+      const network =
         options.network ??
-          networkConfig({ ...process.env, HELIOS_ENV: config.HELIOS_ENV }),
-      ),
-    );
+        networkConfig({ ...process.env, HELIOS_ENV: config.HELIOS_ENV });
+      return createTransport(network)(...args);
+    });
   const sync = createTermiHubSync(database, config, reader);
   async function dispatch() {
     if (config.RESTORE_MODE || !config.WORKER_ENABLED) return;

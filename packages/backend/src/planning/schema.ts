@@ -1,4 +1,3 @@
-import type { CalendarPlanBasis } from "@helios/contracts";
 import {
   pgTable,
   uuid,
@@ -14,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { contexts } from "../work/schema";
 import { user } from "../identity/schema";
 import type {
+  CalendarPlanBasis,
   AgendaState,
   PlanEntry,
   PlanState,

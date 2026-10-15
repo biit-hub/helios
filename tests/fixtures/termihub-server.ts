@@ -1,6 +1,19 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { termihubFixture } from "./termihub";
 import { localDay } from "../../packages/backend/src/planning/selection";
+function outsideCalendarScope(path: string, url: URL, id: string) {
+  return (
+    path === "events" && !url.searchParams.getAll("calendar_ids").includes(id)
+  );
+}
+function fixtureReadStatus(req: IncomingMessage, mode: string) {
+  if (req.method !== "GET") return 405;
+  if (req.headers.authorization !== "Bearer synthetic-termihub-only")
+    return 401;
+  if (mode === "permission") return 403;
+  if (mode === "network") return 503;
+  return 200;
+}
 export function termihubServerFixture() {
   let mode = "ok",
     fixture = termihubFixture(localDay(new Date(), "Europe/Zurich"));
@@ -23,18 +36,9 @@ export function termihubServerFixture() {
     }
     if (!url.pathname.startsWith("/api/v1/external/")) return false;
     res.setHeader("Content-Type", "application/json");
-    if (req.method !== "GET") {
-      res.statusCode = 405;
-      res.end("{}");
-      return true;
-    }
-    if (req.headers.authorization !== "Bearer synthetic-termihub-only") {
-      res.statusCode = 401;
-      res.end("{}");
-      return true;
-    }
-    if (mode === "permission" || mode === "network") {
-      res.statusCode = mode === "permission" ? 403 : 503;
+    const status = fixtureReadStatus(req, mode);
+    if (status !== 200) {
+      res.statusCode = status;
       res.end("{}");
       return true;
     }
@@ -47,10 +51,7 @@ export function termihubServerFixture() {
         end: `${day}T17:00:00+02:00`,
       }));
     }
-    if (
-      path === "events" &&
-      !url.searchParams.getAll("calendar_ids").includes(fixture.calendarId)
-    ) {
+    if (outsideCalendarScope(path, url, fixture.calendarId)) {
       res.statusCode = 400;
       res.end("{}");
       return true;

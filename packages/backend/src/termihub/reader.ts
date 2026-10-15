@@ -61,7 +61,9 @@ export function createTermiHubReader(transport: TermiHubTransport) {
       const query = params(range);
       // calendar_ids also filters virtual identities in the published implementation.
       // Setting virtual_calendar_ids as well would intersect, not union, both filters.
-      for (const id of [...new Set(calendarIds)].sort())
+      for (const id of [...new Set(calendarIds)].sort((a, b) =>
+        a.localeCompare(b),
+      ))
         query.append("calendar_ids", id);
       query.set("include_virtual", "true");
       const result = await read(base, token, "events", eventSchema, query);

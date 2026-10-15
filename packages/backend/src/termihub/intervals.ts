@@ -85,6 +85,97 @@ export type NormalizedDay = {
   warnings: string[];
   modes: string[];
 };
+function classifyEvent(
+  event: TermiEvent,
+  fixed: Span[],
+  uncertain: Span[],
+  warnings: Set<string>,
+) {
+  const span = eventSpan(event);
+  if (["BUSY", "OUT_OF_OFFICE"].includes(event.availability)) fixed.push(span);
+  else if (!["FREE", "WORKING_ELSEWHERE"].includes(event.availability)) {
+    uncertain.push(span);
+    if (!["TENTATIVE", "UNKNOWN"].includes(event.availability))
+      warnings.add("availability_unknown");
+  }
+}
+function eventOccupancy(
+  events: TermiEvent[],
+  calendarIds: string[],
+  warnings: Set<string>,
+) {
+  let complete = true;
+  const fixed: Span[] = [],
+    uncertain: Span[] = [],
+    knownEvents: TermiEvent[] = [];
+  const seen = new Map<string, string>();
+  for (const event of events) {
+    if (!calendarIds.includes(event.calendar.id)) {
+      complete = false;
+      warnings.add("foreign_calendar");
+      continue;
+    }
+    if (["cancelled", "canceled"].includes(event.status.toLowerCase()))
+      continue;
+    knownEvents.push(event);
+    const span = eventSpan(event);
+    const key = JSON.stringify([event.id, event.start ?? event.start_date]);
+    const signature = JSON.stringify([
+      span,
+      event.availability,
+      event.calendar.id,
+    ]);
+    const prior = seen.get(key);
+    if (prior && prior !== signature) {
+      complete = false;
+      warnings.add("conflicting_event_identity");
+    }
+    if (prior === signature) continue;
+    seen.set(key, signature);
+    classifyEvent(event, fixed, uncertain, warnings);
+  }
+
+  return { fixed, uncertain, knownEvents, complete };
+}
+function sameOccurrence(
+  event: TermiEvent,
+  related: NonNullable<TermiTravel["related_event"]>,
+) {
+  if (event.id !== related.id) return false;
+  if (event.all_day) return event.start_date === related.start_date;
+  return (
+    related.start !== null &&
+    Date.parse(event.start!) === Date.parse(related.start)
+  );
+}
+function travelOccupancy(
+  travels: TermiTravel[],
+  events: TermiEvent[],
+  work: Span[],
+  boundary: Span,
+  warnings: Set<string>,
+) {
+  const fixed: Span[] = [];
+  let complete = true;
+  for (const travel of travels) {
+    const span = {
+      start: Date.parse(travel.start),
+      end: Date.parse(travel.end),
+    };
+    if (!intersect([span], work.length ? work : [boundary]).length) continue;
+    if (
+      travel.related_event &&
+      events.some((event) => sameOccurrence(event, travel.related_event!))
+    )
+      fixed.push(span);
+    else if (work.length) {
+      complete = false;
+      warnings.add("travel_unassigned");
+    }
+  }
+  return { fixed, complete };
+}
+
 export function normalizeDay(input: {
   day: string;
   timezone: string;
@@ -111,10 +202,7 @@ export function normalizeDay(input: {
         .filter((w) => w.organization.id === input.organizationId)
         .map((w) => w.mode),
     ),
-  ].sort();
-  const fixed: Span[] = [],
-    uncertain: Span[] = [];
-  const knownEvents: TermiEvent[] = [];
+  ].sort((a, b) => a.localeCompare(b));
   let complete =
     input.complete &&
     input.mappingsComplete &&
@@ -123,62 +211,17 @@ export function normalizeDay(input: {
   if (!input.mappingsComplete) warnings.add("calendar_mapping_incomplete");
   if (input.organizationId === null && input.kind !== "private")
     warnings.add("organization_unmapped");
-  const seen = new Map<string, string>();
-  for (const event of input.events) {
-    if (!input.calendarIds.includes(event.calendar.id)) {
-      complete = false;
-      warnings.add("foreign_calendar");
-      continue;
-    }
-    if (["cancelled", "canceled"].includes(event.status.toLowerCase()))
-      continue;
-    knownEvents.push(event);
-    const span = eventSpan(event);
-    const key = JSON.stringify([event.id, event.start ?? event.start_date]);
-    const signature = JSON.stringify([
-      span,
-      event.availability,
-      event.calendar.id,
-    ]);
-    const prior = seen.get(key);
-    if (prior && prior !== signature) {
-      complete = false;
-      warnings.add("conflicting_event_identity");
-    }
-    if (prior === signature) continue;
-    seen.set(key, signature);
-    if (["BUSY", "OUT_OF_OFFICE"].includes(event.availability))
-      fixed.push(span);
-    else if (!["FREE", "WORKING_ELSEWHERE"].includes(event.availability)) {
-      uncertain.push(span);
-      if (!["TENTATIVE", "UNKNOWN"].includes(event.availability))
-        warnings.add("availability_unknown");
-    }
-  }
-  for (const travel of input.travel) {
-    const span = {
-      start: Date.parse(travel.start),
-      end: Date.parse(travel.end),
-    };
-    if (!intersect([span], work.length ? work : [boundary]).length) continue;
-    if (
-      travel.related_event &&
-      knownEvents.some(
-        (event) =>
-          event.id === travel.related_event!.id &&
-          (event.all_day
-            ? event.start_date === travel.related_event!.start_date
-            : travel.related_event!.start !== null &&
-              Date.parse(event.start!) ===
-                Date.parse(travel.related_event!.start)),
-      )
-    )
-      fixed.push(span);
-    else if (work.length) {
-      complete = false;
-      warnings.add("travel_unassigned");
-    }
-  }
+  const events = eventOccupancy(input.events, input.calendarIds, warnings);
+  const travel = travelOccupancy(
+    input.travel,
+    events.knownEvents,
+    work,
+    boundary,
+    warnings,
+  );
+  complete = complete && events.complete && travel.complete;
+  const fixed = [...events.fixed, ...travel.fixed],
+    uncertain = events.uncertain;
   const fixedWithin = intersect(fixed, work.length ? work : [boundary]);
   // Uncertain minutes exclude already fixed occupancy; both bounds use interval union.
   const uncertainWithin = subtract(
@@ -207,7 +250,7 @@ export function normalizeDay(input: {
     uncertainMinutes: work.length ? minutes(uncertainWithin) : null,
     budget,
     complete,
-    warnings: [...warnings].sort(),
+    warnings: [...warnings].sort((a, b) => a.localeCompare(b)),
     modes,
   };
 }

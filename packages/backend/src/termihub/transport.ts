@@ -64,7 +64,8 @@ export function cleanOrigin(raw: string): URL {
   if (
     !raw ||
     raw.length > 2048 ||
-    /[\s\u0000-\u001f\u007f]/.test(raw) ||
+    /\s/.test(raw) ||
+    [...raw].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127) ||
     !["https:", "http:"].includes(u.protocol) ||
     u.username ||
     u.password ||
@@ -209,7 +210,7 @@ export function createTransport(
       !allowedPaths.has(path) ||
       !token ||
       token.length > 4096 ||
-      /[\r\n\u0000]/.test(token)
+      !/^[!-~]+$/.test(token)
     )
       throw new TermiHubFault("TERMIHUB_REQUEST_INVALID", 400);
     const { url, pinned } = await resolveTarget(base, config, resolver);

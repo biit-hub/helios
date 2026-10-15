@@ -4,6 +4,10 @@ import type { TermiHubSettings } from "@helios/contracts";
 import { routineRequest as api } from "./routine-http";
 const at = (v: string | null) =>
   v ? new Date(v).toLocaleString("de-CH") : "Noch nicht abgerufen";
+function formText(form: FormData, key: string) {
+  const value = form.get(key);
+  return typeof value === "string" ? value : "";
+}
 const states: Record<string, string> = {
   not_connected: "Nicht verbunden",
   saved: "Gespeichert · Abruf ausstehend",
@@ -87,7 +91,7 @@ export function TermiHubConnection({
         {error ? (
           <p role="alert">{error}</p>
         ) : (
-          <p role="status">Kalendereinstellungen werden geladen …</p>
+          <output>Kalendereinstellungen werden geladen …</output>
         )}
       </section>
     );
@@ -123,11 +127,11 @@ export function TermiHubConnection({
         Arbeitszeiten und Kalender dienen als Orientierung. Helios liest
         ausschliesslich; bestätigte Tagespläne bleiben erhalten.
       </p>
-      <p role="status">
+      <output>
         Verbindung:{" "}
         {states[i.state] ??
           "Abruf fehlgeschlagen · Verbindung und Lese-Berechtigungen prüfen"}
-      </p>
+      </output>
       <p className="help">
         Letzter Abrufversuch: {at(i.lastCheckedAt)} · Letzter vollständiger
         Abruf: {at(i.lastSyncAt)}
@@ -182,7 +186,7 @@ export function TermiHubConnection({
             required
           />
         </label>
-        <button disabled={busy || !i.keyAvailable}>
+        <button type="submit" disabled={busy || !i.keyAvailable}>
           TermiHub-Token verschlüsselt speichern
         </button>
       </form>
@@ -202,6 +206,7 @@ export function TermiHubConnection({
           />
         </label>
         <button
+          type="button"
           disabled={
             busy ||
             i.syncing ||
@@ -215,6 +220,7 @@ export function TermiHubConnection({
           Verbindung prüfen & Kalender lesen
         </button>
         <button
+          type="button"
           className="secondary"
           disabled={busy}
           onClick={() => void reload().catch((e) => setError(e.message))}
@@ -224,6 +230,7 @@ export function TermiHubConnection({
         {i.hasToken && (
           <>
             <button
+              type="button"
               disabled={busy}
               onClick={() =>
                 void act(i.enabled ? "disable" : "enable", {
@@ -234,6 +241,7 @@ export function TermiHubConnection({
               {i.enabled ? "TermiHub deaktivieren" : "TermiHub aktivieren"}
             </button>
             <button
+              type="button"
               className="secondary"
               disabled={busy}
               onClick={() => void act("remove", { revision: i.revision })}
@@ -261,10 +269,10 @@ export function TermiHubConnection({
                 .map((c) => ({
                   contextId: c.id,
                   contextRevision: c.revision,
-                  organizationId: f.get("organization:" + c.id) || null,
+                  organizationId: formText(f, "organization:" + c.id) || null,
                 })),
               calendars: calendars.flatMap((c) => {
-                const v = String(f.get("calendar:" + c.id) ?? "");
+                const v = formText(f, "calendar:" + c.id);
                 return v
                   ? [
                       {
@@ -357,7 +365,7 @@ export function TermiHubConnection({
               </label>
             );
           })}
-          <button disabled={busy || i.syncing}>
+          <button type="submit" disabled={busy || i.syncing}>
             TermiHub-Zuordnungen speichern
           </button>
         </form>
@@ -367,7 +375,7 @@ export function TermiHubConnection({
           {error}
         </p>
       )}
-      {notice && <p role="status">{notice}</p>}
+      {notice && <output>{notice}</output>}
     </section>
   );
 }

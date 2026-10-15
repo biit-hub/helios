@@ -245,7 +245,7 @@ it("honours retry backoff and stops a failing request after three attempts", asy
   expect(await sync.run(row.id, row.sync_request.id)).toBe("failed");
   const count = f.calls.length;
   expect(await sync.run(row.id, row.sync_request.id)).toBe("skipped");
-  expect(f.calls.length).toBe(count);
+  expect(f.calls).toHaveLength(count);
   h.advance(31000);
   expect(await sync.run(row.id, row.sync_request.id)).toBe("failed");
   h.advance(61000);
@@ -362,4 +362,33 @@ it("blocks foreign and inactive context reads and restore-mode jobs", async () =
   );
   expect(await restored.run(randomUUID(), randomUUID())).toBe("skipped");
   expect(sync).toBeDefined();
+});
+it("isolates invalid optional TermiHub network settings from the existing worker", async () => {
+  const { f } = await setup();
+  const previous = process.env.TERMIHUB_TIMEOUT_SECONDS;
+  process.env.TERMIHUB_TIMEOUT_SECONDS = "invalid-synthetic-value";
+  try {
+    const sent: { integrationId: string; requestId: string }[] = [];
+    const boss = {
+      send: async (_queue: string, data: (typeof sent)[number]) => {
+        sent.push(data);
+        return randomUUID();
+      },
+    } as unknown as Parameters<typeof createTermiHubWorker>[2];
+    const worker = createTermiHubWorker(h.db, h.config, boss, {
+      timezone: "Europe/Zurich",
+    });
+    await worker.dispatch();
+    expect(sent).toHaveLength(1);
+    expect(await worker.run(sent[0]!.integrationId, sent[0]!.requestId)).toBe(
+      "failed",
+    );
+    expect((await h.work.snapshot(h.headers())).integration.state).toBe(
+      "not_connected",
+    );
+    expect(f.calls).not.toContain("events");
+  } finally {
+    if (previous === undefined) delete process.env.TERMIHUB_TIMEOUT_SECONDS;
+    else process.env.TERMIHUB_TIMEOUT_SECONDS = previous;
+  }
 });

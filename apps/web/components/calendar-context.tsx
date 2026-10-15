@@ -150,9 +150,9 @@ export function CalendarContextPanel({
   }
   if (!data)
     return error ? (
-      <p role="status">
+      <output>
         Kalenderorientierung nicht verfügbar. Manuell weiterplanen ist möglich.
-      </p>
+      </output>
     ) : null;
   const shown = data.contexts.filter(
     (c) => c.orientation.state !== "not_connected",
@@ -177,11 +177,11 @@ export function CalendarContextPanel({
             c.orientation.basis !== basis.basis ||
             c.orientation.state !== basis.state,
         ) && (
-          <p role="status">
+          <output>
             Der Kalenderstand hat sich seit dieser Vorschau geändert. Bestehende
             Auswahl und bestätigte Pläne bleiben erhalten; eine neue Vorschau
             entsteht nur auf deinen Auftrag.
-          </p>
+          </output>
         )}
       {shown.map((c) => (
         <div key={c.contextId}>
@@ -209,6 +209,7 @@ export function CalendarContextPanel({
         </div>
       ))}
       <button
+        type="button"
         disabled={busy}
         onClick={() => void act("refresh", { day: data.day })}
       >
