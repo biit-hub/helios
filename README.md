@@ -2,7 +2,7 @@
 
 Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Todoist bleibt für Aufgaben führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E9 in Umsetzung; kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
+**Stand: E9 implementiert; kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
 
 E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollziehbaren Vorschlägen, bewusster Bestätigung, sicherem Operationsjournal und kontextgetrennter Historie. Unteraufgaben behalten ihre Hierarchie.
 

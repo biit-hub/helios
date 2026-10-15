@@ -1,6 +1,6 @@
 # Changelog
 
-## E9 – TermiHub-Integration (in Umsetzung)
+## E9 – TermiHub-Integration (technisch geprüft)
 
 - Konfigurierbare verschlüsselte Verbindung, Step-up, verifizierte Organisations- und Kalenderzuordnungen, GET-only-Reader mit SSRF-/DNS-/Redirect-/TLS-Schutz.
 - Versionierte Arbeits-/Belegungsintervalle, DST und exklusive Ganztagsgrenzen, vorsichtige Verfügbarkeitsspannen, Reiseunion und manuelle Fallbackplanung.

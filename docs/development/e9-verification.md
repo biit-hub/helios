@@ -1,4 +1,4 @@
-# E9 – Prüfbericht (technische Umsetzung, Endprüfungen laufen)
+# E9 – Prüfbericht (technische Prüfungen und lokale Installation)
 
 Branch feat/e9-termihub-integration von develop 362129f. E1/E2 manuell abgenommen; manuelle E3–E9-Abnahmen bleiben offen. E10 ist nicht beauftragt. Kein main-Merge, Release, Imagepush oder Produktivdeployment.
 
@@ -36,18 +36,23 @@ HTTPS mit normaler Zertifikatsprüfung, Originvalidierung, DNS-Neuprüfung und I
 
 15 Minuten frisch; stale/partial/unmapped liefern kein verlässliches neues Planungsbudget. Nach 30 Tagen nur abgelaufene Snapshot-Versionen bereinigen, maximal 200 pro Charge. Keine Termintitel, Beschreibungen, Teilnehmer oder Adressen persistiert; keine Kalenderdaten in KI-Prompts. Kalenderkatalog/Zuordnungen/Credentials/Tagesentscheidungen/Planhistorie werden nicht durch Snapshotcleanup verändert.
 
-## Bisher bestandene Prüfungen
+## Technische Nachweise
 
 - Lint und vollständige Workspace-/Root-Typprüfung.
-- Vollständige Unit-Regression: 173 Tests vor dem ergänzten Einzeltest des unabhängig aktualisierten Änderungshinweises; erneuter Gesamtstand folgt unten nach Abschluss.
-- Vollständige PostgreSQL-Regression: 232 Tests in zwölf Dateien, ausschliesslich isolierte synthetische Testdatenbank. Darin E1–E8 und neue Credential-/Mapping-/Claim-/Revisions-/Sitzungs-/Frische-/Aufbewahrungsfälle.
+- Vollständige Unit-Regression: 176 Tests bestanden. Darin auch die browserseitige Frischeprojektion: exakte Ablaufgrenze ohne neue Serverantwort und fehlgeschlagener Browserabruf entziehen dem angezeigten Budget seine Verlässlichkeit; Eingabefehler werden davon getrennt.
+- Vollständige lokale PostgreSQL-Regression: 232 Tests in zwölf Dateien bestanden. Nach zusätzlichem Fall zur isolierten optionalen Netzkonfiguration nochmals alle 18 gezielten E9-PostgreSQL-Fälle bestanden. Finaler Gesamtumfang: 233 Testfälle. Ausschliesslich isolierte synthetische Testdatenbanken; E1–E8 und Credential-/Mapping-/Claim-/Revisions-/Sitzungs-/Frische-/Aufbewahrungsgrenzen.
 - Exakte Frischegrenze 15 Minuten und Aufbewahrungsgrenze 30 Tage, unveränderliche Snapshots/Planbasis, ausschliessliche Bereinigung, Restore-Sperre, idempotentes Cleanup und monotone Revision nach vollständigem Ablauf.
 - Zeitfälle: geteilte Fenster, Überlappungen, feste/unsichere Union, 23-/25-Stunden-Tage, exklusive mehrtägige Ganztagsintervalle, Quellzeitzone, fremde Kalender, widersprüchliche Identitäten, Reiseunion und unzugeordnete Reisen. Unbekannte Dauer wird nicht mit null bewertet; ein voller Tag wird nicht künstlich aufgefüllt.
 - Credentialrotation und Kontextwechsel während laufender Reads verwerfen Ergebnisse; widerrufene manuelle Sitzung verhindert Übernahme. Geplante konfigurierte Reads bei abgemeldetem aktivem MFA-Konto erzeugen keine Sitzung. Zwei Worker führen denselben Claim nicht doppelt aus. Maximal drei Versuche pro Absicht mit Backoff.
 - Synthetische erfolgreiche und abgewiesene Todoist-Deadline-Erstellung/-Änderung/-Entfernung. Keine produktiven Todoist-Zugangsdaten oder Aufgaben für Tests verwendet; HTTP 403 bleibt ohne sichere Tarifdiagnose.
 - Isolierte age-verschlüsselte E8→E9-Upgrade-/Restore-Probe: 18 Tabellen verglichen, alte Plan-/Reserve-/Fokus-/History-/Unknown-/AI-/Routineinhalte sowie neue Quellenzuordnungen, Tagesentscheidungen und Kalenderrevisionen erhalten. Schutztrigger nach Restore geprüft. Kein Worker gestartet, null externe Aufrufe, null unverschlüsselte Dumpdateien. Testdatenbanken/Volumes erhalten.
-- Schema-Driftprüfung, Secret-/Privatpfadprüfung und Produktionsaudit ohne bekannte Schwachstellen. Nach Aufnahme aller neuen Dateien wird die Secretprüfung nochmals wiederholt.
-- Erster Web-/Worker-Build bestanden. Aktueller Änderungshinweis-Build, Browserprüfung, Image-/Compose-/Scanprüfungen und geschützter PR-Abschluss laufen noch und werden nicht vorweggenommen.
+- Schema-Driftprüfung, Secret-/Privatpfadprüfung und Produktionsaudit ohne bekannte Schwachstellen. Gitleaks prüfte die gesamte Featurehistorie ohne Secretfund; alle neuen Dateien sind einbezogen.
+- Web-/Worker-Build und vollständige Desktop-/Mobil-Browserregression bestanden: 13 erfolgreiche Tests, neun bewusst übersprungene mobile Doppelabläufe. Der finale E9-Fluss wurde nach Refactoring, Verdichtung und Browser-Frischekorrektur zusätzlich erneut erfolgreich geprüft: sichere Tokenannahme/DTOs, bewusste Quellenzuordnung, reale pg-boss-Verarbeitung, veränderte Belegung, Rechtefehler und zwei Tabs ohne Plan-/Historyänderung. Synthetische Screenshots visuell kontrolliert.
+- Beide Linux-Images nacheinander aus Codehead cc378a13ee99700501d32e1f2a3b8f59adddceb5 gebaut. Trivy: keine ausgewählten behebbaren HIGH/CRITICAL-Befunde und keine Secret-Funde. Scan-Metadaten und Dateisystemschichten stimmen mit den installierten Images überein. Web-ID b6998d2229b2825c4efd6a78bb4b29f19952f7e0d3558f052f6bee8ca25b54d9, Worker-ID dde12f9863e1dccaffedbbe36ffd67b9d7ff427b166879f7eb0025a8ead23f16.
+- Isolierter E9-Compose-Smoke: Migration, Readiness, echter Queuejob und anonyme 401 für geschützte Fach-/TermiHub-/Kalenderrouten. Bestehendes LAN-Ollama vom Windows-PC erreichbar; Worker erreicht dasselbe konfigurierte Modell und besteht strukturierte synthetische Inferenz. Keine Cloud-KI, Modellinstallation oder Portfreigabe.
+- Lokale Entwicklungsinstanz nach frischer age-verschlüsselter Datenbank-/Konfigurationssicherung additiv auf E9 aktualisiert. Vor/nach Migration alle bestehenden Konto-/Kontext-/Plan-/History-/Operations-/KI-/Routinehashes verglichen; nur neue additive Spalten aus dem Vergleich bestehender Zeilen ausgeschlossen. Daten unverändert erhalten, anschliessend E9-Readiness und Queue erneut bestanden. Isolierter Smoke-Stack danach nur gestoppt, Datenbank/Volume erhalten. Keine NAS-Anbindung erforderlich.
+- CodeQL meldet am geprüften Codehead keine neuen Alarme, Sonar-Qualitätsgate ist OK ohne neue Security Hotspots. Verbleibende Sonar-Hinweise sind keine unterdrückten Pflichtprüfungen; insbesondere werden Transaktionsoperationen desselben pg-Clients bewusst sequenziell ausgeführt.
+- [PR #20 und endgültige Check-/Merge-Nachweise](https://github.com/biit-hub/helios/pull/20): finale Dokumentationsfassung wird vor Integration erneut über beide CI-Ereignisse, CodeQL, Sonar und strikten Branchschutz geprüft. Images und Laufzeitcode bleiben mit dem genannten Codehead identisch; spätere Änderungen betreffen nur Dokumentation.
 
 ## Offene Nachweise und Grenzen
 
@@ -55,7 +60,7 @@ HTTPS mit normaler Zertifikatsprüfung, Originvalidierung, DNS-Neuprüfung und I
 - Berechtigte Live-Schreibabnahme der Todoist-Deadlines bleibt offen. Das separate Testkonto verwendet nach Auftraggeberangabe Free; Produktionskonto mit Deadline-Unterstützung wird niemals für automatische Tests verwendet.
 - Kein vollständiger externer Arbeitgeberkatalog: Referenztag mit beobachteten Organisations-IDs verwenden. Maximales Ergebnislimit ergibt eine unvollständige Orientierung, kein erfundenes Paging.
 - Zeitbudget gilt für den ganzen gemeldeten Plantag einschliesslich vergangener Tageszeit, nicht als exakte ab jetzt freie Zeit. Kontexte werden nicht zu einem globalen Stundenbudget aufsummiert. Keine Uhrzeitblöcke, Prozentpuffer, Verkehrsverbindungsauswahl oder automatische Neuplanung.
-- Manuelle E3–E9-Abnahme ist ausdrücklich offen. CI/CodeQL/Sonar/Imagescan/geschützter Merge und lokale E9-Installation sind hier erst nach tatsächlichem Nachweis als abgeschlossen einzutragen.
+- Manuelle E3–E9-Abnahme ist ausdrücklich offen. Massgeblicher endgültiger PR-Head, Pflichtcheckstatus und geschützter Mergecommit sind im verlinkten PR nachvollziehbar. main und Produktion werden nicht verändert; kein Release, Imagepush oder E10.
 
 ## Spätere gemeinsame manuelle E3–E9-Abnahme
 

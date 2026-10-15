@@ -174,3 +174,7 @@ Bestaetigt am 15. Oktober 2026: Option A, Abschnitt `## Helios – Wartedetails`
 | Empfehlung         | A, mit festen Origins/Proxyheadern und getrennter DB/Test-Todoistkonto. VPN darf zusaetzlich schuetzen, ersetzt die beschlossene regulaere Domain nicht.                                                              |
 | Auswirkungen       | AuthbaseURL, Cookies, Deep Links, Service-Worker-Origin, TLS-/PWA-/Pushabnahme und NPM-Route.                                                                                                                         |
 | Faellig            | Namen/Zugriff vor oeffentlicher E1-Pilotpruefung, Testdomain spaetestens E11/E12.                                                                                                                                     |
+
+## E9-Konkretisierung der Snapshot-Aufbewahrung
+
+Die ausdrücklich bestätigte [Snapshot-/Verfügbarkeitsentscheidung](termihub-calendar.md) schliesst diesen Teil von O-11: 15 Minuten frisch, 30 Tage ausschliessliche Bereinigung abgeleiteter Snapshot-Versionen. Bestätigte Pläne und unveränderliche Historie bleiben erhalten. Keine dauerhaften Termintitel, Beschreibungen oder Teilnehmer. Mobile Offline-Entwürfe und spätere Produktions-Backup-RPO/RTO werden dadurch nicht vorweggenommen.
