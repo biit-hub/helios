@@ -1,0 +1,131 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { TermiHubConnection } from "../../apps/web/components/termihub-settings";
+import { CalendarContextPanel } from "../../apps/web/components/calendar-context";
+import { emptyOrientation } from "../../packages/backend/src/termihub/policy";
+import type { TermiHubSettings } from "@helios/contracts";
+const settings: TermiHubSettings = {
+  integrationId: null,
+  revision: 0,
+  baseUrl: "",
+  enabled: false,
+  hasToken: false,
+  keyAvailable: true,
+  state: "not_connected",
+  syncing: false,
+  lastCheckedAt: null,
+  lastCatalogAt: null,
+  lastSyncAt: null,
+  nextAllowedAt: null,
+  calendars: [],
+  organizations: [],
+  mappings: [],
+  contexts: [],
+};
+afterEach(() => vi.unstubAllGlobals());
+it("shows step-up failure beside TermiHub token and retains the entered value", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_path, init) =>
+      init?.method === "POST"
+        ? Response.json(
+            {
+              error: {
+                message:
+                  "Bitte zuerst Passwort und neuen Authenticator-Code bestätigen.",
+              },
+            },
+            { status: 403 },
+          )
+        : Response.json(settings),
+    ),
+  );
+  render(<TermiHubConnection onChange={async () => {}} />);
+  const token = await screen.findByLabelText("Neuer TermiHub-API-Token");
+  fireEvent.change(screen.getByLabelText("TermiHub-Serveradresse"), {
+    target: { value: "https://calendar.example.invalid" },
+  });
+  fireEvent.change(token, { target: { value: "synthetic-termihub-only" } });
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "TermiHub-Token verschlüsselt speichern",
+    }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Passwort und neuen Authenticator-Code",
+  );
+  expect(token).toHaveValue("synthetic-termihub-only");
+  expect(
+    screen.getByRole("button", { name: "Verbindung prüfen & Kalender lesen" }),
+  ).toBeDisabled();
+});
+it("clears token only after successful save and authoritative reload", async () => {
+  let saved = false;
+  const changed = vi.fn(async () => {});
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_path, init) => {
+      if (init?.method === "POST") {
+        saved = true;
+        return Response.json({ revision: 1 });
+      }
+      return Response.json(
+        saved
+          ? {
+              ...settings,
+              revision: 1,
+              enabled: true,
+              hasToken: true,
+              state: "saved",
+            }
+          : settings,
+      );
+    }),
+  );
+  render(<TermiHubConnection onChange={changed} />);
+  const input = await screen.findByLabelText("Neuer TermiHub-API-Token");
+  fireEvent.change(screen.getByLabelText("TermiHub-Serveradresse"), {
+    target: { value: "https://calendar.example.invalid" },
+  });
+  fireEvent.change(input, { target: { value: "synthetic-termihub-only" } });
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "TermiHub-Token verschlüsselt speichern",
+    }),
+  );
+  await waitFor(() => expect(changed).toHaveBeenCalledOnce());
+  expect(screen.getByLabelText("Neuer TermiHub-API-Token")).toHaveValue("");
+  expect(
+    screen.getByRole("button", { name: "Verbindung prüfen & Kalender lesen" }),
+  ).toBeEnabled();
+});
+it("labels stale bounds as historical and leaves manual planning available", async () => {
+  const orientation = {
+    ...emptyOrientation("2026-10-15", "Europe/Zurich", "stale"),
+    observedBudget: { minimumMinutes: 30, maximumMinutes: 90 },
+    retrievedAt: "2026-10-15T08:00:00Z",
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Response.json({
+        day: orientation.day,
+        timezone: orientation.timezone,
+        isToday: true,
+        contexts: [
+          {
+            contextId: "synthetic-context",
+            name: "Synthetic context",
+            orientation,
+          },
+        ],
+      }),
+    ),
+  );
+  render(<CalendarContextPanel contextId="synthetic-context" />);
+  expect(await screen.findByText("Veralteter Kalenderstand")).toBeVisible();
+  expect(screen.getByText(/Frühere Orientierung: 30–90 Min/)).toBeVisible();
+  expect(
+    screen.getByText(/Manuell planen bleibt jederzeit möglich/),
+  ).toBeVisible();
+});

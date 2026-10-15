@@ -1,4 +1,5 @@
 "use client";
+import { TermiHubConnection } from "./termihub-settings";
 import { Epics } from "./epics";
 import { MorningRoutine } from "./morning-routine";
 import { Problems } from "./problems";
@@ -324,6 +325,7 @@ export function Workbench({
                   />
                 ))}
               </section>
+              <TermiHubConnection onChange={load} />
               <Problems snapshot={snapshot} busy={busy} action={action} />
             </>
           )}
@@ -388,8 +390,9 @@ function StepUp({ onError }: Readonly<{ onError: (v: string) => void }>) {
     <section id="sensitive-changes" className="card settings-panel auth-card">
       <h2>Sensible Änderungen bestätigen</h2>
       <p>
-        Tokenwechsel und Projektzuordnungen benötigen Passwort und einen neuen
-        Authenticator-Code. Die Bestätigung gilt höchstens fünf Minuten.
+        Tokenwechsel sowie Projekt- und Kalenderzuordnungen benötigen Passwort
+        und einen neuen Authenticator-Code. Die Bestätigung gilt höchstens fünf
+        Minuten.
       </p>
       <form
         onSubmit={async (e) => {
@@ -584,13 +587,10 @@ function Connection({
         </>
       )}
       {pause && <p className="help">Abrufpause bis {at(i.nextAllowedAt)}.</p>}
-      <div className="termihub-status">
-        <h3>TermiHub</h3>
-        <p>
-          Noch nicht verfügbar · Instanzreferenz und Arbeitgeber-ID können
-          vorbereitet werden. Es findet kein Netzwerkzugriff statt.
-        </p>
-      </div>
+      <p className="help">
+        TermiHub-Kalender und Arbeitsorganisationen werden unten bewusst
+        zugeordnet.
+      </p>
     </section>
   );
 }
@@ -696,26 +696,11 @@ function ContextEditor({
             ))}
           </select>
         </label>
-        <label>
-          TermiHub-Instanzreferenz (optional)
-          <input
-            maxLength={200}
-            value={data.termihubInstanceRef ?? ""}
-            onChange={(e) =>
-              field({ termihubInstanceRef: e.target.value || null })
-            }
-          />
-        </label>
-        <label>
-          TermiHub-Arbeitgeber-ID (optional)
-          <input
-            maxLength={120}
-            value={data.termihubEmployerId ?? ""}
-            onChange={(e) =>
-              field({ termihubEmployerId: e.target.value || null })
-            }
-          />
-        </label>
+        <p className="help">
+          TermiHub-Referenzen werden im Kalenderbereich anhand verifizierter IDs
+          zugeordnet.
+        </p>
+
         {context?.kind !== "private" && (
           <label className="check">
             <input

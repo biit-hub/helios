@@ -37,12 +37,24 @@ export async function GET() {
     await database.pool.query(
       "SELECT status,operation_id,draft_id FROM review_feedback LIMIT 1",
     );
+    await database.pool.query(
+      "SELECT base_url,sync_request,sync_revision FROM integrations LIMIT 1",
+    );
+    await database.pool.query(
+      "SELECT mapping_basis,source_hash,fresh_until FROM calendar_snapshots LIMIT 1",
+    );
+    await database.pool.query(
+      "SELECT credential_version FROM termihub_calendar_mappings LIMIT 1",
+    );
+    await database.pool.query(
+      "SELECT no_work_confirmed FROM calendar_day_decisions LIMIT 1",
+    );
     const r = await database.pool.query(
       "SELECT 1 FROM worker_heartbeats WHERE seen_at > now() - interval '35 seconds' LIMIT 1",
     );
     if (!r.rowCount) throw new Error("Worker unavailable");
     return Response.json(
-      { status: "ok", service: "web", stage: "E8" },
+      { status: "ok", service: "web", stage: "E9" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {

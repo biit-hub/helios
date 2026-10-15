@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { CalendarContextPanel } from "./calendar-context";
 import { ConfirmedAgenda } from "./agenda";
 import { agendaEntries } from "@helios/contracts";
 import type { PlanningView, PlanEntry, ContextView } from "@helios/contracts";
@@ -156,6 +157,14 @@ export function PlanningPanel({
               />
             </label>
           </div>
+          <CalendarContextPanel contextId={context.id} day={data.day} />
+          {data.calendarChanged && (
+            <p role="status">
+              Der Kalenderstand hat sich seit dieser Vorschau geändert.
+              Bestehende Auswahl und bestätigte Pläne bleiben erhalten; eine
+              neue Vorschau entsteht nur auf deinen Auftrag.
+            </p>
+          )}
           <p className="help">
             {plan ? states[plan.status] : "Noch kein Tagesplan"} ·{" "}
             {context.name}

@@ -8,6 +8,7 @@ import {
   loadWorkConfig,
   createPlanExecutor,
   createAiWorker,
+  createTermiHubWorker,
   log,
 } from "@helios/backend";
 const config = loadWorkConfig();
@@ -20,6 +21,11 @@ const boss = createQueue(config.DATABASE_URL);
 const id = randomUUID();
 const executor = createPlanExecutor(database, config);
 const ai = createAiWorker(database, config, boss);
+const calendar = createTermiHubWorker(database, config, boss);
+let calendarTimer: ReturnType<typeof setInterval> | undefined;
+let calendarBusy = false;
+let cleanupBusy = false;
+let cleanupTimer: ReturnType<typeof setInterval> | undefined;
 let aiTimer: ReturnType<typeof setInterval> | undefined;
 let scanTimer: ReturnType<typeof setInterval> | undefined;
 let aiBusy = false;
@@ -52,6 +58,8 @@ async function shutdown(code = 0) {
   clearInterval(timer);
   clearInterval(operationsTimer);
   clearInterval(aiTimer);
+  clearInterval(calendarTimer);
+  clearInterval(cleanupTimer);
   clearInterval(scanTimer);
   ai.stop();
   await boss.stop({ graceful: true, timeout: 10000 });
@@ -62,6 +70,27 @@ try {
   await prepareQueue(boss);
   await registerSmokeHandler(boss, database);
   await ai.register();
+  await calendar.register();
+  calendarTimer = setInterval(() => {
+    if (calendarBusy) return;
+    calendarBusy = true;
+    void calendar
+      .dispatch()
+      .catch(() => log("error", "calendar_dispatch_failed"))
+      .finally(() => {
+        calendarBusy = false;
+      });
+  }, 3000);
+  cleanupTimer = setInterval(() => {
+    if (cleanupBusy) return;
+    cleanupBusy = true;
+    void calendar
+      .cleanup()
+      .catch(() => log("error", "calendar_cleanup_failed"))
+      .finally(() => {
+        cleanupBusy = false;
+      });
+  }, 60000);
   aiTimer = setInterval(() => {
     if (aiBusy) return;
     aiBusy = true;
