@@ -547,3 +547,57 @@ it("does not move private fun tasks or their children into an employer project",
   expect(f.control.calls).toHaveLength(0);
   expect(f.state.tasks[0]!.project_id).toBe(c.projectId);
 });
+it.each(["create", "change", "remove"])(
+  "supports synthetic successful deadline %s",
+  async (mode) => {
+    const c = await prepare();
+    if (mode === "remove") f.state.tasks[0]!.deadline = { date: "2026-10-22" };
+    const op =
+      mode === "create"
+        ? ((await tasks().handle("submit", headers(), {
+            key: crypto.randomUUID(),
+            action: "create",
+            contextId: c.id,
+            projectId: c.projectId,
+            fields: {
+              content: "Synthetic deadline fixture",
+              deadline: "2026-10-23",
+            },
+          })) as { operationId: string })
+        : await change(c, "update", {
+            fields: { deadline: mode === "remove" ? null : "2026-10-23" },
+          });
+    await executor().runNext();
+    expect((await result(op.operationId)).status).toBe("succeeded");
+    expect(f.state.tasks[mode === "create" ? 1 : 0]!.deadline).toEqual(
+      mode === "remove" ? null : { date: "2026-10-23" },
+    );
+  },
+);
+it.each(["create", "change", "remove"])(
+  "keeps synthetic denied deadline %s explicit without native changes",
+  async (mode) => {
+    const c = await prepare();
+    f.state.tasks[0]!.deadline = { date: "2026-10-22" };
+    f.control.fail = "403";
+    const op =
+      mode === "create"
+        ? ((await tasks().handle("submit", headers(), {
+            key: crypto.randomUUID(),
+            action: "create",
+            contextId: c.id,
+            projectId: c.projectId,
+            fields: {
+              content: "Synthetic denied deadline",
+              deadline: "2026-10-23",
+            },
+          })) as { operationId: string })
+        : await change(c, "update", {
+            fields: { deadline: mode === "remove" ? null : "2026-10-23" },
+          });
+    await executor().runNext();
+    expect((await result(op.operationId)).status).not.toBe("succeeded");
+    expect(f.state.tasks).toHaveLength(1);
+    expect(f.state.tasks[0]!.deadline).toEqual({ date: "2026-10-22" });
+  },
+);

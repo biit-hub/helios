@@ -53,7 +53,9 @@ export async function taskScope(
   const [i] = await db
     .select()
     .from(integrations)
-    .where(eq(integrations.userId, userId));
+    .where(
+      and(eq(integrations.userId, userId), eq(integrations.type, "todoist")),
+    );
   if (!i?.enabled || !i.encryptedToken)
     throw new WorkFault("CONTEXT_INCOMPLETE", 409);
   const [c] = contextId

@@ -93,7 +93,7 @@ export function taskFixture() {
         priority: Number(body?.priority ?? 1),
         labels: (body?.labels ?? []) as string[],
         due: null,
-        deadline: null,
+        deadline: body?.deadline_date ? { date: String(body.deadline_date) } : null,
         duration: null,
         checked: false,
         is_deleted: false,

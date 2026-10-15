@@ -18,3 +18,5 @@ export * from "./planning/schema";
 export * from "./ai/schema";
 
 export * from "./routine/schema";
+
+export * from "./termihub/schema";

@@ -1,3 +1,4 @@
+import type { CalendarPlanBasis } from "@helios/contracts";
 import {
   pgTable,
   uuid,
@@ -31,6 +32,7 @@ export const dailyPlans = pgTable(
     revision: integer("revision").notNull(),
     status: text("status").$type<PlanState>().notNull(),
     entries: jsonb("entries").$type<PlanEntry[]>().notNull(),
+    calendarBasis: jsonb("calendar_basis").$type<CalendarPlanBasis>(),
     agenda: jsonb("agenda").$type<AgendaState>(),
     focusTaskId: text("focus_task_id"),
     projectId: text("project_id").notNull(),

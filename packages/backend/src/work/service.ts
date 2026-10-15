@@ -1,3 +1,4 @@
+import { TermiHubFault } from "../termihub/transport";
 import { runtimeProblems } from "./runtime-problems";
 import { readWaiting } from "../tasks/waiting";
 import { randomUUID, createHash } from "node:crypto";
@@ -51,7 +52,12 @@ async function ensure(db: Db, userId: string) {
   const [i] = await db
     .select()
     .from(s.integrations)
-    .where(eq(s.integrations.userId, userId));
+    .where(
+      and(
+        eq(s.integrations.userId, userId),
+        eq(s.integrations.type, "todoist"),
+      ),
+    );
   if (!i) throw new Error("Missing integration");
   return i;
 }
@@ -62,6 +68,28 @@ async function owned(db: Db, userId: string, id: string) {
     .where(and(eq(s.contexts.id, id), eq(s.contexts.userId, userId)));
   if (!c) throw new WorkFault("CONTEXT_NOT_FOUND", 404);
   return c;
+}
+async function checkTermihubReference(
+  db: Db,
+  userId: string,
+  input: ContextInput,
+  c: Context | null,
+) {
+  if (
+    input.termihubEmployerId === (c?.termihubEmployerId ?? null) &&
+    input.termihubInstanceRef === (c?.termihubInstanceRef ?? null)
+  )
+    return;
+  const [termihub] = await db
+    .select({ id: s.integrations.id })
+    .from(s.integrations)
+    .where(
+      and(
+        eq(s.integrations.userId, userId),
+        eq(s.integrations.type, "termihub"),
+      ),
+    );
+  if (termihub) throw new WorkFault("TERMIHUB_MAPPING_REQUIRED", 409);
 }
 async function problem(
   db: Db,
@@ -248,7 +276,9 @@ export function createWorkService(
   async function saveContext(h: Headers, input: ContextInput) {
     const initial = await authorized(h, true, false, async (db, userId) => {
       const i = await ensure(db, userId);
-      return { i, c: input.id ? await owned(db, userId, input.id) : null };
+      const c = input.id ? await owned(db, userId, input.id) : null;
+      await checkTermihubReference(db, userId, input, c);
+      return { i, c };
     });
     if (initial.c && initial.c.revision !== input.revision) throw conflict();
     if (!initial.c && input.revision !== 0) throw conflict();
@@ -281,6 +311,7 @@ export function createWorkService(
         throw conflict();
       const old = input.id ? await owned(db, userId, input.id) : null;
       if (old && old.revision !== input.revision) throw conflict();
+      await checkTermihubReference(db, userId, input, old);
       if (old?.kind === "private" && !input.active)
         throw new WorkFault("PRIVATE_REQUIRED");
       if (input.projectId && remap) {
@@ -924,6 +955,29 @@ const workErrorMessages: Record<string, string> = {
   PROJECT_ALREADY_ASSIGNED:
     "Dieses Projekt ist bereits einem aktiven Kontext zugeordnet.",
   RETRY_LATER: "Bitte die Abrufpause abwarten.",
+  TERMIHUB_AUTH: "TermiHub hat den Token abgewiesen. Gültigkeit und Ablauf prüfen.",
+  TERMIHUB_PERMISSION: "TermiHub erlaubt benötigte Lesezugriffe nicht. API-Scopes und Zugriff prüfen.",
+  TERMIHUB_UNREACHABLE: "TermiHub ist nicht erreichbar. Die manuelle Planung bleibt verfügbar.",
+  TERMIHUB_TIMEOUT: "TermiHub hat nicht rechtzeitig geantwortet.",
+  TERMIHUB_RATE_LIMIT: "TermiHub begrenzt die Abrufe. Den angegebenen Retryzeitpunkt abwarten.",
+  TERMIHUB_CONTRACT: "TermiHub liefert einen unerwarteten Datenvertrag. Es wird kein verlässliches Zeitbudget behauptet.",
+  TERMIHUB_RESPONSE: "TermiHub hat den Abruf abgewiesen oder einen Serverfehler geliefert.",
+  TERMIHUB_TOO_LARGE: "Die TermiHub-Antwort überschreitet die erlaubte Grösse. Der Snapshot bleibt unbestätigt.",
+  TERMIHUB_REDIRECT: "TermiHub leitet den Abruf weiter. Die Zugangsdaten werden nicht weitergereicht.",
+  TERMIHUB_SCOPE: "TermiHub lieferte Daten ausserhalb der angeforderten Kalender. Sie werden nicht übernommen.",
+  TERMIHUB_NOT_CONNECTED: "Zuerst die TermiHub-Verbindung sicher speichern und aktivieren.",
+  TERMIHUB_URL_INVALID: "Eine HTTPS-Basisadresse ohne Zugangsdaten, Pfad oder Query eingeben.",
+  TERMIHUB_URL_BLOCKED: "Diese TermiHub-Adresse ist nicht freigegeben. HTTPS und die serverseitige Freigabe privater Instanzen prüfen.",
+  TERMIHUB_MAPPING_REQUIRED: "TermiHub-Zuordnungen in der eigenen Verbindungseinstellung anhand bestätigter IDs bearbeiten.",
+  TERMIHUB_ORGANIZATION_UNVERIFIED: "Diese Organisations-ID ist mit der aktuellen Verbindung noch nicht nachgewiesen. Einen Tag mit passendem Arbeitseinsatz laden.",
+  TERMIHUB_CALENDAR_UNVERIFIED: "Diesen Kalender zuerst mit der aktuellen Verbindung lesen; bestehende Zuordnungen bleiben erhalten.",
+  TERMIHUB_CONTEXT_REVISION_REQUIRED: "Den Zielkontext frisch laden und die Zuordnung erneut prüfen.",
+  TERMIHUB_BUSY: "Ein TermiHub-Abruf läuft bereits. Die manuelle Planung bleibt verfügbar.",
+  TERMIHUB_COOLDOWN: "Bitte die angezeigte TermiHub-Abrufpause abwarten.",
+  TERMIHUB_DAY_CHANGED: "Der lokale Tag hat gewechselt. Die heutige Orientierung neu laden.",
+  TERMIHUB_DAY_INVALID: "Ein gültiges Datum im unterstützten Abfragezeitraum wählen.",
+  TERMIHUB_WORK_EXISTS: "TermiHub liefert Arbeitseinsätze für diesen Kontext. Die Quelle prüfen; manuelles Planen bleibt möglich.",
+  TERMIHUB_REQUEST_INVALID: "Der Aktualisierungsauftrag ist ungültig. Verbindungseinstellung prüfen.",
   KEY_UNAVAILABLE:
     "Der Integrationsschlüssel ist nicht verfügbar. Lokale Konfiguration prüfen.",
 };
@@ -950,8 +1004,8 @@ export function publicWorkError(e: unknown) {
   }
   if (e instanceof z.ZodError)
     return errorResponse(400, "INVALID_REQUEST", "Bitte die Eingaben prüfen.");
-  if (e instanceof WorkFault)
-    return errorResponse(e.status, e.code, workErrorMessages[e.code]);
+  if (e instanceof WorkFault || e instanceof TermiHubFault)
+    return errorResponse(e instanceof TermiHubFault && [401, 403].includes(e.status) ? 409 : e.status, e.code, workErrorMessages[e.code]);
   return errorResponse(
     503,
     "SERVICE_UNAVAILABLE",

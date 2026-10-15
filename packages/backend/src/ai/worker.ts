@@ -100,7 +100,12 @@ export function createAiWorker(
     const scope = await database.db
       .select()
       .from(integrations)
-      .where(eq(integrations.userId, d.userId));
+      .where(
+        and(
+          eq(integrations.userId, d.userId),
+          eq(integrations.type, "todoist"),
+        ),
+      );
     const i = scope[0];
     if (!i) return;
     const key = i.id + ":" + d.contextId + ":ai_failed";

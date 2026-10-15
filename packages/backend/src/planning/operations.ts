@@ -291,7 +291,12 @@ export function createPlanExecutor(
     const [i] = await db
       .select()
       .from(integrations)
-      .where(eq(integrations.userId, op.userId));
+      .where(
+        and(
+          eq(integrations.userId, op.userId),
+          eq(integrations.type, "todoist"),
+        ),
+      );
     if (!i) return;
     const key = "plan-operation:" + op.id;
     if (success) {
@@ -364,7 +369,12 @@ export function createPlanExecutor(
             state: "rate_limit",
             nextAllowedAt: new Date(Date.now() + error.retrySeconds * 1000),
           })
-          .where(eq(integrations.userId, op.userId));
+          .where(
+            and(
+              eq(integrations.userId, op.userId),
+              eq(integrations.type, "todoist"),
+            ),
+          );
       await problem(db, op, p, success);
       if (success) await store.observe(db, next, "plan_confirmed");
     });

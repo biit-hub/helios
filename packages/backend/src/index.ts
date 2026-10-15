@@ -27,3 +27,6 @@ export { createRoutineService } from "./routine/service";
 export * from "./routine/schema";
 
 export {createEpicService} from "./epics/service";
+
+export { createTermiHubService } from "./termihub/service";
+export { createTermiHubWorker } from "./termihub/worker";

@@ -20,6 +20,9 @@ import { taskProjections, integrations } from "../work/schema";
 import { dailyPlans, planOperations, planSteps } from "./schema";
 import { candidates, localDay } from "./selection";
 import * as store from "./store";
+import { readCalendarDay } from "../termihub/store";
+import { planCalendarBasis } from "../termihub/policy";
+import { calendarCandidates } from "../termihub/selection";
 import type { WorkConfig } from "../work/config";
 export function planningTimezone(env: NodeJS.ProcessEnv = process.env) {
   const tz = env.PLAN_TIMEZONE ?? "Europe/Zurich";
@@ -97,8 +100,26 @@ export function createPlanningService(
         throw new WorkFault("INVALID_REQUEST");
       const c = await store.scope(db, userId, contextId);
       const p = await store.planFor(db, contextId, day);
+      const calendar = await readCalendarDay(db, userId, c, day, timezone);
+      const calendarInfo =
+        calendar.state === "not_connected"
+          ? {}
+          : {
+              calendar,
+              calendarChanged:
+                !!p?.calendarBasis &&
+                (p.calendarBasis.basis !== calendar.basis ||
+                  p.calendarBasis.state !== calendar.state),
+            };
       if (!p)
-        return { day, timezone, plan: null, operation: null, history: [] };
+        return {
+          day,
+          timezone,
+          plan: null,
+          operation: null,
+          history: [],
+          ...calendarInfo,
+        };
       const rows = await db
         .select()
         .from(taskProjections)
@@ -112,7 +133,12 @@ export function createPlanningService(
       const [integration] = await db
         .select()
         .from(integrations)
-        .where(eq(integrations.userId, userId));
+        .where(
+          and(
+            eq(integrations.userId, userId),
+            eq(integrations.type, "todoist"),
+          ),
+        );
       const matchingScope =
         c.active &&
         integration?.enabled &&
@@ -164,6 +190,7 @@ export function createPlanningService(
             currentAvailability[entry.taskId] = available;
         }
       return {
+        ...calendarInfo,
         instanceAvailability: currentAvailability
           ? instanceAvailability
           : undefined,
@@ -224,16 +251,22 @@ export function createPlanningService(
             eq(taskProjections.projectId, c.projectId!),
           ),
         );
-      const entries = candidates(
-        rows.map((r) => ({
-          data: r.data,
-          state: r.state,
-          sectionName: r.sectionName,
-          retrievedAt: r.retrievedAt.toISOString(),
-        })),
-        c.projectId!,
+      const calendar = await readCalendarDay(db, userId, c, data.day, timezone);
+      const entries = calendarCandidates(
+        candidates(
+          rows.map((r) => ({
+            data: r.data,
+            state: r.state,
+            sectionName: r.sectionName,
+            retrievedAt: r.retrievedAt.toISOString(),
+          })),
+          c.projectId!,
+          data.day,
+          c.kind,
+          rows.length,
+        ),
+        calendar,
         data.day,
-        c.kind,
       );
       for (const entry of entries)
         if (
@@ -255,6 +288,10 @@ export function createPlanningService(
         credentialVersion: i.credentialVersion,
         sourceAt: c.lastSyncAt,
         confirmedAt: null,
+        calendarBasis:
+          calendar.state === "not_connected"
+            ? null
+            : planCalendarBasis(calendar),
       };
       if (old) return store.view(await store.change(db, old, values));
       const [p] = await db

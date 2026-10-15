@@ -18,11 +18,9 @@ it("upgrades an existing E1.2 account additively and provisions its private cont
   const name = "helios_upgrade_" + process.pid + "_test";
   if (!/^helios_upgrade_[0-9]+_test$/.test(name))
     throw new Error("Unsafe test database");
-  let created = false;
   let db: ReturnType<typeof createDatabase> | undefined;
   try {
     await admin.pool.query('CREATE DATABASE "' + name + '"');
-    created = true;
     const url = new URL(config.DATABASE_URL);
     url.pathname = "/" + name;
     db = createDatabase(url.toString());
@@ -69,7 +67,7 @@ it("upgrades an existing E1.2 account additively and provisions its private cont
     ).toHaveLength(0);
   } finally {
     await db?.close();
-    if (created) await admin.pool.query('DROP DATABASE "' + name + '"');
+    // E9 resource constraint: preserve isolated databases; never drop databases or volumes.
     await admin.close();
   }
 });

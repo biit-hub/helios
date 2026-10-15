@@ -1,0 +1,1 @@
+ALTER TABLE "integrations" ADD COLUMN "sync_request" jsonb;
