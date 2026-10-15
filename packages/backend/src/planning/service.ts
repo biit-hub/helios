@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { createHash, randomUUID } from "node:crypto";
 import {
   planScope,
@@ -7,7 +7,13 @@ import {
   focusInput,
   resumeInput,
 } from "@helios/contracts";
-import type { PlanningView } from "@helios/contracts";
+import {
+  agendaState,
+  agendaEntries,
+  entryKey,
+  type PlanningView,
+} from "@helios/contracts";
+import { agendaActions, createAgendaService } from "./agenda-service";
 import { createIdentityService } from "../identity/service";
 import { WorkFault } from "../work/service";
 import { taskProjections, integrations } from "../work/schema";
@@ -68,6 +74,7 @@ export function createPlanningService(
   timezone = planningTimezone(),
 ) {
   const identity = createIdentityService(database, config);
+  const agendaService = createAgendaService(database, config, timezone);
   const currentDay = () => localDay(new Date(), timezone);
   function today(day: string) {
     if (day !== currentDay()) throw new WorkFault("PLAN_DAY_CHANGED", 409);
@@ -108,6 +115,7 @@ export function createPlanningService(
         .where(eq(integrations.userId, userId));
       const matchingScope =
         c.active &&
+        integration?.enabled &&
         c.projectId === p.projectId &&
         integration?.credentialVersion === p.credentialVersion;
       const currentAvailability =
@@ -126,7 +134,47 @@ export function createPlanningService(
             .from(planSteps)
             .where(eq(planSteps.operationId, op.id))
         : [];
+      const pendingIds = agendaState(p).pending.map((item) => item.operationId);
+      const agendaOps = pendingIds.length
+        ? await db
+            .select()
+            .from(planOperations)
+            .where(
+              and(
+                eq(planOperations.userId, userId),
+                inArray(planOperations.id, pendingIds),
+              ),
+            )
+        : [];
+      const instanceAvailability: Record<string, boolean> = {};
+      const active = new Set([
+        ...agendaState(p).main,
+        ...agendaState(p).reserve,
+      ]);
+      const baseAvailability = { ...currentAvailability };
+      if (currentAvailability)
+        for (const entry of [...p.entries, ...agendaState(p).extra]) {
+          const current = rows.find((row) => row.taskId === entry.taskId);
+          const available =
+            baseAvailability[entry.taskId] === true &&
+            !!current &&
+            entryKey({ ...entry, source: current.data }) === entryKey(entry);
+          instanceAvailability[entryKey(entry)] = available;
+          if (active.has(entryKey(entry)))
+            currentAvailability[entry.taskId] = available;
+        }
       return {
+        instanceAvailability: currentAvailability
+          ? instanceAvailability
+          : undefined,
+        editable: p.day === currentDay() && !!matchingScope,
+        agendaOperations: agendaOps.map((op) => ({
+          id: op.id,
+          status: op.status,
+          code: op.code,
+          retryAt: op.retryAt?.toISOString() ?? null,
+          steps: [],
+        })),
         day,
         timezone: p.timezone,
         plan: store.view(p),
@@ -312,7 +360,7 @@ export function createPlanningService(
         p.status !== "confirmed" ||
         p.projectId !== c.projectId ||
         p.credentialVersion !== i.credentialVersion ||
-        !p.entries.some((e) => e.taskId === data.taskId)
+        !agendaEntries(p, "main").some((e) => e.taskId === data.taskId)
       )
         throw store.conflict();
       const [task] = await db
@@ -401,6 +449,8 @@ export function createPlanningService(
     snapshot,
     async handle(action: string, h: Headers, input: unknown) {
       await identity.withActive(h, { mutation: true }, async () => {});
+      if (agendaActions.has(action))
+        return agendaService.handle(action, h, input);
       const handler = handlers.get(action);
       if (!handler) throw new WorkFault("NOT_FOUND", 404);
       return handler(h, input);

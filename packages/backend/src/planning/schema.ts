@@ -12,7 +12,12 @@ import {
 import { sql } from "drizzle-orm";
 import { contexts } from "../work/schema";
 import { user } from "../identity/schema";
-import type { PlanEntry, PlanState, PlanView } from "@helios/contracts";
+import type {
+  AgendaState,
+  PlanEntry,
+  PlanState,
+  PlanView,
+} from "@helios/contracts";
 const time = (name: string) => timestamp(name, { withTimezone: true });
 export const dailyPlans = pgTable(
   "daily_plans",
@@ -26,6 +31,7 @@ export const dailyPlans = pgTable(
     revision: integer("revision").notNull(),
     status: text("status").$type<PlanState>().notNull(),
     entries: jsonb("entries").$type<PlanEntry[]>().notNull(),
+    agenda: jsonb("agenda").$type<AgendaState>(),
     focusTaskId: text("focus_task_id"),
     projectId: text("project_id").notNull(),
     contextRevision: integer("context_revision").notNull(),
@@ -105,16 +111,23 @@ export const planSteps = pgTable(
   },
   (t) => [uniqueIndex("operation_task_step").on(t.operationId, t.taskId)],
 );
-export const observations = pgTable("planning_observations", {
-  id: uuid("id").primaryKey(),
-  contextId: uuid("context_id")
-    .notNull()
-    .references(() => contexts.id),
-  planId: uuid("plan_id")
-    .notNull()
-    .references(() => dailyPlans.id),
-  revision: integer("revision").notNull(),
-  event: text("event").notNull(),
-  taskId: text("task_id"),
-  at: time("at").notNull().defaultNow(),
-});
+export const observations = pgTable(
+  "planning_observations",
+  {
+    id: uuid("id").primaryKey(),
+    contextId: uuid("context_id")
+      .notNull()
+      .references(() => contexts.id),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => dailyPlans.id),
+    revision: integer("revision").notNull(),
+    event: text("event").notNull(),
+    taskId: text("task_id"),
+    key: uuid("idempotency_key"),
+    requestHash: text("request_hash"),
+    detail: jsonb("detail").$type<Record<string, unknown>>(),
+    at: time("at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("observation_plan_key").on(t.planId, t.key)],
+);
