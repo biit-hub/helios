@@ -1,5 +1,6 @@
 import { test, expect, devices } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { generateSync } from "otplib";
 const password = "Synthetic passphrase 72!";
 let previousCode = "";
@@ -25,6 +26,11 @@ test("complete bootstrap, MFA, simultaneous sessions, step-up, recovery and pass
   test.skip(
     info.project.name !== "desktop",
     "Single-user lifecycle executes once; mobile guards run in both projects.",
+  );
+  execFileSync(
+    process.execPath,
+    ["node_modules/tsx/dist/cli.mjs", "tests/e2e/fixture-bootstrap.ts"],
+    { stdio: "pipe" },
   );
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
