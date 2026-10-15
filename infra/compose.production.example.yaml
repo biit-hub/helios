@@ -12,3 +12,6 @@ services:
 
 # OLLAMA_BASE_URL / OLLAMA_MODEL / OLLAMA_TIMEOUT_SECONDS are inherited from compose.yaml.
 # Set the existing private LAN endpoint in the separate production environment.
+
+# TERMIHUB_TIMEOUT_SECONDS / TERMIHUB_MAX_RESPONSE_BYTES / TERMIHUB_PRIVATE_ORIGINS
+# are inherited from compose.yaml. Credentials are entered through protected settings.

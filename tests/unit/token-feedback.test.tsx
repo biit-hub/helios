@@ -1,3 +1,4 @@
+vi.mock("../../apps/web/components/termihub-settings", () => ({ TermiHubConnection: () => null }));
 import { afterEach, expect, it, vi } from "vitest";
 import {
   fireEvent,

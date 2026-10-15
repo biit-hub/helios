@@ -782,7 +782,12 @@ export function createTaskExecutor(
             state: "rate_limit",
             nextAllowedAt: new Date(Date.now() + retrySeconds! * 1000),
           })
-          .where(eq(integrations.userId, op.userId));
+          .where(
+            and(
+              eq(integrations.userId, op.userId),
+              eq(integrations.type, "todoist"),
+            ),
+          );
       const key = "task-operation:" + op.id;
       if (!error)
         await db
@@ -797,7 +802,12 @@ export function createTaskExecutor(
         const [i] = await db
           .select()
           .from(integrations)
-          .where(eq(integrations.userId, op.userId));
+          .where(
+            and(
+              eq(integrations.userId, op.userId),
+              eq(integrations.type, "todoist"),
+            ),
+          );
         if (i)
           await db
             .insert(integrationProblems)

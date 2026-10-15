@@ -37,3 +37,8 @@ Todoist und PostgreSQL haben keinen gemeinsamen Commit und keinen hier nachgewie
 Fokus unter /, Tagesplan unter /plan, E2-Lesesicht unter /tasks. Navigation behält den Kontext über dessen UUID. Planquellen sind als historische Quellen gekennzeichnet. Auswahl/Abwahl, Bestätigungsabsicht, erfolgreiche Bestätigung, manuelle Fokusänderung und übergangene Empfehlung werden mit Kontext, Revision und Zeitpunkt gespeichert. Keine wirksame Lernhypothese oder dauerhafte Abwertung.
 
 Mobile Morgenroutine, E4-Aufgabenverwaltung, E5-Reserve/Reorder, Nachtplanung, KI und E8-Epicabschluss bleiben späteren Etappen vorbehalten.
+
+
+## E9-Kalendergrundlage
+
+[Kalenderorientierung](termihub-calendar.md) fliesst nur bei ausdrücklicher Vorschauerstellung ein. Bekannte positive native Dauern und vorsichtige untere Budgetgrenze, unbekannt bleibt unbekannt; wenige passende Aufgaben statt Pflichtquote. Veraltete/unvollständige Daten liefern kein verlässliches Budget. calendar_basis bleibt ab Bestätigung unveränderlich und in der Planhistorie erhalten; neue Kalenderfassungen erzeugen nur einen Hinweis.

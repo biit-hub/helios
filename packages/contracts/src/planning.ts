@@ -1,3 +1,4 @@
+import type { CalendarPlanBasis, CalendarOrientation } from "./calendar";
 import { z } from "zod";
 import type { TodoistTask } from "./work";
 export const planScope = z.strictObject({
@@ -24,6 +25,7 @@ export type PlanEntry = {
 };
 export type PlanState = "draft" | "confirming" | "partial" | "confirmed";
 export type PlanView = {
+  calendarBasis?: CalendarPlanBasis;
   id: string;
   contextId: string;
   day: string;
@@ -50,6 +52,8 @@ export type OperationView = {
   steps: StepView[];
 };
 export type PlanningView = {
+  calendar?: CalendarOrientation;
+  calendarChanged?: boolean;
   editable?: boolean;
   agendaOperations?: OperationView[];
   instanceAvailability?: Record<string, boolean>;

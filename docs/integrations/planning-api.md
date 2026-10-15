@@ -31,3 +31,8 @@ GET liefert zusätzlich `agenda`, `editable`, aktuelle Instanzverfügbarkeit und
 Instanzschlüssel mit `entryKey` aus dem gemeinsamen Vertrag berechnen; Todoist-ID allein genügt bei Wiederholungen nicht. Derselbe Key mit geändertem Body ist 409; eine identische Wiederholung verursacht keine zweite Aktion. Veraltete Revision ist 409 und bietet den erneut lesbaren Stand statt stillen Überschreibens. `PLAN_INSTANCE_CHANGED` verlangt eine neue bewusste Prüfung, `PLAN_TASK_UNAVAILABLE` kennzeichnet fehlende Eignung. Nachweise werden nicht aus fehlenden Active-Tasks abgeleitet.
 
 Wiederaufnahme verknüpfter Writes bleibt POST /api/tasks/resume mit operationId und den E4-Frist-/Backoff-/Scopeprüfungen; kein neuer Close bei unbekannter Wirkung. Der bisherige E3-focus-Vertrag bleibt kompatibel; die E5-Oberfläche nutzt den zusätzlich idempotenten agenda-focus-Vertrag.
+
+
+## E9-Ergänzung
+
+PlanningView kann calendar und calendarChanged enthalten; PlanView optional calendarBasis. Nur die explizite propose-Aktion erstellt die aggregierte Basis. Bestehende bestätigte Pläne/Historien werden bei Refresh nicht mutiert. Ohne TermiHub bleibt der bisherige Antwortvertrag erhalten. Aktuelle lesende Orientierung separat über GET /api/calendar?contextId=…&day=…. [Details](termihub.md).

@@ -1,5 +1,18 @@
 # Changelog
 
+## E9 – TermiHub-Integration (technisch geprüft)
+
+- Konfigurierbare verschlüsselte Verbindung, Step-up, verifizierte Organisations- und Kalenderzuordnungen, GET-only-Reader mit SSRF-/DNS-/Redirect-/TLS-Schutz.
+- Versionierte Arbeits-/Belegungsintervalle, DST und exklusive Ganztagsgrenzen, vorsichtige Verfügbarkeitsspannen, Reiseunion und manuelle Fallbackplanung.
+- 15 Minuten Frische, 30 Tage ausschliessliche Snapshotbereinigung; keine dauerhaften Termintitel/Beschreibungen/Teilnehmer und keine Kalenderdaten in KI.
+- Bestehender Worker, kontextbezogene Routineorientierung und ausdrückliche Planvorschläge ohne automatische Mutation bestätigter Pläne. Additive Migrationen 0011–0014.
+- Ergänzte synthetische Deadline-Erfolgs-/Ablehnungstests für Erstellen/Ändern/Entfernen. Offene Live-Nachweise und manuelle E3–E9-Abnahme im E9-Prüfbericht.
+
+## Dokumentationspräzisierung – Todoist-Deadlines
+
+- Free-Testkonto und kostenpflichtiges Produktivkonto als mitgeteilte Testbedingungen eingeordnet; HTTP 403 bleibt ohne sichere Tarifdiagnose. Deadline-Erstellung/-Änderung/-Entfernung bleiben verbindlich.
+- Synthetische Erfolgs-/Ablehnungstests, Ausschluss produktiver Testzugriffe und offene berechtigungspflichtige Live-Abnahme ausdrücklich dokumentiert; keine Architektur- oder Laufzeitänderung.
+
 ## E7 – Persistente Morgenroutine und Review
 
 - Servergespeicherte lokale Routinetage, Kontextwahl, Revisionen, Wiederaufnahme und übersprungene offene Schritte.

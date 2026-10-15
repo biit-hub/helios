@@ -36,3 +36,8 @@ E5: [Persistente Tagesordnung und zyklische Reserve](daily-order-reserve.md), ad
 E7: [Persistente Morgenroutine und bestätigte Reviewregel](morning-routine-review.md).
 
 E8: [Native Epics, SMART, Markdown und bestätigter F1-Abschlussentscheid](epics-smart-goals.md).
+
+
+## E9
+
+[TermiHub-Kalenderorientierung und bestätigter Snapshot-/Verfügbarkeitsentscheid](termihub-calendar.md). Bestehende Web-/Worker-/PostgreSQL-Architektur, keine neue Schreibpipeline.

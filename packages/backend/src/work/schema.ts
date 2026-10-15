@@ -1,3 +1,4 @@
+import type { TermiHubSyncRequest } from "../termihub/request";
 import {
   pgTable,
   uuid,
@@ -23,6 +24,11 @@ export const integrations = pgTable(
       .references(() => user.id),
     type: text("type").notNull().default("todoist"),
     encryptedToken: text("encrypted_token"),
+    baseUrl: text("base_url"),
+    syncRequest: jsonb("sync_request").$type<TermiHubSyncRequest>(),
+    syncRevision: integer("sync_revision").notNull().default(0),
+    syncClaimUntil: time("sync_claim_until"),
+    lastSyncAt: time("last_sync_at"),
     credentialVersion: uuid("credential_version").notNull(),
     enabled: boolean("enabled").notNull().default(false),
     revision: integer("revision").notNull().default(0),
@@ -34,7 +40,7 @@ export const integrations = pgTable(
   },
   (t) => [
     uniqueIndex("integration_user_type").on(t.userId, t.type),
-    check("integration_type", sql`${t.type} = 'todoist'`),
+    check("integration_type", sql`${t.type} IN ('todoist','termihub')`),
   ],
 );
 export const contexts = pgTable(

@@ -32,3 +32,8 @@ Name/Farbe bleiben lokale Konfiguration, Eingangs- und fremde Projektaufgaben we
 ## Schlüsselverlust / Restore
 
 INTEGRATION_KEY neben AUTH_SECRET getrennt geschützt sichern. Bei Verlust kann der alte Token nicht rekonstruiert werden. Nach bewusstem neuen Schlüssel Token mit Step-up neu hinterlegen; eine neue Credentialgeneration verhindert Vermischung alter Kontocaches. Eine automatische Schlüsselrotation oder stille Entschlüsselungsumgehung gibt es nicht. Restaurierte Jobs/Credentials niemals ungeprüft starten; RESTORE_MODE, lokale Auth-Recovery und anschliessend bewusste lesende Todoist-Prüfung vor Freigabe verwenden. Öffentlicher HTTPS-/NPM-Betrieb bleibt separat abzunehmen.
+
+
+## E9-Ergänzung
+
+[Bewusste TermiHub-Zuordnung](termihub-calendar.md): Organisations-ID statt Namensgleichheit; Kalender explizit kontextgebunden/gemeinsam/ausgeschlossen. Kein automatischer Kontextwechsel. Die frühere freie Referenzeingabe kann die verifizierten Quellenzuordnungen nicht umgehen. Tokenrotation erhält Referenzen sichtbar, verlangt aber eine erneute Verifikation.

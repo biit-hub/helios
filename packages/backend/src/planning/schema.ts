@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { contexts } from "../work/schema";
 import { user } from "../identity/schema";
 import type {
+  CalendarPlanBasis,
   AgendaState,
   PlanEntry,
   PlanState,
@@ -31,6 +32,7 @@ export const dailyPlans = pgTable(
     revision: integer("revision").notNull(),
     status: text("status").$type<PlanState>().notNull(),
     entries: jsonb("entries").$type<PlanEntry[]>().notNull(),
+    calendarBasis: jsonb("calendar_basis").$type<CalendarPlanBasis>(),
     agenda: jsonb("agenda").$type<AgendaState>(),
     focusTaskId: text("focus_task_id"),
     projectId: text("project_id").notNull(),

@@ -1,0 +1,2 @@
+ALTER TABLE "termihub_calendar_mappings" ADD COLUMN "credential_version" uuid;--> statement-breakpoint
+CREATE INDEX "calendar_snapshot_expiry" ON "calendar_snapshots" USING btree ("retrieved_at","id");

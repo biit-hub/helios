@@ -142,7 +142,12 @@ export function createRoutineService(
         const [integration] = await db
           .select()
           .from(integrations)
-          .where(eq(integrations.userId, user));
+          .where(
+            and(
+              eq(integrations.userId, user),
+              eq(integrations.type, "todoist"),
+            ),
+          );
         if (kind === "inbox") return { d, r: null, c: null, integration };
         if (!contextId) throw new WorkFault("INVALID_REQUEST", 400);
         const { r, c } = await ownedContext(db, d, contextId);
@@ -168,7 +173,12 @@ export function createRoutineService(
         const [integration] = await db
           .select()
           .from(integrations)
-          .where(eq(integrations.userId, user));
+          .where(
+            and(
+              eq(integrations.userId, user),
+              eq(integrations.type, "todoist"),
+            ),
+          );
         if (
           integration?.credentialVersion !==
             base.integration?.credentialVersion ||

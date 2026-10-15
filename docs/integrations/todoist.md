@@ -33,6 +33,25 @@ Kein Hintergrundpolling und keine neue Queue. Manuelle Refreshes nutzen dieselbe
 
 Offizielle Dokumentation und Quellverträge geprüft; synthetischer HTTP-Vertragsserver mit paginierten, offiziell strukturierten Antworten sowie echte PostgreSQL-/Browserabläufe getestet. Noch kein lesender Live-Vertragstest mit einem separaten Todoist-Testaccount ausgeführt: dafür lag kein freigegebener Testtoken vor. Keine Behauptung, dass ein produktiver Account abgeglichen wurde. Spätere Schreib-/Recurring-/Completed-/Webhooks-Verträge sind ausdrücklich nicht abgenommen. Siehe [E2-Prüfbericht](../development/e2-verification.md).
 
+## Deadline-Schreibfunktionen und Kontoberechtigungen
+
+Präzisierung des Auftraggebers vom 15. Oktober 2026: Das separate Todoist-Testkonto verwendet den Free-Plan; das produktive Konto besitzt einen kostenpflichtigen Plan mit Deadline-Unterstützung. Das ist die mitgeteilte Kontokonfiguration, keine automatische Tarifermittlung durch Helios.
+
+Deadline-Erstellung, -Änderung und -Entfernung bleiben verbindliche Helios-Funktionen. Deadline und geplantes Datum bleiben getrennt. Die in E4 beobachtete HTTP-403-Antwort beim Deadline-Schreiben ist sehr wahrscheinlich durch die fehlende Tarifberechtigung des Free-Testkontos erklärbar. Der HTTP-Status allein beweist diese Ursache jedoch nicht; andere fehlende Berechtigungen oder Zugriffsbeschränkungen bleiben möglich.
+
+Helios zeigt eine verständliche, neutrale Berechtigungsablehnung und erhält die Eingaben. Keine sichere Tarifdiagnose allein aus HTTP 403, kein behaupteter Schreiberfolg und kein automatischer Tarifwechsel oder Fallback auf das geplante Datum. Bestehende Nachlese-/Journalregeln bleiben verbindlich: Auch HTTP 200 genügt ohne passenden zurückgelesenen Feldwert nicht als Erfolgsnachweis.
+
+### Verbindliche Testhinweise
+
+- Automatisierte Tests verwenden ausschliesslich synthetische API-Fixtures und isolierte Testdatenbanken. Erfolgreiche Deadline-Erstellung, -Änderung und -Entfernung sowie abgewiesene Operationen werden unabhängig von den Berechtigungen des Live-Testkontos modelliert. Ein ausgelassenes Deadline-Feld bleibt unverändert; null entfernt die Deadline, ohne das geplante Datum zu verändern.
+- Berechtigungs-Fixtures liefern HTTP 403 und prüfen verständlichen Fehlerstatus, erhaltene Originaleingaben und ausbleibenden Erfolgsnachweis. HTTP 403 darf keine gesicherte Free-/Pro-Tarifklassifikation auslösen. Ignorierte Felder oder nicht passende Nachlesewerte dürfen ebenfalls keinen Erfolg vortäuschen.
+- Bewusst freigegebene Live-Schreibtests im separaten Free-Testkonto dürfen erwartungsgemäss an fehlender Tarifberechtigung scheitern. Konto-/Testbedingung und tatsächliche HTTP-Antwort getrennt dokumentieren; das ist kein erfolgreicher Deadline-Schreibnachweis.
+- Produktive Todoist-Zugangsdaten und produktive Aufgaben dürfen niemals für automatische Tests verwendet werden. Insbesondere gibt es keinen automatischen Ausweichpfad auf das bezahlte Produktivkonto.
+
+**Offene Integrationsprüfung:** Eine erfolgreiche Live-Abnahme der berechtigungspflichtigen Deadline-Erstellung, -Änderung und -Entfernung liegt weiterhin nicht vor. Synthetische Erfolgstests ersetzen sie nicht. Ein künftiger Live-Nachweis benötigt eine gesondert freigegebene isolierte Testumgebung mit den erforderlichen Berechtigungen; die Angabe zum Produktivkonto erteilt keine Testfreigabe. Keine Architekturänderung erforderlich.
+
+Vorhandene Fixture-Nachweise und der historische Live-Befund: [E4-Prüfbericht](../development/e4-verification.md#deadline-testhinweise-präzisierung-vom-15-oktober-2026). Bedienung bei Ablehnung: [Aufgaben-Runbook](../runbooks/tasks.md).
+
 ## E8 – F1-Vertrag
 
 Der isolierte Live-Nachweis bestätigt native Parent-Kaskade und das Wiederöffnen des Parents beim Öffnen eines Kindes. Der Auftraggeber hat deshalb ausschliesslich Trennen oder Abbrechen bestätigt. IDs/Kommentare/mehrstufige Teilbäume bleiben beim Trennen im selben Projekt erhalten; erst vollständiger Nachweis erlaubt Epic-Close. [Architekturentscheid](../architecture/epics-smart-goals.md), [Prüfbericht](../development/e8-verification.md).

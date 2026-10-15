@@ -390,6 +390,27 @@ export function createIdentityService(
         return fn(db, value.current.user.id, value.current.session.id);
       });
     },
+    // Internal configured read jobs may update derived local data while signed out.
+    // This grants no authority to execute native Todoist writes or renew sessions.
+    async withBackgroundUser<T>(
+      userId: string,
+      fn: (db: Db) => Promise<T>,
+    ): Promise<T> {
+      if (config.RESTORE_MODE) throw new AuthFault("RESTORE_BLOCKED", 503);
+      return transaction(database, config, async (db) => {
+        const [state] = await db
+          .select()
+          .from(s.identityState)
+          .where(eq(s.identityState.userId, userId));
+        const [user] = await db
+          .select()
+          .from(s.user)
+          .where(eq(s.user.id, userId));
+        if (state?.status !== "active" || !user?.twoFactorEnabled)
+          throw new AuthFault();
+        return fn(db);
+      });
+    },
     // Internal worker guard: session IDs come only from persisted, guarded user intent.
     // Background execution must never renew idle activity or manufacture cookies.
     async withOperationSession<T>(

@@ -44,7 +44,7 @@ Bisher behoben: frische Browser-Testdatenbank musste vor Workerstart migriert we
 
 Kein verteilter Commit/CAS zwischen Todoist und PostgreSQL. Änderungen zwischen letzter Quellenprüfung und externer Mutation können nur eingegrenzt und nachgeprüft werden. Unbekannte Create-/Comment-Ergebnisse ohne zurückgespeicherte externe ID bleiben ungeklärt; kein blindes Neuanlegen bei Wiederaufnahme. Das vollständige Journal bewahrt bestätigte Eingaben und nachgewiesene Schritte.
 
-Dieses Testkonto unterstützt Deadline und Dauer nicht wie ein vollständig berechtigtes Konto; diese Grenzen werden sichtbar statt Erfolg zu behaupten. Historische bestätigte Planquellen bleiben erhalten; aktuelle Projektionen sind keine zweite Aufgabenwahrheit. Die Aufgabenübersicht zeigt bekannte Projektionen, keinen behaupteten vollständigen Todoist-Abschlussarchivimport.
+Der beobachtete Deadline-Schreibversuch im separaten Testkonto wurde mit HTTP 403 abgewiesen; daraus allein lassen sich weder Tarif noch vollständige Feldberechtigungen sicher bestimmen. Die nachträgliche Kontoinformation und die weiterhin offene Live-Abnahme sind unten präzisiert. Historische bestätigte Planquellen bleiben erhalten; aktuelle Projektionen sind keine zweite Aufgabenwahrheit. Die Aufgabenübersicht zeigt bekannte Projektionen, keinen behaupteten vollständigen Todoist-Abschlussarchivimport.
 
 Der F1-Sonderabschluss eines Epics mit offenen Kindern bleibt E8 vorbehalten und wird in E4 nicht durch stillen nativen Kaskadenabschluss ersetzt. Inkonsistente fun-Einzeländerungen innerhalb bestehender Epics werden abgewiesen; keine automatische Labeländerung an Kindern. E5/E6, KI-Eingangsanalyse, Review, Reserve und Produktivbetrieb sind ausserhalb dieses Auftrags.
 
@@ -71,3 +71,13 @@ Eigene synthetische Compose-Umgebung: Migration 0006, drei gesunde Dienste, pg-b
 Die lokale Entwicklungsumgebung wurde nach frischer separater age-Sicherung von Datenbank und Konfiguration additiv auf E4 aktualisiert. Kein Produktivdeployment. Bestehendes Konto, Kontexte, Tagespläne und Historie wurden anhand von Anzahl und Hashes unverändert nachgewiesen; keine ausstehenden Operationen übernommen. Web, Worker und PostgreSQL gesund, Readiness E4, Worker-Smoke bestanden. Keine persönlichen Sicherungsdaten in Tests restauriert, keine echten Tagespläne durch den Agenten angelegt. Altprojekt unverändert.
 
 Spätere manuelle Abnahme: [Aufgaben bedienen und prüfen](../runbooks/tasks.md). Die manuelle E3-Abnahme bleibt ausdrücklich offen. E5 wird nicht begonnen.
+
+## Deadline-Testhinweise: Präzisierung vom 15. Oktober 2026
+
+Nach Angabe des Auftraggebers verwendet das separate Testkonto den Free-Plan; das Produktivkonto besitzt einen kostenpflichtigen Plan mit Deadline-Unterstützung. Fehlende Tarifberechtigung erklärt den E4-HTTP-403-Befund sehr wahrscheinlich, bleibt aber eine vom Status allein nicht bewiesene Ursache. Der historische Befund bleibt HTTP 403 ohne erfolgreichen Live-Schreibnachweis.
+
+Deadline-Erstellen, -Ändern und -Entfernen bleiben Pflichtfunktionen. Automatische Erfolgs- und Ablehnungstests sind synthetische API-Fixtures, keine Live-Tests gegen das Produktivkonto. Bereits vorhanden: Feldabbildung/Clearing und unveränderte ausgelassene Felder in tests/unit/tasks.test.ts sowie unabhängiges Leeren, Erhalt einer ausgelassenen Deadline und definitive HTTP-403-Ablehnung mit erhaltenen Originaleingaben/ohne Erfolgseffekte in tests/integration/tasks.test.ts. Diese Nachweise sind keine vollständige Live-Abnahme der Deadline-Schreiboperationen.
+
+Die verbindliche Testmatrix umfasst erfolgreiche Erstellung, Änderung und Entfernung, unveränderte ausgelassene Werte, getrenntes geplantes Datum, Berechtigungsablehnung und fehlenden Nachlesebeweis. Massgeblich sind die [zentralen Testregeln](../integrations/todoist.md#verbindliche-testhinweise). Neue Live-Proben mit dem Free-Testkonto dürfen erwartungsgemäss abgewiesen werden und werden genau so dokumentiert. Keine automatischen Tests mit produktiven Zugangsdaten oder Aufgaben; kein Ausweichen auf das bezahlte Produktivkonto.
+
+**Weiterhin offen:** erfolgreiche isolierte Live-Abnahme von Deadline-Erstellung, -Änderung und -Entfernung mit erforderlichen Berechtigungen. Die bestehende Anzeige TODOIST_PERMISSION nennt eine verweigerte Kontoänderung und erhaltene Eingaben, keine sicher erkannte Tarifursache. Diese Ergänzung ändert Dokumentation/Testvorgaben, keine Architektur oder Laufzeitlogik; sie behauptet keinen neuen Testlauf.

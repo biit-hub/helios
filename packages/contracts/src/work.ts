@@ -58,6 +58,15 @@ export const todoistTaskSchema = z.object({
 });
 export type TodoistTask = z.infer<typeof todoistTaskSchema>;
 export const problemMessages = {
+  termihub_auth: "TermiHub hat den Token abgewiesen; Gültigkeit und Ablauf in TermiHub prüfen.",
+  termihub_permission: "TermiHub erlaubt benötigte Lesezugriffe nicht. API-Scopes und Zugriff prüfen.",
+  termihub_network: "TermiHub ist nicht erreichbar; vorhandene Orientierung ist nicht verlässlich aktuell.",
+  termihub_timeout: "TermiHub hat nicht rechtzeitig geantwortet. Die manuelle Planung bleibt verfügbar.",
+  termihub_rate_limit: "TermiHub begrenzt die Abrufe; den angegebenen Retryzeitpunkt abwarten.",
+  termihub_contract: "TermiHub liefert einen unerwarteten oder widersprüchlichen Vertrag; kein verlässliches Zeitbudget.",
+  termihub_incomplete: "TermiHub-Daten sind unvollständig; daraus wird kein verlässlich freies Zeitbudget abgeleitet.",
+  termihub_key: "Die TermiHub-Zugangsdaten können mit dem konfigurierten Integrationsschlüssel nicht gelesen werden.",
+  termihub_configuration: "Die konfigurierte TermiHub-Adresse ist nicht zulässig. HTTPS und Betreiberfreigabe prüfen.",
   worker_unavailable:
     "Der zuletzt bekannte Worker meldet sich nicht mehr. Offene Operationen und Workerbetrieb prüfen.",
   auth_recovery:

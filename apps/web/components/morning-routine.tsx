@@ -1,4 +1,5 @@
 "use client";
+import { CalendarContextPanel } from "./calendar-context";
 import { useRoutineResource } from "./routine-resource";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -318,6 +319,7 @@ function RoutineContexts({
         Voraussetzung.
       </p>
       {error && <p role="alert">{error}</p>}
+      <CalendarContextPanel />
       <div className="routine-contexts">
         {snapshot.contexts.map((c) => (
           <label key={c.id} data-theme={c.theme} className="context-pill">

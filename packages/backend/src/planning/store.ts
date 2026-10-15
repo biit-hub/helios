@@ -18,6 +18,7 @@ export function view(p: Plan): PlanView {
     status: p.status,
     entries: p.entries,
     ...(p.agenda ? { agenda: p.agenda } : {}),
+    ...(p.calendarBasis ? { calendarBasis: p.calendarBasis } : {}),
     focusTaskId: p.focusTaskId,
     sourceAt: p.sourceAt.toISOString(),
     confirmedAt: p.confirmedAt?.toISOString() ?? null,
@@ -62,7 +63,9 @@ export async function connected(
   const [i] = await db
     .select()
     .from(integrations)
-    .where(eq(integrations.userId, userId));
+    .where(
+      and(eq(integrations.userId, userId), eq(integrations.type, "todoist")),
+    );
   if (!c.active || !c.projectId || !i?.enabled || !i.encryptedToken)
     throw new WorkFault("CONTEXT_INCOMPLETE", 409);
   const [p] = await db

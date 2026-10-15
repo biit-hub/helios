@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { CalendarContextPanel } from "./calendar-context";
 import { ConfirmedAgenda } from "./agenda";
 import { agendaEntries } from "@helios/contracts";
 import type { PlanningView, PlanEntry, ContextView } from "@helios/contracts";
@@ -156,6 +157,12 @@ export function PlanningPanel({
               />
             </label>
           </div>
+          <CalendarContextPanel
+            key={context.id + ":" + data.day}
+            contextId={context.id}
+            day={data.day}
+            basis={data.plan?.calendarBasis}
+          />
           <p className="help">
             {plan ? states[plan.status] : "Noch kein Tagesplan"} ·{" "}
             {context.name}

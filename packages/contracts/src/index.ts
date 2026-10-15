@@ -4,7 +4,7 @@ export type SmokeJob = z.infer<typeof smokeJobSchema>;
 export const healthSchema = z.strictObject({
   status: z.enum(["ok", "unavailable"]),
   service: z.enum(["web", "worker"]),
-  stage: z.literal("E8"),
+  stage: z.literal("E9"),
 });
 export type Health = z.infer<typeof healthSchema>;
 // Domain contracts grow with verified feature slices; no private data in browser exports.
@@ -19,3 +19,5 @@ export * from "./ai";
 export * from "./routine";
 
 export * from "./epics";
+
+export * from "./calendar";

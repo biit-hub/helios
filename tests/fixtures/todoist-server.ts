@@ -1,3 +1,4 @@
+import { termihubServerFixture } from "./termihub-server";
 import { ollamaFixture } from "./ollama";
 import { createServer } from "node:http";
 import { taskFixture as fixture } from "./tasks";
@@ -12,8 +13,10 @@ const origin = new URL(
 if (origin.hostname !== "127.0.0.1") throw new Error("Loopback required");
 let f = fixture();
 const ai = { mode: "ok", calls: 0 };
+const calendar = termihubServerFixture();
 const server = createServer(async (req, res) => {
   try {
+    if (await calendar(req, res)) return;
     if (await ollamaFixture(req, res, ai)) return;
     if (req.url === "/assertions") {
       res.setHeader("Content-Type", "application/json");
