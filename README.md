@@ -113,3 +113,5 @@ docs              Anforderungen, Architektur, Entwicklung, Runbooks
 ```
 
 MIT-Lizenz. Ausschliesslich synthetische Beispieldaten.
+
+E6 ergänzt [lokale KI und gemeinsamen Fortschritt](docs/runbooks/ai-progress.md): prüfbare Erfassung, managed-only-Analyse, Ist klar und persistente Einzelpatch-Entwürfe. Die vorhandene Ubuntu-Ollama-Instanz wird über konfigurierbare OLLAMA_BASE_URL erreicht; Formular und gespeicherte Pläne bleiben ohne KI nutzbar. [Architektur](docs/architecture/local-ai-progress.md), [API](docs/integrations/ai-api.md), [Prüfbericht](docs/development/e6-verification.md). E6 ist in technischer Abnahme; manuelle E3–E5-Abnahmen bleiben offen.

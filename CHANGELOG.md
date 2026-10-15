@@ -1,5 +1,13 @@
 # Changelog
 
+## E6 – Lokale KI und gemeinsamer Fortschritt (technische Abnahme)
+
+- Bestehendes Ollama im privaten LAN, ein geprüftes lokales Modellprofil, strukturierte versionierte Ausgaben und bounded Workerjobs.
+- Persistente bearbeitbare Erfassungs-/Klärungs-/Fortschrittsentwürfe mit Originaltexterhalt und Einzelentscheidungen.
+- Managed-only-Hintergrundanalyse und inhaltsgebundene Ist-klar-Bestätigung; enge need_context-Systempolicy.
+- Verlustarme Checklistenpatches und bestätigte Einzeländerungen ausschliesslich über bestehendes E4-Journal, inklusive Unknown und Teilerfolg.
+- Additive Migration 0008 und freigegebene 30-Tage-Aufbewahrung terminaler Entwürfe; manuelle E3–E5-Abnahmen weiterhin offen.
+
 ## E5 – Tagesordnung, Fokuswahl und zyklische Reserve
 
 - Persistente revisionsgesicherte Ordnung in Hauptauswahl und Reserve, Drag-and-drop, Tastatur und Pfeilaktionen.
