@@ -14,3 +14,5 @@ export * from "./identity/schema";
 
 export * from "./work/schema";
 export * from "./planning/schema";
+
+export * from "./ai/schema";

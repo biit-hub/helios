@@ -25,6 +25,9 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
       AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
       INTEGRATION_KEY: ${INTEGRATION_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-90}
     ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
     networks: [backend, frontend]
     depends_on:
@@ -53,6 +56,9 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?Run pnpm config:auth}
       AUTH_ORIGIN: ${AUTH_ORIGIN:?Run pnpm config:auth}
       INTEGRATION_KEY: ${INTEGRATION_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-90}
     networks: [backend, todoist-egress]
     depends_on:
       postgres: { condition: service_healthy }

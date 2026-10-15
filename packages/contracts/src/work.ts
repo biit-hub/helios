@@ -57,6 +57,8 @@ export const todoistTaskSchema = z.object({
 });
 export type TodoistTask = z.infer<typeof todoistTaskSchema>;
 export const problemMessages = {
+  ai_failed:
+    "Eine lokale KI-Analyse ist fehlgeschlagen. Originaleingabe und Entwurf bleiben erhalten; Entwurfsstatus prüfen.",
   task_operation_failed:
     "Eine Aufgabenänderung ist fehlgeschlagen oder ungeklärt. Den Operationsstand in der Aufgabenverwaltung prüfen.",
   plan_operation_failed:

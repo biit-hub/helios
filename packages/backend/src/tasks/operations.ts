@@ -1,3 +1,11 @@
+import {
+  authorizeAnalysis,
+  validateAnalysisMutation,
+  finishAnalysis,
+} from "../ai/status-policy";
+import { validateDraftMutation, appliedDraftSource } from "../ai/journal";
+import { finishDraftLink } from "../ai/store";
+import type { AiSource } from "../ai/schema";
 import { randomUUID } from "node:crypto";
 import { eq, and, sql } from "drizzle-orm";
 import type { TodoistTask } from "@helios/contracts";
@@ -58,6 +66,7 @@ export function createTaskExecutor(
   const identity = createIdentityService(database, config);
   return async function execute(op: Operation) {
     const payload = op.payload as unknown as TaskPayload;
+    let draftSource: AiSource | null = null;
     let progress: Progress = (op.result ?? {}) as Progress;
     const command = payload.command;
     async function save(patch: Partial<Progress>) {
@@ -86,6 +95,13 @@ export function createTaskExecutor(
         .where(eq(planOperations.id, op.id));
     }
     async function authorize() {
+      if (payload.analysisLink) {
+        if (config.RESTORE_MODE) throw new WorkFault("RESTORE_BLOCKED", 503);
+        return database.db.transaction(async (db) => {
+          await db.execute(sql.raw("select pg_advisory_xact_lock(1748012)"));
+          return authorizeAnalysis(db, op, payload);
+        });
+      }
       return identity.withOperationSession(
         op.sessionId,
         op.userId,
@@ -127,6 +143,10 @@ export function createTaskExecutor(
         const t = await reader.task(token, pending.externalId);
         if (
           t.project_id !== payload.projectId ||
+          t.parent_id !== (command.parentId ?? null) ||
+          (command.sectionId !== undefined &&
+            command.sectionId !== null &&
+            t.section_id !== command.sectionId) ||
           !matchesFields(t, pending.body ?? {})
         )
           return false;
@@ -138,7 +158,9 @@ export function createTaskExecutor(
         const comments = await reader.comments(token, command.taskId!);
         if (
           !comments.some(
-            (c) => c.id === pending.externalId && c.content === command.comment,
+            (c) =>
+              c.id === pending.externalId &&
+              c.content === pending.body?.content,
           )
         )
           return false;
@@ -303,6 +325,16 @@ export function createTaskExecutor(
         (kind === "move" && command.action === "move")
       )
         await checkFun(token);
+      if (payload.analysisLink)
+        await validateAnalysisMutation(database, config, reader, op, payload);
+      if (payload.draftLink)
+        await validateDraftMutation(
+          database,
+          config,
+          reader,
+          payload.draftLink,
+          op.id,
+        );
       if (payload.planLink?.action === "add")
         await validatePlanAddition(reader, token, payload.planLink);
       if (payload.source) await fresh(token);
@@ -553,6 +585,14 @@ export function createTaskExecutor(
               eq(taskProjections.credentialVersion, payload.credentialVersion),
             ),
           );
+      if (payload.draftLink)
+        draftSource = await appliedDraftSource(
+          database,
+          config,
+          reader,
+          payload.draftLink,
+          progress.task?.id,
+        );
     } catch (e) {
       error = e;
     }
@@ -577,6 +617,16 @@ export function createTaskExecutor(
           : "failed";
     await database.db.transaction(async (db) => {
       await db.execute(sql`select pg_advisory_xact_lock(1748012)`);
+      if (!error && payload.analysisLink) await finishAnalysis(db, payload);
+      if (payload.draftLink)
+        await finishDraftLink(
+          db,
+          payload.draftLink,
+          op.id,
+          status,
+          draftSource,
+          code,
+        );
       if (!error && payload.planLink)
         await finishPlanLink(db, payload.planLink, op.id);
       await db
