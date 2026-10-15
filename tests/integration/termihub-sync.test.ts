@@ -392,3 +392,27 @@ it("isolates invalid optional TermiHub network settings from the existing worker
     else process.env.TERMIHUB_TIMEOUT_SECONDS = previous;
   }
 });
+it("does not revive a failed snapshot budget while a transient read is retrying", async () => {
+  const { s, f, run } = await setup();
+  expect(await run()).toBe("synced");
+  f.beforeRead(async () => {
+    throw new TermiHubFault("TERMIHUB_UNREACHABLE");
+  });
+  expect(await run()).toBe("failed");
+  let duringRetry: Awaited<ReturnType<typeof s.orientations>> | undefined;
+  f.beforeRead(async (path) => {
+    if (path === "calendars") duringRetry = await s.orientations(h.headers());
+    throw new TermiHubFault("TERMIHUB_UNREACHABLE");
+  });
+  h.advance(31000);
+  expect(await run()).toBe("failed");
+  expect(duringRetry!.contexts[0]!.orientation.state).toBe("stale");
+  expect(duringRetry!.contexts[0]!.orientation.reliable).toBe(false);
+  expect(duringRetry!.contexts[0]!.orientation.budget).toBeNull();
+  f.beforeRead();
+  h.advance(61000);
+  expect(await run()).toBe("synced");
+  expect(
+    (await s.orientations(h.headers())).contexts[0]!.orientation.reliable,
+  ).toBe(true);
+});

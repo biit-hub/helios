@@ -96,6 +96,13 @@ export function mappingBasis(
     )
     .digest("hex");
 }
+function connectionReadReady(i: TermiIntegration) {
+  if (!["ready", "incomplete"].includes(i.state)) return false;
+  // A queued/retrying request is not evidence that the last failed read recovered.
+  return (
+    !i.lastCheckedAt || (!!i.lastSyncAt && i.lastSyncAt >= i.lastCheckedAt)
+  );
+}
 export async function readCalendarDay(
   db: Db,
   userId: string,
@@ -166,7 +173,7 @@ export async function readCalendarDay(
   return {
     ...snapshotOrientation(
       snapshot,
-      ["ready", "incomplete", "queued", "updating"].includes(i.state),
+      connectionReadReady(i),
       decision?.noWorkConfirmed ?? false,
       now,
     ),
