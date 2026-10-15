@@ -23,7 +23,7 @@
 - E2-Unit/Integration/E2E ausschliesslich synthetisch. Live-Verträge mit einem separaten Testaccount bewusst freigeben und Ergebnisse von Dokumentations-/Fixtureprüfungen unterscheiden. TermiHub-Referenzen sind lokal; keine erfundenen Endpunkte.
 
 - E3-Backupfreigabe vom 14.10.2026: lokale verschlüsselte Sicherungen und isolierte Restore-Proben genügen. Synology erst bei Produktivinstallation; logischer Ordner Backups/Helios, tatsächlicher Zielpfad konfigurierbar, keine NAS-Zugangsdaten voraussetzen.
-- E3 ist beauftragt: unabhängige Tagespläne, revisionsgeschützte Bestätigung, persistenter Fokus ohne Reorder. E4 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3-Abnahme bleibt bewusst verschoben und offen. E5 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3-/E4-Abnahmen bleiben offen. E6 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3–E5-Abnahmen bleiben offen. E7 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3–E6-Abnahmen bleiben offen. E8 bleibt gesperrt.
+- E3 ist beauftragt: unabhängige Tagespläne, revisionsgeschützte Bestätigung, persistenter Fokus ohne Reorder. E4 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3-Abnahme bleibt bewusst verschoben und offen. E5 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3-/E4-Abnahmen bleiben offen. E6 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3–E5-Abnahmen bleiben offen. E7 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3–E6-Abnahmen bleiben offen. E8 ist seit 15.10.2026 ausdrücklich beauftragt; manuelle E3–E7-Abnahmen bleiben offen. E9 bleibt gesperrt.
 - E3-Hierarchieausnahme bestätigt: Unteraufgaben bleiben planbar und behalten ihren Todoist-Abschnitt. Container mit aktiven Kindern nicht still verschieben. Lokale Tagesauswahl ist kein zweiter Kanbanstatus.
 - Planmoves nur über persistentes Operationsjournal und Worker, Sitzung/MFA/Scope vor noch nicht gestarteten Schritten prüfen. Nach Timeout/crash zuerst reconciliieren; unknown nicht automatisch replayen. Historie append-only, kein false confirmed bei Teilerfolg.
 
@@ -33,3 +33,7 @@
 - E6-Aufbewahrung ausdrücklich bestätigt: erledigte und abgelehnte Entwürfe samt Rohtext nach 30 Tagen löschen; offene/fehlgeschlagene bis bewusster Bereinigung erhalten.
 
 - E7: Routinezustand serverseitig und revisionsgesichert. Skip bleibt offen und mutiert keine Tasks. Review schlägt nur den letzten relevanten bestätigten früheren Kontextplan vor; ältere unbekannte Rückmeldungen historisch erhalten. Eingang bleibt ohne KI und Projektvorauswahl. Alle externen Schritte verwenden das bestehende Journal.
+
+- E8: Epic bleibt native Todoist-Aufgabe mit epic-Label; Ziel und Checkliste sind Markdownabschnitte in Todoist. Benutzerkorrekturen und KI-Verständnis sind abgeleitete Daten mit Quellfassung, keine zweite Aufgabenwahrheit. Fehlende Aufgaben beweisen keinen Abschluss; F1 nur nach verifiziertem nativen Vertrag und ausdrücklicher Entscheidung.
+
+- F1 nach Live-Nachweis ausdrücklich bestätigt: bei offenen Epic-Kindern nur bewusste Trennung aller offenen Teilbäume oder Abbruch. Vollständigen Trenn-/Inhalts-/Kommentar-/Hierarchienachweis vor Epic-Close verlangen; partial/unknown/conflict stoppen. Keine offene Behalten-Variante durch lokale Sonderwahrheit.

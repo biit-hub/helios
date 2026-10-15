@@ -23,6 +23,7 @@ async function request(path: string, body?: unknown) {
   return value;
 }
 const labels: Record<AiPatch["kind"], string> = {
+  goal: "Ziel gezielt ersetzen",
   title: "Titel",
   comment: "Fortschrittskommentar",
   "description-append": "Beschreibung ergänzen",
@@ -35,6 +36,8 @@ const labels: Record<AiPatch["kind"], string> = {
   subtask: "Eigenständig planbare Unteraufgabe",
 };
 const messages: Record<string, string> = {
+  AI_SOURCE_TOO_LARGE:
+    "Die KI-Quelle ist zu umfangreich. Ziele und Checklisten bleiben manuell bearbeitbar; bitte die Aufgabe oder einen kleineren Teilbaum gezielt prüfen.",
   AI_PROFILE_CHANGED:
     "Modell oder Prompt wurden geändert. Quelle prüfen und KI bewusst erneut versuchen.",
   AI_LOCAL_MODEL_REQUIRED:
@@ -63,7 +66,13 @@ export function AiDraftPanel({
   manualFields = {},
   expectedInstanceKey,
 }: {
-  kind: "capture" | "progress" | "clarification";
+  kind:
+    | "capture"
+    | "progress"
+    | "clarification"
+    | "smart"
+    | "epic"
+    | "decomposition";
   contextId?: string | null;
   taskId?: string;
   snapshot: WorkSnapshot;
@@ -300,23 +309,8 @@ export function AiDraftPanel({
     !draft.operationId &&
     !conflict;
   return (
-    <section
-      className="ai-panel"
-      aria-label={
-        kind === "capture"
-          ? "KI-Aufgabenerfassung"
-          : kind === "progress"
-            ? "Fortschritt dokumentieren"
-            : "Aufgabenklärung"
-      }
-    >
-      <h3>
-        {kind === "capture"
-          ? "Aus Gedanken wird ein prüfbarer Entwurf"
-          : kind === "progress"
-            ? "Fortschritt dokumentieren"
-            : "Aufgabe gemeinsam klären"}
-      </h3>
+    <section className="ai-panel" aria-label={kindText[kind].label}>
+      <h3>{kindText[kind].title}</h3>
       <p>
         Die KI läuft auf deinem lokalen KI-Server. Vorschläge ändern noch keine
         Aufgabe.
@@ -328,11 +322,7 @@ export function AiDraftPanel({
         </p>
       )}
       <label>
-        {kind === "capture"
-          ? "Aufgabe in eigenen Worten"
-          : kind === "progress"
-            ? "Was hast du erledigt?"
-            : "Deine Antwort auf die Klärungsfragen"}
+        <span>{kindText[kind].input}</span>
         <textarea
           maxLength={8000}
           disabled={busy || waiting}
@@ -342,7 +332,12 @@ export function AiDraftPanel({
       </label>
       <button
         type="button"
-        disabled={busy || waiting || !input.trim()}
+        disabled={
+          busy ||
+          waiting ||
+          (["capture", "progress", "clarification"].includes(kind) &&
+            !input.trim())
+        }
         onClick={() => {
           setBusy(true);
           setError("");
@@ -436,6 +431,37 @@ export function AiDraftPanel({
                       : "Unsicher"}
               </p>
               <p>{draft.output.reason}</p>
+              {draft.output.smart?.map((s) => (
+                <div key={s.component}>
+                  <strong>
+                    {s.component} · {s.status}
+                  </strong>
+                  <p>{s.assessment}</p>
+                  {s.evidence && <blockquote>{s.evidence}</blockquote>}
+                  {s.question && <p>{s.question}</p>}
+                </div>
+              ))}
+              {draft.output.understanding && (
+                <section>
+                  <h4>Abgeleitetes Epic-Verständnis</h4>
+                  <p>{draft.output.understanding.summary}</p>
+                  {draft.output.understanding.contributions.map((c) => (
+                    <p key={c.taskId}>
+                      Aufgabe {c.taskId}: {c.reason} · Beleg: «{c.evidence}»
+                    </p>
+                  ))}
+                  {draft.output.understanding.dependencies.map((d) => (
+                    <p key={d.from + ":" + d.to}>
+                      Abhängigkeit {d.from} → {d.to}: «{d.evidence}»
+                    </p>
+                  ))}
+                  {draft.output.understanding.nextSteps.map((n) => (
+                    <p key={n.taskId + ":" + n.text}>
+                      Nächster Schritt ({n.taskId}): {n.text} · «{n.evidence}»
+                    </p>
+                  ))}
+                </section>
+              )}
               {draft.output.validationNotes?.map((note, i) => (
                 <p key={i}>{note}</p>
               ))}
@@ -586,6 +612,17 @@ export function AiDraftPanel({
               </p>
             </>
           )}
+          {editable &&
+            values.length === 0 &&
+            ["smart", "epic", "decomposition"].includes(kind) && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void action("reject")}
+              >
+                Einschätzung ablehnen
+              </button>
+            )}
           {editable && (
             <>
               <button
@@ -708,3 +745,39 @@ export function AiDraftPanel({
     </section>
   );
 }
+
+const kindText: Record<
+  "capture" | "progress" | "clarification" | "smart" | "epic" | "decomposition",
+  { label: string; title: string; input: string }
+> = {
+  capture: {
+    label: "KI-Aufgabenerfassung",
+    title: "Aus Gedanken wird ein prüfbarer Entwurf",
+    input: "Aufgabe in eigenen Worten",
+  },
+  progress: {
+    label: "Fortschritt dokumentieren",
+    title: "Fortschritt dokumentieren",
+    input: "Was hast du erledigt?",
+  },
+  clarification: {
+    label: "Aufgabenklärung",
+    title: "Aufgabe gemeinsam klären",
+    input: "Deine Antwort auf die Klärungsfragen",
+  },
+  smart: {
+    label: "SMART-Ziel prüfen",
+    title: "SMART-Ziel prüfen",
+    input: "Bekannte Zielinformationen / Antworten auf SMART-Fragen",
+  },
+  epic: {
+    label: "Epic-Verständnis prüfen",
+    title: "Epic-Verständnis prüfen",
+    input: "Deine Korrektur zum Epic-Verständnis (vorrangig)",
+  },
+  decomposition: {
+    label: "Aufgabe sinnvoll zerlegen",
+    title: "Aufgabe sinnvoll zerlegen",
+    input: "Welche Arbeitspakete sind bekannt?",
+  },
+};

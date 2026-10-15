@@ -586,3 +586,19 @@ fieldset[hidden] {
 
 /* E7 uses the shared warm card, context and form tokens. */
 .routine-nav{display:flex;flex-wrap:wrap;gap:.7rem;margin:1.5rem 0}.routine-nav section{border:1px solid var(--border);border-radius:1rem;padding:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.routine-nav [aria-current=step]{outline:3px solid var(--accent);outline-offset:2px}.routine-step{margin-block:1.5rem}.routine-actions,.routine-controls,.routine-contexts{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-block:1rem}.routine-review-card,.routine-inbox-card,.routine-bulk{border-block-start:1px solid var(--border);padding-block:1rem}.routine-inbox-card pre{white-space:pre-wrap;overflow-wrap:anywhere}.routine-gentle{background:var(--surface);border-inline-start:3px solid var(--accent);padding:1rem}.routine-review-card .check-label{align-items:flex-start}.routine-controls{border-top:1px solid var(--border);padding-top:1.5rem}.routine-controls a{margin-left:auto}
+
+.epic-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:1.5rem 0;}
+.checklist-row {display:flex;gap:.4rem;align-items:center;margin:.6rem 0;}
+.checklist-row input:not([type=checkbox]){flex:1;min-width:5rem;}
+.task-document{margin:1rem 0;}
+.task-document summary{cursor:pointer;font-weight:600;}
+.task-document pre{white-space:pre-wrap;overflow-wrap:anywhere;}
+.task-document fieldset {border:0;padding:0;min-width:0;margin:1.25rem 0;display:grid;gap:.85rem;}
+.task-document label {display:grid;gap:.45rem;font-weight:600;}
+.task-document input:not([type="checkbox"]), .task-document textarea, .task-document select {box-sizing:border-box;width:100%;font:inherit;color:inherit;background:#fff;border:1px solid var(--border,#dfd3bf);border-radius:10px;padding:.7rem .8rem;}
+.task-document textarea {min-height:7rem;resize:vertical;line-height:1.6;}
+.task-document input:focus-visible, .task-document textarea:focus-visible {outline:2px solid var(--accent,#ba6a1f);outline-offset:2px;}
+.task-document button {justify-self:start;}
+.task-document .checklist-row {margin:0;}
+.task-document .checklist-row input[type="checkbox"] {width:1.15rem;height:1.15rem;flex:none;}
+.task-document .ai-panel {margin-top:1rem;}

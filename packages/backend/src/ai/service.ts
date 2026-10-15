@@ -1,3 +1,4 @@
+import { rejectReadonlyDraft } from "./readonly-decision";
 import { patchCommand, captureFields } from "./patches";
 import { aiTimezone, referenceDay } from "./dates";
 import { randomUUID } from "node:crypto";
@@ -105,6 +106,11 @@ export function createAiService(
         }) !== input.expectedInstanceKey)
     )
       throw new WorkFault("PLAN_INSTANCE_CHANGED", 409);
+    if (
+      input.kind === "epic" &&
+      !source?.inspection.task.labels.includes("epic")
+    )
+      throw new WorkFault("AI_SCOPE_DENIED", 409);
     if (input.kind === "capture" && input.taskId)
       throw new WorkFault("AI_SCOPE_DENIED", 409);
     return identity.withActive(
@@ -534,6 +540,8 @@ export function createAiService(
       if (action === "start") return start(h, input);
       if (action === "edit") return edit(h, input);
       if (action === "apply") return apply(h, input);
+      if (action === "reject")
+        return rejectReadonlyDraft(database, config, h, input);
       if (["retry", "cancel", "clear", "reopen"].includes(action))
         return simple(action, h, input);
       throw new WorkFault("NOT_FOUND", 404);

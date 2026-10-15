@@ -20,6 +20,32 @@ export const waitingInput = z.strictObject({
   subject: z.string().trim().min(1).max(1000),
   followUp: date.nullable(),
 });
+export const documentChange = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("goal"), value: z.string().max(6000) }),
+  z.strictObject({
+    kind: z.literal("checklist"),
+    items: z
+      .array(
+        z.strictObject({
+          text: z.string().trim().min(1).max(500),
+          checked: z.boolean(),
+        }),
+      )
+      .max(100),
+  }),
+  z.strictObject({
+    kind: z.literal("link-add"),
+    label: z.string().trim().min(1).max(300),
+    url: z.string().min(1).max(2000),
+  }),
+  z.strictObject({
+    kind: z.literal("link-edit"),
+    target: z.string().min(1).max(2000),
+    label: z.string().trim().min(1).max(300),
+    url: z.string().min(1).max(2000),
+  }),
+]);
+export type DocumentChange = z.infer<typeof documentChange>;
 export const taskCommand = z.strictObject({
   key: z.uuid(),
   action: z.enum([
@@ -32,6 +58,7 @@ export const taskCommand = z.strictObject({
     "delete",
     "sections",
     "plan-select",
+    "document",
   ]),
   contextId: z.uuid().nullable(),
   taskId: externalId.optional(),
@@ -40,6 +67,8 @@ export const taskCommand = z.strictObject({
   sectionId: externalId.nullable().optional(),
   parentId: externalId.nullable().optional(),
   fields: taskPatch.optional(),
+  document: documentChange.optional(),
+  epicClosePolicy: z.literal("detach").optional(),
   comment: z.string().trim().min(1).max(12000).optional(),
   waiting: waitingInput.optional(),
   acknowledgeHierarchy: z.boolean().default(false),
@@ -53,7 +82,7 @@ export type TaskInspection = {
   links: { url: string; label: string }[];
   task: z.infer<typeof todoistTaskSchema>;
   basis: string;
-  children: { id: string; content: string }[];
+  children: { id: string; content: string; parentId?: string | null }[];
   sections: { id: string; name: string; project_id: string }[];
   comments: { id: string; content: string; posted_at: string | null }[];
   waiting: WaitingDetails | null;

@@ -5,6 +5,9 @@ export const aiKind = z.enum([
   "analysis",
   "clarification",
   "progress",
+  "smart",
+  "epic",
+  "decomposition",
 ]);
 export const aiPatch = z.strictObject({
   kind: z.enum([
@@ -18,11 +21,53 @@ export const aiPatch = z.strictObject({
     "deadline",
     "project",
     "subtask",
+    "goal",
   ]),
   value: z.string().trim().min(1).max(4000),
   target: z.string().max(500).nullable(),
   evidence: z.string().trim().min(1).max(2000),
   reason: z.string().trim().min(1).max(1000),
+});
+export const smartAssessment = z
+  .array(
+    z.strictObject({
+      component: z.enum(["S", "M", "A", "R", "T"]),
+      status: z.enum(["known", "missing", "unclear"]),
+      assessment: z.string().trim().min(1).max(1000),
+      evidence: z.string().min(1).max(2000).nullable(),
+      question: z.string().min(1).max(500).nullable(),
+    }),
+  )
+  .length(5);
+export const epicUnderstanding = z.strictObject({
+  summary: z.string().min(1).max(2000),
+  contributions: z
+    .array(
+      z.strictObject({
+        taskId: z.string().min(1).max(200),
+        evidence: z.string().min(1).max(2000),
+        reason: z.string().min(1).max(1000),
+      }),
+    )
+    .max(50),
+  dependencies: z
+    .array(
+      z.strictObject({
+        from: z.string().max(200),
+        to: z.string().max(200),
+        evidence: z.string().min(1).max(2000),
+      }),
+    )
+    .max(30),
+  nextSteps: z
+    .array(
+      z.strictObject({
+        taskId: z.string().max(200),
+        text: z.string().min(1).max(1000),
+        evidence: z.string().min(1).max(2000),
+      }),
+    )
+    .max(10),
 });
 export const aiOutput = z.strictObject({
   clarity: z.enum(["clear", "needs_context", "uncertain"]),
@@ -38,6 +83,8 @@ export const aiOutput = z.strictObject({
   estimatedMinutes: z.number().int().min(1).max(14400).nullable(),
   uncertainty: z.string().trim().min(1).max(1000),
   patches: z.array(aiPatch).max(8),
+  smart: smartAssessment.optional(),
+  understanding: epicUnderstanding.optional(),
 });
 export type AiOutput = z.infer<typeof aiOutput> & {
   validationNotes?: string[];

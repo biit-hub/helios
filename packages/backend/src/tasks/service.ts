@@ -1,7 +1,9 @@
+import { descendants } from "./hierarchy";
+import { prepareEpicClosure } from "../epics/close";
 import { linkRoutine, type RoutineLink } from "../routine/journal";
 import { fingerprint } from "./hash";
 import { z } from "zod";
-import { fromMarkdown } from "mdast-util-from-markdown";
+import { descriptionLinks } from "./document";
 import { randomUUID } from "node:crypto";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { and, eq, desc, inArray } from "drizzle-orm";
@@ -28,6 +30,7 @@ import { linkDraft, resumeDraftLink, type DraftLink } from "../ai/store";
 import { readWaiting } from "./waiting";
 import { linkPlan, type PlanLink } from "../planning/agenda-store";
 export type TaskPayload = {
+  epicClosure?: import("../epics/close").EpicClosure;
   routineLink?: RoutineLink;
   analysisLink?: import("../ai/status-policy").AnalysisLink;
   draftLink?: DraftLink;
@@ -41,21 +44,7 @@ export type TaskPayload = {
   children: TodoistTask[];
 };
 export { canonical, fingerprint } from "./hash";
-export function descendants(rows: TodoistTask[], taskId: string) {
-  const ids = new Set([taskId]);
-  let change = true;
-  while (change) {
-    change = false;
-    for (const row of rows)
-      if (row.parent_id && ids.has(row.parent_id) && !ids.has(row.id)) {
-        ids.add(row.id);
-        change = true;
-      }
-  }
-  return rows
-    .filter((t) => t.id !== taskId && ids.has(t.id))
-    .sort((a, b) => a.id.localeCompare(b.id));
-}
+export { descendants } from "./hierarchy";
 export async function taskScope(
   db: Db,
   userId: string,
@@ -137,6 +126,8 @@ export function createTaskService(
       reader.sections(token, task.project_id),
       reader.comments(token, task.id),
     ]);
+    if (rows.some((t) => t.project_id !== task.project_id))
+      throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
     const children = descendants(rows, task.id);
     await identity.withActive(h, {}, async (db, user) => {
       const now = await taskScope(db, user, contextId);
@@ -150,7 +141,11 @@ export function createTaskService(
     return {
       task,
       basis: fingerprint({ task, children }),
-      children: children.map(({ id, content }) => ({ id, content })),
+      children: children.map(({ id, content, parent_id }) => ({
+        id,
+        content,
+        parentId: parent_id,
+      })),
       sections,
       comments,
       waiting: readWaiting(task.description),
@@ -274,6 +269,8 @@ export function createTaskService(
       throw new WorkFault("RECURRENCE_CONFIRMATION_REQUIRED", 409);
     if (command.action === "sections" && (!scope.c || project.inbox_project))
       throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+    if (command.action === "document" && !command.document)
+      throw new WorkFault("INVALID_REQUEST");
     if (command.action === "comment" && !command.comment)
       throw new WorkFault("INVALID_REQUEST");
     if (
@@ -295,13 +292,15 @@ export function createTaskService(
       !command.acknowledgeHierarchy
     )
       throw new WorkFault("HIERARCHY_CONFIRMATION_REQUIRED", 409);
-    if (
-      source?.labels.includes("epic") &&
-      children.length &&
-      command.action === "close"
-    )
-      throw new WorkFault("EPIC_CHILDREN_POLICY", 409);
+    const epicClosure = await prepareEpicClosure(
+      reader,
+      token,
+      command,
+      source,
+      children,
+    );
     const payload: TaskPayload = {
+      ...(epicClosure ? { epicClosure } : {}),
       ...(planLink ? { planLink } : {}),
       ...(draftLink ? { draftLink } : {}),
       ...(routineLink ? { routineLink } : {}),
@@ -503,24 +502,6 @@ export function createTaskService(
       throw new WorkFault("NOT_FOUND", 404);
     },
   };
-}
-
-function descriptionLinks(description: string) {
-  const found: { url: string; label: string }[] = [];
-  function visit(node: unknown) {
-    if (!node || typeof node !== "object") return;
-    const v = node as {
-      type?: string;
-      url?: string;
-      children?: unknown[];
-      value?: string;
-    };
-    if (v.type === "link" && v.url && /^https?:\/\//i.test(v.url))
-      found.push({ url: v.url, label: v.url });
-    for (const child of v.children ?? []) visit(child);
-  }
-  visit(fromMarkdown(description));
-  return found;
 }
 
 async function routineInboxProject(

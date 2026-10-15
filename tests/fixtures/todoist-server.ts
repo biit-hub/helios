@@ -39,6 +39,42 @@ const server = createServer(async (req, res) => {
         ai.calls = 0;
       }
       if (data.aiMode) ai.mode = data.aiMode;
+      if (data.scenario === "epics") {
+        const template = structuredClone(f.state.tasks[1]!);
+        f.state.tasks = [
+          {
+            ...template,
+            id: "browser-epic",
+            parent_id: null,
+            labels: ["epic"],
+            content: "Synthetisches Handbuch",
+            description:
+              "Originalnotiz **erhalten**\n\n## Ziel\nHandbuch veröffentlichen\n\n## Checkliste\n- [ ] Quellen sammeln\n\n## Notizen\n[Notiz](https://example.com/note)",
+            due: null,
+            deadline: null,
+          },
+          {
+            ...template,
+            id: "browser-child",
+            parent_id: "browser-epic",
+            labels: [],
+            content: "Synthetisches Kapitel",
+            description: "Kind erhalten",
+            due: null,
+            deadline: null,
+          },
+          {
+            ...template,
+            id: "browser-grandchild",
+            parent_id: "browser-child",
+            labels: [],
+            content: "Synthetische Quellen",
+            description: "Enkel erhalten",
+            due: null,
+            deadline: null,
+          },
+        ];
+      }
       if (data.scenario === "ai") {
         const template = structuredClone(f.state.tasks[1]!);
         f.state.tasks = [

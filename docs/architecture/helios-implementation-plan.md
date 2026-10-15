@@ -350,3 +350,7 @@ Geplante AGENTS-Regeln: Todoist fuehrt, Eingang ohne KI; Task-/Kontextscope imme
 **Zuerst E1 als klar begrenzten Umsetzungsschnitt freigeben.** Repository-/Originangaben und Sessionpolicy vorher festlegen; Auth-/Queueadapter dabei mit konkreter UI pruefen. E2/E3 fuehren anschliessend rasch zur ersten alltagstauglichen Fokusversion.
 
 Dieser Plan ist vollstaendig dokumentiert, nicht ausgefuehrt. Kein neues Repository, Anwendungscode, Stack, Container oder Datenbankschema wurde initialisiert; keine Abhaengigkeit installiert und keine Todoist-/TermiHubdaten veraendert. Die vorherige Evaluation und Helios 1.0 bleiben unveraendert.
+
+## E8-Umsetzungsstand
+
+E8 ist ausdrücklich beauftragt; [Prüfbericht](../development/e8-verification.md) und [F1-Entscheid](epics-smart-goals.md) konkretisieren die historische Planung. Manuelle E3–E8-Abnahmen bleiben offen. E9 bleibt gesperrt.

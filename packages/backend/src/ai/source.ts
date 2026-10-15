@@ -1,3 +1,5 @@
+import { knownHierarchy } from "../epics/hierarchy";
+import { aiTaskSignals } from "./schema";
 import { referenceDay } from "./dates";
 import { and, eq } from "drizzle-orm";
 import {
@@ -40,7 +42,29 @@ export async function readSource(
     reader.tasks(token, task.project_id),
     reader.comments(token, taskId),
   ]);
-  const children = descendants(rows, task.id);
+  const hierarchy = await knownHierarchy(
+    database,
+    reader,
+    token,
+    {
+      contextId,
+      credentialVersion: scope.i.credentialVersion,
+      projectId: task.project_id,
+    },
+    rows,
+    task.id,
+  );
+  const children = hierarchy.children;
+  const [correction] = await database.db
+    .select()
+    .from(aiTaskSignals)
+    .where(
+      and(
+        eq(aiTaskSignals.contextId, contextId),
+        eq(aiTaskSignals.taskId, taskId),
+        eq(aiTaskSignals.credentialVersion, scope.i.credentialVersion),
+      ),
+    );
   const ancestors: import("@helios/contracts").TodoistTask[] = [];
   let parentId = task.parent_id;
   const seen = new Set([task.id]);
@@ -54,11 +78,39 @@ export async function readSource(
     ancestors.push(ancestor);
     parentId = ancestor.parent_id;
   }
+  const childComments: NonNullable<AiSource["childComments"]> = [];
+  for (const child of children) {
+    const comments = await reader.comments(token, child.id);
+    if (comments.length) childComments.push({ taskId: child.id, comments });
+  }
   const parent = ancestors[0] ?? null;
+  const ancestorCorrections: NonNullable<AiSource["ancestorCorrections"]> = [];
+  for (const ancestor of ancestors.filter((a) => a.labels.includes("epic"))) {
+    const [signal] = await database.db
+      .select()
+      .from(aiTaskSignals)
+      .where(
+        and(
+          eq(aiTaskSignals.contextId, contextId),
+          eq(aiTaskSignals.taskId, ancestor.id),
+          eq(aiTaskSignals.credentialVersion, scope.i.credentialVersion),
+        ),
+      );
+    if (signal?.epicCorrection)
+      ancestorCorrections.push({
+        taskId: ancestor.id,
+        text: signal.epicCorrection,
+        revision: signal.correctionRevision,
+      });
+  }
   const result: AiSource = {
+    childComments,
+    userCorrection: correction?.epicCorrection ?? "",
+    ancestorCorrections,
+    unknownChildren: hierarchy.unknownChildren,
     inspection: {
       task,
-      basis: fingerprint({ task, children }),
+      basis: fingerprint({ task, children: descendants(rows, task.id) }),
       children: children.map(({ id, content }) => ({ id, content })),
       comments,
       sections: [],
@@ -77,6 +129,10 @@ export function promptSource(source: AiSource | null) {
   if (!source) return null;
   const task = source.inspection.task;
   return {
+    childComments: source.childComments ?? [],
+    userCorrection: source.userCorrection ?? "",
+    ancestorCorrections: source.ancestorCorrections ?? [],
+    unknownChildren: source.unknownChildren ?? [],
     task: {
       id: task.id,
       title: task.content,
@@ -90,7 +146,13 @@ export function promptSource(source: AiSource | null) {
       id: c.id,
       content: c.content,
     })),
-    children: source.inspection.children,
+    children: source.children.map((t) => ({
+      id: t.id,
+      parentId: t.parent_id,
+      title: t.content,
+      description: t.description,
+      completed: t.checked,
+    })),
     epicContext: (source.ancestors ?? (source.parent ? [source.parent] : []))
       .filter((p) => p.labels.includes("epic"))
       .map((p) => ({
@@ -116,6 +178,18 @@ export function sourceHash(source: AiSource | null) {
   return fingerprint(
     source
       ? {
+          ...(source.childComments?.length
+            ? { childComments: source.childComments }
+            : {}),
+          ...(source.ancestorCorrections?.length
+            ? { ancestorCorrections: source.ancestorCorrections }
+            : {}),
+          ...(source.userCorrection
+            ? { userCorrection: source.userCorrection }
+            : {}),
+          ...(source.unknownChildren?.length
+            ? { unknownChildren: source.unknownChildren }
+            : {}),
           task: stable(source.inspection.task),
           children: source.children.map(stable),
           comments: source.inspection.comments,

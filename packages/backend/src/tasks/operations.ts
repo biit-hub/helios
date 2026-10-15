@@ -1,3 +1,4 @@
+import { verifyEpicDetach } from "../epics/close";
 import {
   authorizeRoutine,
   validateRoutineMutation,
@@ -42,11 +43,13 @@ import {
   TaskRateLimit,
 } from "./todoist";
 import type { TaskWriter } from "./todoist";
+import { patchDocument } from "./document";
 import { patchWaiting } from "./waiting";
 import { finishPlanLink } from "../planning/agenda-store";
 import { validatePlanAddition } from "../planning/agenda-source";
 type Operation = typeof planOperations.$inferSelect;
 type Progress = {
+  detached?: string[];
   effects?: Record<string, unknown>[];
   children?: TodoistTask[];
   task?: TodoistTask;
@@ -85,6 +88,12 @@ export function createTaskExecutor(
           ...(progress.effects ?? []),
           {
             kind: progress.pending.kind,
+            taskId:
+              progress.pending.before?.id ??
+              command.taskId ??
+              progress.pending.externalId ??
+              null,
+            title: progress.pending.before?.content ?? null,
             requestId: progress.pending.requestId,
             status: "verified",
             externalId: progress.pending.externalId ?? null,
@@ -206,6 +215,41 @@ export function createTaskExecutor(
           }
           throw e;
         }
+      }
+      if (pending.kind === "epic-detach") {
+        if (!pending.before) return false;
+        const removed = await verifyEpicDetach(
+          reader,
+          token,
+          payload,
+          pending.before,
+        );
+        const epic = await reader.task(token, command.taskId!);
+        if (
+          fingerprint({ ...epic, updated_at: null }) !==
+          fingerprint({
+            ...(progress.task ?? payload.source),
+            updated_at: null,
+          })
+        )
+          throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+        const expected = (progress.children ?? payload.children).filter(
+          (t) => !removed.includes(t.id),
+        );
+        const actual = descendants(
+          await reader.tasks(token, payload.projectId),
+          command.taskId!,
+        );
+        if (fingerprint(expected) !== fingerprint(actual))
+          throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+        await save({
+          task: epic,
+          children: actual,
+          detached: [...(progress.detached ?? []), pending.before.id],
+          pending: undefined,
+          stage: "detached",
+        });
+        return true;
       }
       const t = await reader.task(token, command.taskId!);
       if (pending.kind === "close") {
@@ -329,18 +373,7 @@ export function createTaskExecutor(
       )
         throw new WorkFault("FUN_EPIC_CONFLICT", 409);
     }
-    async function mutate(
-      token: string,
-      kind: string,
-      path: string,
-      body?: Record<string, unknown>,
-    ) {
-      await authorize();
-      if (
-        ["create", "update"].includes(kind) ||
-        (kind === "move" && command.action === "move")
-      )
-        await checkFun(token);
+    async function validateLinkedMutations(token: string) {
       if (payload.analysisLink)
         await validateAnalysisMutation(database, config, reader, op, payload);
       if (payload.draftLink)
@@ -362,13 +395,45 @@ export function createTaskExecutor(
           payload,
           op.id,
         );
+    }
+    async function assertDetachSource(token: string, target: TodoistTask) {
+      const current = await reader.task(token, target.id);
+      if (fingerprint(current) !== fingerprint(target))
+        throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+      for (const child of [
+        target,
+        ...descendants(payload.children, target.id),
+      ]) {
+        if (
+          fingerprint(await reader.comments(token, child.id)) !==
+          fingerprint(payload.epicClosure?.comments[child.id] ?? [])
+        )
+          throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+      }
+    }
+    async function mutate(
+      token: string,
+      kind: string,
+      path: string,
+      body?: Record<string, unknown>,
+      target?: TodoistTask,
+    ) {
+      await authorize();
+      if (
+        ["create", "update"].includes(kind) ||
+        (kind === "move" && command.action === "move")
+      )
+        await checkFun(token);
+      await validateLinkedMutations(token);
       if (payload.source) await fresh(token);
+      if (kind === "epic-detach" && target)
+        await assertDetachSource(token, target);
       await save({
         pending: {
           kind,
           path,
           body,
-          before: progress.task ?? payload.source ?? undefined,
+          before: target ?? progress.task ?? payload.source ?? undefined,
           requestId: randomUUID(),
         },
       });
@@ -482,12 +547,15 @@ export function createTaskExecutor(
             )
           )
             throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
-          if (
-            command.parentId &&
-            (await reader.task(token, command.parentId)).project_id !==
-              payload.projectId
-          )
-            throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+          if (command.parentId) {
+            const parent = await reader.task(token, command.parentId);
+            if (
+              parent.project_id !== payload.projectId ||
+              parent.checked ||
+              parent.is_deleted
+            )
+              throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+          }
           await mutate(token, "create", "tasks", body);
         } else {
           const t = await fresh(token);
@@ -496,6 +564,10 @@ export function createTaskExecutor(
             await validatePlanAddition(reader, token, payload.planLink!);
             await save({ task: t, stage: "done" });
           }
+          if (command.action === "document")
+            await mutate(token, "update", path, {
+              description: patchDocument(t.description, command.document!),
+            });
           if (command.action === "update")
             await mutate(token, "update", path, fieldPatch(command.fields!));
           if (command.action === "comment")
@@ -551,6 +623,26 @@ export function createTaskExecutor(
           }
           if (command.action === "delete") await mutate(token, "delete", path);
           if (command.action === "close") {
+            if (payload.epicClosure) {
+              if (t.due?.is_recurring)
+                throw new WorkFault("EPIC_RECURRENCE_UNSAFE", 409);
+              for (const rootId of payload.epicClosure.roots) {
+                if (progress.detached?.includes(rootId)) continue;
+                const root = payload.children.find((c) => c.id === rootId);
+                if (!root) throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+                await mutate(
+                  token,
+                  "epic-detach",
+                  "tasks/" + encodeURIComponent(rootId) + "/move",
+                  { project_id: payload.projectId },
+                  root,
+                );
+              }
+              // Every originally open subtree must be proved detached before moving/closing the Epic.
+              if ((progress.children ?? payload.children).length)
+                throw new WorkFault("EPIC_CHILDREN_POLICY", 409);
+              await fresh(token);
+            }
             if (
               progress.stage !== "moved" &&
               progress.stage !== "recurrence-advanced"
