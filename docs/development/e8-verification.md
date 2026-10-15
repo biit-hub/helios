@@ -30,7 +30,7 @@ Native Epic-Übersicht/-Hierarchie; Ziel, vollständige Checklistenbearbeitung u
 ## Bisher ausgeführte Prüfungen
 
 - 109 Unit-/Vertragstests bestanden. Darunter AST-Erhalt/CRLF, mehrdeutige Abschnitte, Checklisten-CRUD, gefährliche Links und aus realen Modellfehlern abgeleitete SMART-Regressionen.
-- Vollständige PostgreSQL-Regression: 202 Fälle bestanden, davon 18 E8-Fälle. Native Mehrstufigkeit, Abschlussnachweise/Unknown, Quellenkonflikte, Einzelpatch-Journal, Korrekturen, Scope/Origin und F1-Stop bei Konflikt/unbekannter Trennung/neuen Kindern geprüft.
+- Vollständige PostgreSQL-Regression: 202 Fälle im ersten Gesamtlauf bestanden; anschliessend 23 E8-Fälle separat bestanden. Native Mehrstufigkeit, Abschlussnachweise/Unknown, Quellenkonflikte, Einzelpatch-Journal, Korrekturen, Scope/Origin und F1-Stop bei Konflikt/unbekannter Trennung/neuen Kindern geprüft.
 - Produktionsbuild und Typprüfung bestanden; Editor in Controller/Felder/Links/Vorschau/Hierarchie/Anreicherung aufgeteilt.
 - Verschlüsselte isolierte E7-zu-E8-Upgrade-/Restore-Probe bestanden: elf Migrationen, 13 Tabellen verglichen, bestehende Plan-/Reserve-/Historien-/Unknown-/KI-/Routinewerte und Epic-Korrekturrevision erhalten. Geschützte Historien-/Routinequellen nach Restore unveränderlich. Keine gestarteten Worker, externen Calls oder Klartextdumpdateien.
 - Weitere abschliessende Browser-, Container-, Sicherheits- und CI-Ergebnisse werden vor Merge ergänzt.
@@ -41,7 +41,7 @@ Windows erreicht den vorhandenen konfigurierten Ubuntu-Ollama-Server im privaten
 
 Reale frühe Fehler: Zitatpräfixe statt wortgetreuer Belege; implizit unterstellte Akzeptanz/Ressourcen/Terminierung; unabhängiges Ergebnis als Checkliste. Prompt/Gegenbeispiele und eigenständige semantische Guards nachgeschärft. Insbesondere ist fehlender Termindruck kein bekannter Termin. Formale Schemagültigkeit wurde nicht als ausreichende Qualität gewertet.
 
-Acht abschliessende Fälle mit tatsächlichem Prompt-/Struktur-/Validierungsvertrag bestanden: vollständiges SMART-Ziel, fehlender Termin, unklares Ziel, ausdrückliche Terminkorrektur, kleiner Checklistenpunkt, unabhängig planbares Arbeitspaket, Epic-Zielbeiträge und Prompt-Injection. Maximal zwei bestehende E6-Versuche; der Fall ohne Termin benötigt einen gezielten Korrekturversuch. Modellbewertungen bleiben menschlich zu prüfen, insbesondere semantische Machbarkeit und sinnvolle Zerlegung.
+Neun abschliessende Fälle mit tatsächlichem Prompt-/Struktur-/Validierungsvertrag bestanden: vollständiges SMART-Ziel, fehlender Termin, unklares Ziel, ausdrückliche Terminkorrektur, kleiner Checklistenpunkt, unabhängig planbares Arbeitspaket, Epic-Zielbeiträge Prompt-Injection sowie ein konkreter bearbeitbarer Zielvorschlag ohne erfundenen Termin. Maximal zwei bestehende E6-Versuche; der Fall ohne Termin benötigt einen gezielten Korrekturversuch. Modellbewertungen bleiben menschlich zu prüfen, insbesondere semantische Machbarkeit und sinnvolle Zerlegung.
 
 ## Grenzen
 
@@ -50,3 +50,5 @@ Kein gemeinsamer atomarer Commit zwischen Todoist und PostgreSQL. Quellenrennen 
 ## Zusätzliche Browserbefunde
 
 Beim realen Browserablauf wurde der Reload nach externem Erfolg bis zur vollständigen Quellenübernahme gesperrt, damit nachfolgende Eingaben nicht überschrieben werden. Ausserdem enthielt die Checklisten-Leseantwort interne AST-Positionen; der strikte Änderungsvertrag wies diese korrekt zurück. Die API projiziert jetzt ausschliesslich text/checked, der Browser tut dies defensiv ebenfalls. Ein PostgreSQL-Lesen-/Vorschau-/Bestätigungs-Roundtrip sichert die Grenze. Keine Validierung wurde gelockert.
+
+Die visuelle Prüfung des synthetischen Epic-Editors führte zu eigenen konsistenten Feld-/Textarea-Stilen statt ungestalteter Browser-Standardfelder. Der E8-Browserablauf mit Ziel/Checkliste/Link, Reload und sicherem Trennen/Abschluss besteht; die vollständige Browserregression läuft bis zur Schlussprüfung weiter.
