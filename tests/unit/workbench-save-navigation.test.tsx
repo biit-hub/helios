@@ -46,14 +46,14 @@ it("keeps navigation disabled until a context save and its authoritative reload 
   render(<Workbench settings />);
   await act(async () => {});
   fireEvent.click(
-    screen.getByRole("button", { name: "Kontext speichern", exact: true }),
+    screen.getByRole("button", { name: "Kontext speichern" }),
   );
   expect(
-    screen.getByRole("link", { name: "Aufgaben", exact: true }),
+    screen.getByRole("link", { name: "Aufgaben" }),
   ).toHaveAttribute("aria-disabled", "true");
   await act(async () => finishSave(Response.json({ ok: true })));
   expect(
-    screen.getByRole("link", { name: "Aufgaben", exact: true }),
+    screen.getByRole("link", { name: "Aufgaben" }),
   ).toHaveAttribute("aria-disabled", "true");
   await act(async () =>
     finishReload(
@@ -61,7 +61,7 @@ it("keeps navigation disabled until a context save and its authoritative reload 
     ),
   );
   expect(
-    screen.getByRole("link", { name: "Aufgaben", exact: true }),
+    screen.getByRole("link", { name: "Aufgaben" }),
   ).toHaveAttribute("aria-disabled", "false");
   expect(
     screen.getByText("Gespeichert. Todoist-Inhalte bleiben unverändert."),
