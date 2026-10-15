@@ -14,6 +14,7 @@ import { token } from "./todoist";
 import type { ContextInput } from "@helios/contracts";
 export function createWorkHarness<F extends { fetcher: typeof fetch }>(
   fixture: () => F,
+  clockStart?: string,
 ) {
   const config = loadWorkConfig({
     ...process.env,
@@ -144,7 +145,7 @@ export function createWorkHarness<F extends { fetcher: typeof fetch }>(
   );
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date());
+    vi.setSystemTime(clockStart ? new Date(clockStart) : new Date());
     await db.pool.query(
       "TRUNCATE auth_user,auth_flows,auth_limits,auth_rate_limit,auth_verification,auth_totp_uses,security_events CASCADE",
     );

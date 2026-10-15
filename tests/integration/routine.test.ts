@@ -23,6 +23,7 @@ import { createTodoistReader } from "../../packages/backend/src/work/todoist";
 import { createTodoistMover } from "../../packages/backend/src/planning/todoist";
 import { createTaskWriter } from "../../packages/backend/src/tasks/todoist";
 import { view as planView } from "../../packages/backend/src/planning/store";
+import { localDay } from "../../packages/backend/src/planning/selection";
 import {
   type RoutineView,
   type ReviewItem,
@@ -31,7 +32,8 @@ import {
 import { createWorkHarness } from "../fixtures/integration-work";
 import { taskFixture } from "../fixtures/tasks";
 import { projects } from "../fixtures/todoist";
-const h = createWorkHarness(taskFixture);
+// Pin the suite after Zurich midnight while UTC is still on the previous day.
+const h = createWorkHarness(taskFixture, "2026-10-15T23:30:00.000Z");
 const { db, config, headers, connect, input, advance } = h;
 const reader = () => createTodoistReader(h.f.fetcher);
 const service = () => createRoutineService(db, config, reader());
@@ -91,7 +93,7 @@ async function prepare(count = 2) {
 async function historical(contextId: string, daysAgo: number) {
   const [integration] = await db.db.select().from(integrations);
   const when = new Date(Date.now() - daysAgo * 86400000);
-  const day = when.toISOString().slice(0, 10);
+  const day = localDay(when, "Europe/Zurich");
   const [p] = await db.db
     .insert(dailyPlans)
     .values({
@@ -585,7 +587,7 @@ it("reuses feedback only for the same frozen plan, without filling older histori
   await db.db.insert(routineDays).values({
     id: priorId,
     userId: (await db.db.select().from(routineDays))[0]!.userId,
-    day: new Date(Date.now() - 86400000).toISOString().slice(0, 10),
+    day: localDay(new Date(Date.now() - 86400000), "Europe/Zurich"),
     timezone: "Europe/Zurich",
     steps: { inbox: "done", contexts: "done", problems: "done" },
     cursor: { step: "review", contextId: c.id },
@@ -797,7 +799,9 @@ it("requires the existing E6 progress draft for partial feedback", async () => {
 });
 it("never reports global completion while a selected context still has an external operation", async () => {
   const { c, d, items } = await reviewSetup();
-  await historical(c.id, 0);
+  const today = await historical(c.id, 0);
+  expect(d.day).toBe("2026-10-16");
+  expect(today.day).toBe(d.day);
   const tasks = createTaskService(db, config, reader());
   await tasks.handle("submit", headers(), {
     key: key(),
