@@ -9,6 +9,8 @@ import type {
   TaskOperationView,
 } from "@helios/contracts";
 import type { ReactNode } from "react";
+import { entryKey } from "@helios/contracts";
+import { AddToPlan, TaskPlanProvider } from "./agenda";
 async function api(path: string, body?: unknown) {
   const r = await fetch(path, {
     method: body === undefined ? "GET" : "POST",
@@ -80,7 +82,7 @@ export function TaskManager({
             : t.sectionName === status)),
   );
   return (
-    <>
+    <TaskPlanProvider context={context}>
       <div className="task-filters">
         <label>
           Aufgaben suchen
@@ -141,6 +143,11 @@ export function TaskManager({
         {visible.map((t) => (
           <div className="task-entry" key={t.data.id}>
             {renderTask(t)}
+            <AddToPlan
+              taskId={t.data.id}
+              instanceKey={entryKey({ taskId: t.data.id, source: t.data })}
+              context={context}
+            />
             <button
               type="button"
               className="secondary task-open"
@@ -162,7 +169,7 @@ export function TaskManager({
         />
       )}
       <TaskOperations contextId={context.id} />
-    </>
+    </TaskPlanProvider>
   );
 }
 export function TaskCapture({ snapshot }: { snapshot: WorkSnapshot }) {

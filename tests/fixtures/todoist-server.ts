@@ -70,6 +70,21 @@ const server = createServer(async (req, res) => {
           section_id: "section:open",
         });
       }
+      if (data.scenario === "agenda") {
+        const template = structuredClone(f.state.tasks[1]!);
+        f.state.tasks = Array.from({ length: 6 }, (_, i) => ({
+          ...template,
+          id: "agenda-browser-" + i,
+          content: "Synthetische Tagesaufgabe " + i,
+          project_id: "project:private/alpha",
+          parent_id: null,
+          labels: [],
+          section_id: "project:private/alpha:section:0",
+          due: null,
+          deadline: null,
+          priority: Math.max(1, 4 - i),
+        }));
+      }
       res.end("{}");
       return;
     }

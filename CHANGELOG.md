@@ -1,5 +1,13 @@
 # Changelog
 
+## E5 – Tagesordnung, Fokuswahl und zyklische Reserve
+
+- Persistente revisionsgesicherte Ordnung in Hauptauswahl und Reserve, Drag-and-drop, Tastatur und Pfeilaktionen.
+- Idempotente Fokuswahl ohne Reorder, bewusste zusätzliche Planaufnahme mit Kontext und Rückweg.
+- Zyklische Reserve mit optionalem Skipgrund, Einzelkartenpause und ausdrücklicher Wiederaufnahme.
+- Nachgewiesener E4-Abschluss entfernt nur die konkrete Reserveinstanz; Unknown und Fehler bleiben sichtbar, keine doppelte Close-Operation.
+- Additive Agenda-/Beobachtungsfelder im bestehenden Modell; bestätigte Quellen und Historie bleiben erhalten. Manuelle E3-/E4-Abnahmen weiterhin offen.
+
 ## E4 – Aufgabenverwaltung und Wartestatus
 
 - Bewusste Formularerfassung, Bearbeitung, native Moves, Kommentare, Warten, Abschluss und Löschung über das erweiterte bestehende Operationsjournal.

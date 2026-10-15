@@ -30,3 +30,5 @@ E2: [Kontexte und Todoist-Lesesicht](contexts-todoist.md), [verifizierte API-Ver
 E3: [Tagesplanung und Fokus](planning-focus.md), Operationsjournal und ausdrücklich bestätigte Hierarchieausnahme.
 
 E4: [Aufgaben-/Operationsvertrag](../integrations/tasks-api.md), [Bedienung](../runbooks/tasks.md) und [tatsächlicher Prüfstand](../development/e4-verification.md). Erweiterung desselben E3-Journals; keine zweite Schreibpipeline. Manuelle E3-Abnahme bleibt offen.
+
+E5: [Persistente Tagesordnung und zyklische Reserve](daily-order-reserve.md), additive Erweiterung desselben E3-Plans und E4-Journals.

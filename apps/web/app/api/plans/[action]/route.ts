@@ -5,5 +5,12 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ action: string }> },
 ) {
-  return guardedDomainPost(request, context, planning, ["confirm", "resume"]);
+  const { action } = await context.params;
+  return guardedDomainPost(
+    request,
+    context,
+    planning,
+    ["confirm", "resume", "admit", "reserve-close"],
+    action === "reorder" ? 131072 : 8192,
+  );
 }

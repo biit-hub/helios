@@ -465,3 +465,78 @@ legend {
 .task-dialog fieldset:disabled {
   opacity: 0.7;
 }
+
+.agenda-list {
+  display: block;
+}
+.agenda-entry {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line, #e4d5c0);
+  border-radius: 1rem;
+  background: var(--surface, #fffdf9);
+}
+.agenda-entry-content {
+  flex: 1;
+  min-width: 0;
+}
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  font-size: 1.4rem;
+  min-width: 44px;
+  min-height: 44px;
+}
+.drag-handle:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+.dragging {
+  opacity: 0.65;
+}
+.drop-target {
+  border-top: 4px solid var(--accent, #a45216);
+  box-shadow: 0 -3px 0 #e8bc8b;
+}
+.agenda-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+.reserve-stack {
+  margin-block: 1.5rem;
+}
+.reserve-card {
+  padding: 1.2rem;
+  border-left: 4px solid var(--accent, #a45216);
+  border-radius: 1rem;
+  background: #f8f0e3;
+}
+.reserve-manage {
+  margin-top: 1rem;
+}
+.reserve-stack input,
+.add-to-plan select {
+  padding: 0.7rem;
+  border: 1px solid #ddcbb4;
+  border-radius: 0.6rem;
+  background: white;
+}
+.add-to-plan {
+  display: flex;
+  gap: 0.7rem;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-block: 1rem;
+}
+.add-to-plan label {
+  display: grid;
+  gap: 0.4rem;
+}
+.task-dialog::backdrop {
+  background: #15203388;
+}
