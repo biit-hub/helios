@@ -70,11 +70,14 @@ test("E5 ordering, keyboard and pointer drag, focus, persistent cyclic reserve a
   await expect(main.locator(".agenda-entry h3").first()).toHaveText(
     original[0]!,
   );
+  // The keyboard drag can retain an inert placeholder until its settling animation ends.
+  // Measure the next pointer target only after that temporary clone is removed.
+  await expect(main.locator("[data-dnd-placeholder]")).toHaveCount(0);
   const source = main.getByRole("button", {
     name: original[0] + " verschieben",
     exact: true,
   });
-  const target = main.locator(".agenda-entry").nth(2);
+  const target = main.getByRole("listitem").nth(2);
   await expect(source).toBeEnabled();
   await source.scrollIntoViewIfNeeded();
   const from = await source.boundingBox();
