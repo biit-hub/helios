@@ -220,11 +220,23 @@ it.each([false, true])(
     fireEvent.click(await screen.findByRole("button", { name: /ready/ }));
     for (const input of screen.getAllByLabelText("Diese Änderung auswählen"))
       fireEvent.click(input);
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Ausgewählte Änderungen bewusst speichern",
-      }),
-    );
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Entwurfsentscheidungen speichern",
+        }),
+      );
+    });
+    expect(
+      screen.getByRole("button", { name: "Entwurfsentscheidungen speichern" }),
+    ).toBeDisabled();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Ausgewählte Änderungen bewusst speichern",
+        }),
+      );
+    });
     await screen.findByText(
       "Änderung angenommen; externer Nachweis steht aus.",
     );
