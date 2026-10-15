@@ -5,6 +5,7 @@ import type {
   CalendarOrientation,
   CalendarOverview,
   CalendarBudget,
+  CalendarPlanBasis,
 } from "@helios/contracts";
 import { routineRequest as api } from "./routine-http";
 const labels: Record<string, string> = {
@@ -108,7 +109,8 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
 export function CalendarContextPanel({
   contextId,
   day,
-}: Readonly<{ contextId?: string; day?: string }>) {
+  basis,
+}: Readonly<{ contextId?: string; day?: string; basis?: CalendarPlanBasis }>) {
   const [data, setData] = useState<CalendarOverview | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -169,6 +171,18 @@ export function CalendarContextPanel({
       aria-label="Kalenderorientierung"
     >
       <h2>Arbeitszeit & Kalender</h2>
+      {basis &&
+        shown.some(
+          (c) =>
+            c.orientation.basis !== basis.basis ||
+            c.orientation.state !== basis.state,
+        ) && (
+          <p role="status">
+            Der Kalenderstand hat sich seit dieser Vorschau geändert. Bestehende
+            Auswahl und bestätigte Pläne bleiben erhalten; eine neue Vorschau
+            entsteht nur auf deinen Auftrag.
+          </p>
+        )}
       {shown.map((c) => (
         <div key={c.contextId}>
           <h3>{c.name}</h3>

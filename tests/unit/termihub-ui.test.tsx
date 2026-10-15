@@ -129,3 +129,52 @@ it("labels stale bounds as historical and leaves manual planning available", asy
     screen.getByText(/Manuell planen bleibt jederzeit möglich/),
   ).toBeVisible();
 });
+it("reports a newer calendar basis without posting a plan mutation", async () => {
+  const old = {
+    ...emptyOrientation("2026-10-15", "Europe/Zurich", "ready"),
+    basis: "synthetic-old",
+  };
+  const current = { ...old, basis: "synthetic-new" };
+  const fetcher = vi.fn(async () =>
+    Response.json({
+      day: current.day,
+      timezone: current.timezone,
+      isToday: true,
+      contexts: [
+        {
+          contextId: "synthetic-context",
+          name: "Synthetic context",
+          orientation: current,
+        },
+      ],
+    }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  render(
+    <CalendarContextPanel
+      contextId="synthetic-context"
+      basis={{
+        snapshotId: null,
+        snapshotRevision: 1,
+        basis: old.basis,
+        state: old.state,
+        retrievedAt: null,
+        budget: null,
+        workMinutes: null,
+        fixedMinutes: null,
+        uncertainMinutes: null,
+        warnings: [],
+      }}
+    />,
+  );
+  expect(
+    await screen.findByText(
+      /Der Kalenderstand hat sich seit dieser Vorschau geändert/,
+    ),
+  ).toBeVisible();
+  expect(fetcher).toHaveBeenCalledOnce();
+  expect(fetcher.mock.calls[0]).toEqual([
+    "/api/calendar?contextId=synthetic-context",
+    { method: "GET", headers: {}, body: undefined, cache: "no-store" },
+  ]);
+});
