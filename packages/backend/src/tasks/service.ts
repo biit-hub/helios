@@ -1,6 +1,7 @@
+import { fingerprint } from "./hash";
 import { z } from "zod";
 import { fromMarkdown } from "mdast-util-from-markdown";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { and, eq, desc, inArray } from "drizzle-orm";
 import { taskCommand, taskFields } from "@helios/contracts";
@@ -22,9 +23,12 @@ import {
 } from "../work/schema";
 import { planOperations, planSteps } from "../planning/schema";
 import type { Database, Db } from "../planning/store";
+import { linkDraft, resumeDraftLink, type DraftLink } from "../ai/store";
 import { readWaiting } from "./waiting";
 import { linkPlan, type PlanLink } from "../planning/agenda-store";
 export type TaskPayload = {
+  analysisLink?: import("../ai/status-policy").AnalysisLink;
+  draftLink?: DraftLink;
   planLink?: PlanLink;
   command: TaskCommand;
   projectId: string;
@@ -34,21 +38,7 @@ export type TaskPayload = {
   source: TodoistTask | null;
   children: TodoistTask[];
 };
-export function canonical(v: unknown): string {
-  if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
-  if (v && typeof v === "object")
-    return (
-      "{" +
-      Object.entries(v)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, x]) => JSON.stringify(k) + ":" + canonical(x))
-        .join(",") +
-      "}"
-    );
-  return JSON.stringify(v) ?? "null";
-}
-export const fingerprint = (v: unknown) =>
-  createHash("sha256").update(canonical(v)).digest("hex");
+export { canonical, fingerprint } from "./hash";
 export function descendants(rows: TodoistTask[], taskId: string) {
   const ids = new Set([taskId]);
   let change = true;
@@ -165,13 +155,24 @@ export function createTaskService(
       links: descriptionLinks(task.description),
     };
   }
-  async function enqueue(h: Headers, raw: unknown, planLink?: PlanLink) {
+  async function enqueue(
+    h: Headers,
+    raw: unknown,
+    planLink?: PlanLink,
+    draftLink?: DraftLink,
+  ) {
     const command = taskCommand.parse(raw);
     if (command.fields?.recurring && command.fields.due !== undefined)
       throw new WorkFault("INVALID_REQUEST");
     if (command.action === "plan-select" && !planLink)
       throw new WorkFault("INVALID_REQUEST");
-    const hash = fingerprint(planLink ? { command, planLink } : command);
+    const hash = fingerprint(
+      draftLink
+        ? { command, draftLink }
+        : planLink
+          ? { command, planLink }
+          : command,
+    );
     const base = await identity.withActive(
       h,
       { mutation: true },
@@ -285,6 +286,7 @@ export function createTaskService(
       throw new WorkFault("EPIC_CHILDREN_POLICY", 409);
     const payload: TaskPayload = {
       ...(planLink ? { planLink } : {}),
+      ...(draftLink ? { draftLink } : {}),
       command,
       projectId,
       contextRevision: scope.c?.revision ?? null,
@@ -326,6 +328,7 @@ export function createTaskService(
         )
           throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
         if (planLink) await linkPlan(db, planLink, id);
+        if (draftLink) await linkDraft(db, user, draftLink, id, command);
         await db.insert(planOperations).values({
           id,
           userId: user,
@@ -394,6 +397,10 @@ export function createTaskService(
     });
   }
   return {
+    async enqueueDraft(h: Headers, input: unknown, link: DraftLink) {
+      await identity.withActive(h, { mutation: true }, async () => {});
+      return enqueue(h, input, undefined, link);
+    },
     async enqueueLinked(h: Headers, input: unknown, link: PlanLink) {
       await identity.withActive(h, { mutation: true }, async () => {});
       return enqueue(h, input, link);
@@ -455,6 +462,8 @@ export function createTaskService(
               throw new WorkFault("REVISION_CONFLICT", 409);
             if (op.retryAt && op.retryAt > new Date())
               throw new WorkFault("RETRY_LATER", 429);
+            const draftLink = (op.payload as unknown as TaskPayload)?.draftLink;
+            if (draftLink) await resumeDraftLink(db, draftLink, op.id);
             await db
               .update(planOperations)
               .set({

@@ -7,6 +7,7 @@ import {
   workerHeartbeats,
   loadWorkConfig,
   createPlanExecutor,
+  createAiWorker,
   log,
 } from "@helios/backend";
 const config = loadWorkConfig();
@@ -18,6 +19,11 @@ const database = createDatabase(config.DATABASE_URL);
 const boss = createQueue(config.DATABASE_URL);
 const id = randomUUID();
 const executor = createPlanExecutor(database, config);
+const ai = createAiWorker(database, config, boss);
+let aiTimer: ReturnType<typeof setInterval> | undefined;
+let scanTimer: ReturnType<typeof setInterval> | undefined;
+let aiBusy = false;
+let scanBusy = false;
 let operationsBusy = false;
 const operationsTimer = setInterval(() => {
   if (operationsBusy) return;
@@ -45,6 +51,9 @@ async function shutdown(code = 0) {
   shuttingDown = true;
   clearInterval(timer);
   clearInterval(operationsTimer);
+  clearInterval(aiTimer);
+  clearInterval(scanTimer);
+  ai.stop();
   await boss.stop({ graceful: true, timeout: 10000 });
   await database.close();
   process.exit(code);
@@ -52,6 +61,29 @@ async function shutdown(code = 0) {
 try {
   await prepareQueue(boss);
   await registerSmokeHandler(boss, database);
+  await ai.register();
+  aiTimer = setInterval(() => {
+    if (aiBusy) return;
+    aiBusy = true;
+    void ai
+      .dispatch()
+      .catch(() => log("error", "ai_dispatch_failed"))
+      .finally(() => {
+        aiBusy = false;
+      });
+  }, 2000);
+  scanTimer = setInterval(() => {
+    if (scanBusy) return;
+    scanBusy = true;
+    void ai
+      .scan()
+      .then(() => ai.syncStatus())
+      .then(() => ai.cleanup())
+      .catch(() => log("error", "ai_scan_failed"))
+      .finally(() => {
+        scanBusy = false;
+      });
+  }, 60000);
   await heartbeat();
   timer = setInterval(() => {
     void heartbeat().catch(() => {

@@ -822,6 +822,35 @@ export function createWorkService(
   };
 }
 const workErrorMessages: Record<string, string> = {
+  AI_OUTCOME_UNRESOLVED:
+    "Die externe Wirkung ist nicht eindeutig ausgeschlossen. Zuerst dieselbe Operation prüfen; unbekannte Writes werden nicht neu erzeugt.",
+  AI_PROFILE_CHANGED:
+    "Modell oder Prompt wurden geändert. Quelle prüfen und KI bewusst erneut versuchen; Originaltext bleibt erhalten.",
+  AI_LOCAL_MODEL_REQUIRED:
+    "Ollama meldet kein nachgewiesenes lokales Textmodell. Cloud- und Remote-Modelle werden abgewiesen.",
+  AI_UNAVAILABLE:
+    "Die lokale KI ist nicht erreichbar oder nicht konfiguriert. Formular und gespeicherte Pläne bleiben nutzbar.",
+  AI_MODEL_MISSING:
+    "Das konfigurierte lokale Modell ist nicht installiert. Es wird nichts automatisch heruntergeladen.",
+  AI_TIMEOUT:
+    "Die lokale KI hat nicht rechtzeitig geantwortet. Originaleingabe bleibt erhalten.",
+  AI_INVALID_OUTPUT:
+    "Die KI-Antwort war nicht gültig. Es wurde nichts gespeichert.",
+  AI_PATCH_INVALID:
+    "Die KI hat einen nicht belegten oder unzulässigen Vorschlag geliefert. Es wurde nichts angewandt.",
+  AI_SOURCE_STALE:
+    "Die Quelle wurde verändert. Entwurf und Eingaben bleiben erhalten; Quelle neu prüfen.",
+  AI_SCOPE_DENIED:
+    "Diese Aufgabe darf in diesem Kontext nicht durch KI analysiert werden.",
+  AI_DRAFT_CONFLICT:
+    "Der Entwurf wurde zwischenzeitlich geändert. Aktuellen Stand laden.",
+  AI_NO_SELECTION:
+    "Bitte mindestens einen offenen Vorschlag bewusst auswählen.",
+  AI_TITLE_REQUIRED:
+    "Für die Erfassung muss der Titel bewusst ausgewählt sein.",
+  CHECKLIST_AMBIGUOUS:
+    "Die Checklistenstruktur ist mehrdeutig. Bestehende Beschreibung zuerst prüfen.",
+
   ...problemMessages,
   RECURRENCE_CONFIRMATION_REQUIRED:
     "Die Datumsänderung würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext verwenden.",

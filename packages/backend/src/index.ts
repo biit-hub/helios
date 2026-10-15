@@ -19,3 +19,6 @@ export { createPlanningService, planningTimezone } from "./planning/service";
 export { createPlanExecutor } from "./planning/operations";
 
 export { createTaskService } from "./tasks/service";
+
+export { createAiService } from "./ai/service";
+export { createAiWorker } from "./ai/worker";

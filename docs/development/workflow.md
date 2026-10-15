@@ -40,3 +40,7 @@ Die Migrationsprüfung erstellt in der isolierten PostgreSQL-Testinstanz eine ne
 ## E5-Regressionsabnahme
 
 Lokale Ordnung, Fokus und Skip dürfen keine Todoist-Writes erzeugen. E5-Aufnahme/Reserveabschluss verwenden injizierte Reader/Writer desselben E4-Journals. Wiederholungsinstanzen, Quellenkonflikte, konkurrierende Revisionen, verlorene Close-Antwort und Wiederaufnahme prüfen. Browser prüfen echte Tastatur- und Pointer-Sensoren; keine DOM-Sensoren global deaktivieren. Zusätzliche Schattenmodelle, Historienupdates oder abgeschwächte Sicherheitsregeln sind ausgeschlossen.
+
+## E6-Regressionsabnahme
+
+Ollama-Tests verwenden explizite synthetische Fixtures, niemals einen geerbten realen LAN-Endpunkt. Modellbenchmark mit vorhandenen lokalen Modellen getrennt von Fixture-/Regressionstests dokumentieren. Managed-only-Prüfung an Enqueue/Ausführung/Statuswrite; Browser/Formular und gespeicherte Pläne ohne KI testen. Workerabbruch, Claims, begrenzte Konkurrenz, Quellrevisionen, Einzelentscheidungen und E4-Unknown-/Teilerfolgsnachweise prüfen. Nicht parallel dieselbe Testdatenbank oder denselben Trivy-Cache verwenden.

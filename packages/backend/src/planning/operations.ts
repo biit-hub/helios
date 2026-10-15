@@ -413,7 +413,10 @@ export function createPlanExecutor(
               eq(planOperations.status, "running"),
             ),
           )
-          .orderBy(planOperations.createdAt)
+          .orderBy(
+            sql.raw("CASE WHEN payload ? 'analysisLink' THEN 1 ELSE 0 END"),
+            planOperations.createdAt,
+          )
           .limit(1);
         if (!op) return false;
         await database.db

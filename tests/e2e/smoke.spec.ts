@@ -11,6 +11,15 @@ test("unauthenticated desktop and mobile shells redirect to real login", async (
   const denied = await request.get("/api/protected");
   expect(denied.status()).toBe(401);
   expect((await request.get("/api/work")).status()).toBe(401);
+  expect((await request.get("/api/ai")).status()).toBe(401);
+  expect(
+    (
+      await request.post("/api/ai/start", {
+        headers: { Origin: process.env.AUTH_ORIGIN! },
+        data: {},
+      })
+    ).status(),
+  ).toBe(401);
   expect((await request.get("/api/work?contextId=invalid")).status()).toBe(401);
   expect(
     (
@@ -37,7 +46,7 @@ test("liveness reveals no configuration; raw auth routes and CSRF are blocked", 
   expect(await r.json()).toEqual({
     status: "ok",
     service: "web",
-    stage: "E5",
+    stage: "E6",
   });
   expect(
     (await request.post("/api/auth/sign-up/email", { data: {} })).status(),
