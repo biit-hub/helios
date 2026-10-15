@@ -20,12 +20,23 @@ async function capture(page: Page, name: string) {
     ).toBeVisible();
     if (name === "epics")
       await expect(page.locator(".epic-grid h3").first()).toBeVisible();
-    if (name === "agenda")
+    if (name === "agenda" || name === "focus")
       await expect(page.locator(".agenda-entry").first()).toBeVisible();
+    if (phase !== "before") {
+      await expect(
+        page.getByRole("button", { name: "＋ Aufgabe erfassen", exact: true }),
+      ).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+    }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: `${folder}/${name}-${width}.png`,
       fullPage: (await page.getByRole("dialog").count()) === 0,
+      animations: "disabled",
     });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -70,6 +81,16 @@ test("E9.1 synthetic desktop design evidence: settings, tasks, dialogs, plan, fo
   await expect(
     page.getByRole("heading", { name: "TermiHub verbinden" }),
   ).toBeVisible();
+  if (phase !== "before") {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.getByRole("link", { name: "Zum Inhalt", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("#main-content")).toBeFocused();
+    await page.locator("#main-content").evaluate((element) => element.blur());
+    await expect(
+      page.getByRole("navigation", { name: "Einstellungsbereiche" }),
+    ).toBeVisible();
+  }
   await capture(page, "settings");
   await connectProject(page, "planning");
   await capture(page, "tasks");
@@ -240,6 +261,20 @@ test("E9.1 synthetic desktop design evidence: TermiHub mappings, read error and 
   await expect(panel.getByText(/Synthetic calendar ·/)).toBeVisible({
     timeout: 35000,
   });
+  if (phase !== "before") {
+    await expect(
+      panel.getByRole("group", {
+        name: "1. Verbindung einrichten",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      panel.getByRole("group", {
+        name: "4. Kalender bewusst zuordnen",
+        exact: true,
+      }),
+    ).toBeVisible();
+  }
   await capture(page, "termihub-mappings");
   await page.route("**/api/termihub", (route) =>
     route.fulfill({

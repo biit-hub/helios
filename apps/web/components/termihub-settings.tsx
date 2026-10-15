@@ -86,7 +86,11 @@ export function TermiHubConnection({
   }
   if (!data)
     return (
-      <section className="card settings-panel">
+      <section
+        id="termihub-settings"
+        className="card settings-panel termihub-settings"
+        aria-label="TermiHub-Einstellungen"
+      >
         <h2>TermiHub verbinden</h2>
         {error ? (
           <p role="alert">{error}</p>
@@ -119,7 +123,8 @@ export function TermiHubConnection({
   ];
   return (
     <section
-      className="card settings-panel"
+      id="termihub-settings"
+      className="card settings-panel termihub-settings"
       aria-label="TermiHub-Einstellungen"
     >
       <h2>TermiHub verbinden</h2>
@@ -164,31 +169,34 @@ export function TermiHubConnection({
             setToken("");
         }}
       >
-        <label>
-          TermiHub-Serveradresse
-          <input
-            name="baseUrl"
-            type="url"
-            placeholder="https://termihub.example.invalid"
-            defaultValue={i.baseUrl}
-            maxLength={2048}
-            required
-          />
-        </label>
-        <label>
-          Neuer TermiHub-API-Token
-          <input
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            maxLength={4096}
-            required
-          />
-        </label>
-        <button type="submit" disabled={busy || !i.keyAvailable}>
-          TermiHub-Token verschlüsselt speichern
-        </button>
+        <fieldset className="settings-group">
+          <legend>1. Verbindung einrichten</legend>
+          <label>
+            TermiHub-Serveradresse
+            <input
+              name="baseUrl"
+              type="url"
+              placeholder="https://termihub.example.invalid"
+              defaultValue={i.baseUrl}
+              maxLength={2048}
+              required
+            />
+          </label>
+          <label>
+            Neuer TermiHub-API-Token
+            <input
+              type="password"
+              autoComplete="off"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              maxLength={4096}
+              required
+            />
+          </label>
+          <button type="submit" disabled={busy || !i.keyAvailable}>
+            TermiHub-Token verschlüsselt speichern
+          </button>
+        </fieldset>
       </form>
       <p className="help">
         {i.hasToken
@@ -196,66 +204,69 @@ export function TermiHubConnection({
           : "Kein Token hinterlegt."}{" "}
         HTTPS-Serveradresse ohne Pfad verwenden.
       </p>
-      <div className="button-row">
-        <label>
-          Referenztag für Arbeitsorganisationen
-          <input
-            type="date"
-            value={day}
-            onChange={(e) => setDay(e.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          disabled={
-            busy ||
-            i.syncing ||
-            pause ||
-            !i.enabled ||
-            !i.hasToken ||
-            !i.keyAvailable
-          }
-          onClick={() => void act("refresh", day ? { day } : {})}
-        >
-          Verbindung prüfen & Kalender lesen
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          disabled={busy}
-          onClick={() => void reload().catch((e) => setError(e.message))}
-        >
-          Gespeicherten Stand neu laden
-        </button>
-        {i.hasToken && (
-          <>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() =>
-                void act(i.enabled ? "disable" : "enable", {
-                  revision: i.revision,
-                })
-              }
-            >
-              {i.enabled ? "TermiHub deaktivieren" : "TermiHub aktivieren"}
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={busy}
-              onClick={() => void act("remove", { revision: i.revision })}
-            >
-              TermiHub-Token entfernen
-            </button>
-          </>
+      <div className="settings-group">
+        <h3>2. Daten lesen und Verbindung prüfen</h3>
+        <div className="button-row">
+          <label>
+            Referenztag für Arbeitsorganisationen
+            <input
+              type="date"
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={
+              busy ||
+              i.syncing ||
+              pause ||
+              !i.enabled ||
+              !i.hasToken ||
+              !i.keyAvailable
+            }
+            onClick={() => void act("refresh", day ? { day } : {})}
+          >
+            Verbindung prüfen & Kalender lesen
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy}
+            onClick={() => void reload().catch((e) => setError(e.message))}
+          >
+            Gespeicherten Stand neu laden
+          </button>
+          {i.hasToken && (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void act(i.enabled ? "disable" : "enable", {
+                    revision: i.revision,
+                  })
+                }
+              >
+                {i.enabled ? "TermiHub deaktivieren" : "TermiHub aktivieren"}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={busy}
+                onClick={() => void act("remove", { revision: i.revision })}
+              >
+                TermiHub-Token entfernen
+              </button>
+            </>
+          )}
+        </div>
+        {pause && (
+          <p className="help">
+            Nächster Abruf frühestens: {at(i.nextAllowedAt)}.
+          </p>
         )}
       </div>
-      {pause && (
-        <p className="help">
-          Nächster Abruf frühestens: {at(i.nextAllowedAt)}.
-        </p>
-      )}
       {i.enabled && i.hasToken && (
         <form
           key={"mapping:" + i.revision}
@@ -286,85 +297,92 @@ export function TermiHubConnection({
             });
           }}
         >
-          <h3>Arbeitsorganisationen bewusst zuordnen</h3>
-          <p className="help">
-            Organisationen werden anhand ihrer IDs aus gelesenen Arbeitszeiten
-            angeboten. Fehlt eine, einen passenden Referenztag lesen. Ein Tag
-            ohne Arbeitszeit entfernt bestehende Zuordnungen nicht.
-          </p>
-          {i.contexts
-            .filter((c) => c.active)
-            .map((c) => (
-              <label key={c.id}>
-                {c.name} · Arbeitsorganisation
-                <select
-                  name={"organization:" + c.id}
-                  defaultValue={c.organizationId ?? ""}
-                >
-                  <option value="">Keine Zuordnung</option>
-                  {c.organizationId &&
-                    !i.organizations.some((o) => o.id === c.organizationId) && (
-                      <option value={c.organizationId}>
-                        Bestehende Referenz {c.organizationId} ·{" "}
-                        {c.instanceMatches
-                          ? "erhalten"
-                          : "erneute Verifikation erforderlich"}
-                      </option>
-                    )}
-                  {i.organizations.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name} · {o.id}
-                    </option>
-                  ))}
-                </select>
-                {!c.instanceMatches && c.organizationId && (
-                  <span className="help">
-                    Diese Referenz ist für die aktuelle Verbindung unbestätigt.
-                  </span>
-                )}
-              </label>
-            ))}
-          <h3>Kalender bewusst zuordnen</h3>
-          <p className="help">
-            Jeden aktiven Kalender einem Kontext zuordnen, ausdrücklich
-            gemeinsam verwenden oder ausschliessen. Gemeinsame Kalender gelten
-            für alle Kontexte. Ungeklärte Quellen ergeben kein verlässliches
-            Budget.
-          </p>
-          {!calendars.length && (
-            <p>Noch kein Kalenderkatalog. Bitte einen Leseabruf ausführen.</p>
-          )}
-          {calendars.map((c) => {
-            const m = i.mappings.find((v) => v.calendarId === c.id);
-            return (
-              <label key={c.id}>
-                {c.name} · {c.id} · {c.type}
-                {!c.available || !c.enabled ? " · nicht verfügbar" : ""}
-                {m && !m.verified ? " · unbestätigt" : ""}
-                <select
-                  name={"calendar:" + c.id}
-                  defaultValue={
-                    m
-                      ? m.mode === "context"
-                        ? "context:" + m.contextId
-                        : m.mode
-                      : ""
-                  }
-                >
-                  <option value="">Ungeklärt lassen</option>
-                  <option value="excluded">Ausschliessen</option>
-                  <option value="shared">Bewusst gemeinsam verwenden</option>
-                  {i.contexts
-                    .filter((v) => v.active)
-                    .map((v) => (
-                      <option key={v.id} value={"context:" + v.id}>
-                        {v.name}
+          <fieldset className="settings-group">
+            <legend>3. Arbeitsorganisationen bewusst zuordnen</legend>
+            <p className="help">
+              Organisationen werden anhand ihrer IDs aus gelesenen Arbeitszeiten
+              angeboten. Fehlt eine, einen passenden Referenztag lesen. Ein Tag
+              ohne Arbeitszeit entfernt bestehende Zuordnungen nicht.
+            </p>
+            {i.contexts
+              .filter((c) => c.active)
+              .map((c) => (
+                <label key={c.id}>
+                  {c.name} · Arbeitsorganisation
+                  <select
+                    name={"organization:" + c.id}
+                    defaultValue={c.organizationId ?? ""}
+                  >
+                    <option value="">Keine Zuordnung</option>
+                    {c.organizationId &&
+                      !i.organizations.some(
+                        (o) => o.id === c.organizationId,
+                      ) && (
+                        <option value={c.organizationId}>
+                          Bestehende Referenz {c.organizationId} ·{" "}
+                          {c.instanceMatches
+                            ? "erhalten"
+                            : "erneute Verifikation erforderlich"}
+                        </option>
+                      )}
+                    {i.organizations.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name} · {o.id}
                       </option>
                     ))}
-                </select>
-              </label>
-            );
-          })}
+                  </select>
+                  {!c.instanceMatches && c.organizationId && (
+                    <span className="help">
+                      Diese Referenz ist für die aktuelle Verbindung
+                      unbestätigt.
+                    </span>
+                  )}
+                </label>
+              ))}
+          </fieldset>
+          <fieldset className="settings-group">
+            <legend>4. Kalender bewusst zuordnen</legend>
+            <p className="help">
+              Jeden aktiven Kalender einem Kontext zuordnen, ausdrücklich
+              gemeinsam verwenden oder ausschliessen. Gemeinsame Kalender gelten
+              für alle Kontexte. Ungeklärte Quellen ergeben kein verlässliches
+              Budget.
+            </p>
+            {!calendars.length && (
+              <p>Noch kein Kalenderkatalog. Bitte einen Leseabruf ausführen.</p>
+            )}
+            {calendars.map((c) => {
+              const m = i.mappings.find((v) => v.calendarId === c.id);
+              return (
+                <label key={c.id}>
+                  {c.name} · {c.id} · {c.type}
+                  {!c.available || !c.enabled ? " · nicht verfügbar" : ""}
+                  {m && !m.verified ? " · unbestätigt" : ""}
+                  <select
+                    name={"calendar:" + c.id}
+                    defaultValue={
+                      m
+                        ? m.mode === "context"
+                          ? "context:" + m.contextId
+                          : m.mode
+                        : ""
+                    }
+                  >
+                    <option value="">Ungeklärt lassen</option>
+                    <option value="excluded">Ausschliessen</option>
+                    <option value="shared">Bewusst gemeinsam verwenden</option>
+                    {i.contexts
+                      .filter((v) => v.active)
+                      .map((v) => (
+                        <option key={v.id} value={"context:" + v.id}>
+                          {v.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              );
+            })}
+          </fieldset>
           <button type="submit" disabled={busy || i.syncing}>
             TermiHub-Zuordnungen speichern
           </button>

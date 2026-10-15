@@ -1,9 +1,11 @@
 # Changelog
 
-## E9.1 – Design-Audit in Arbeit
+## E9.1 – UI-Konsolidierung
 
-- Bestandsaufnahme und priorisierte UI-Konsolidierung dokumentiert; Designsystem-Bestandskatalog und synthetische Desktop-Bildstrecke ergänzt.
-- Vollständiger visueller Sites-V2-Vergleich wartet auf zuverlässig zugängliche Ansichten. Noch keine UI-Neugestaltung oder abgeschlossene E9.1-Abnahme.
+- Vollständigen lokalen Sites-V2-Export geprüft; belegter Design-Audit, gemeinsame Design-Tokens und lokaler Vorher-/Referenz-/Nachher-Vergleich.
+- Sonnenmarke, abgerundete Navigation mit Linienicons, Kontextfarben, Karten, Formulare und Dialoge vereinheitlicht.
+- Fokuskomposition und Routine-Schrittleiste angeglichen; Einstellungen über lokale Anker und TermiHub über verständliche Formulargruppen erschlossen.
+- Tastatur-Sprung zum Inhalt, zusätzliche Fokusmarkierungen, reduzierte Animation und Desktopbreiten-Prüfungen ergänzt. Bestehende E1–E9-Fachfunktionen erhalten; finale Prüfergebnisse im E9.1-Bericht.
 
 ## E9 – TermiHub-Integration (technisch geprüft)
 

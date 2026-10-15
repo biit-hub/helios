@@ -141,151 +141,163 @@ export function MorningRoutine({
               ? "Alle gewählten Schritte sind nachgewiesen abgeschlossen."
               : "Dein Stand ist serverseitig gespeichert. Offene Schritte bleiben wiederaufnehmbar."}
           </p>
-          <nav className="routine-nav" aria-label="Schritte der Morgenroutine">
-            {(["inbox", "contexts"] as RoutineStep[]).map((step) => (
-              <button
-                key={step}
-                className="secondary"
-                aria-current={d.cursor.step === step ? "step" : undefined}
-                disabled={busy}
-                onClick={() => void move("navigate", step).catch(() => {})}
-              >
-                {names[step]} · {states[d.steps[step as "inbox"]]}
-              </button>
-            ))}
-            {d.contexts
-              .filter((c) => c.selected)
-              .map((r) => (
-                <section
-                  key={r.id}
-                  data-theme={
-                    snapshot.contexts.find((c) => c.id === r.contextId)?.theme
-                  }
-                >
-                  <strong>
-                    {snapshot.contexts.find((c) => c.id === r.contextId)
-                      ?.name ?? "Gespeicherter Kontext"}
-                  </strong>
-                  {(["review", "enrichment", "planning"] as const).map(
-                    (step) => (
-                      <button
-                        key={step}
-                        className="secondary"
-                        disabled={busy}
-                        aria-current={
-                          d.cursor.step === step &&
-                          d.cursor.contextId === r.contextId
-                            ? "step"
-                            : undefined
-                        }
-                        onClick={() =>
-                          void move("navigate", step, r.contextId).catch(
-                            () => {},
-                          )
-                        }
-                      >
-                        {names[step]} · {states[r.steps[step]]}
-                      </button>
-                    ),
-                  )}
-                </section>
-              ))}
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() => void move("navigate", "problems").catch(() => {})}
+          <div className="routine-layout">
+            <nav
+              className="routine-nav"
+              aria-label="Schritte der Morgenroutine"
             >
-              {names.problems} · {states[d.steps.problems]}
-            </button>
-          </nav>
-          {d.cursor.step === "inbox" && (
-            <RoutineInbox
-              key={d.id}
-              routine={d}
-              snapshot={snapshot}
-              act={act}
-              refresh={refresh}
-            />
-          )}{" "}
-          {d.cursor.step === "contexts" && (
-            <RoutineContexts routine={d} snapshot={snapshot} act={act} />
-          )}{" "}
-          {rc && context && (
-            <div data-theme={context.theme}>
-              {!context.active && (
-                <p role="alert">
-                  Dieser Kontext ist derzeit inaktiv. Sein gespeicherter Stand
-                  bleibt erhalten; andere Schritte kannst du weiter bearbeiten.
-                </p>
-              )}
-              {d.cursor.step === "review" && (
-                <RoutineReview
-                  key={rc.id}
+              {(["inbox", "contexts"] as RoutineStep[]).map((step) => (
+                <button
+                  key={step}
+                  className="secondary"
+                  aria-current={d.cursor.step === step ? "step" : undefined}
+                  disabled={busy}
+                  onClick={() => void move("navigate", step).catch(() => {})}
+                >
+                  {names[step]} · {states[d.steps[step as "inbox"]]}
+                </button>
+              ))}
+              {d.contexts
+                .filter((c) => c.selected)
+                .map((r) => (
+                  <section
+                    key={r.id}
+                    data-theme={
+                      snapshot.contexts.find((c) => c.id === r.contextId)?.theme
+                    }
+                  >
+                    <strong>
+                      {snapshot.contexts.find((c) => c.id === r.contextId)
+                        ?.name ?? "Gespeicherter Kontext"}
+                    </strong>
+                    {(["review", "enrichment", "planning"] as const).map(
+                      (step) => (
+                        <button
+                          key={step}
+                          className="secondary"
+                          disabled={busy}
+                          aria-current={
+                            d.cursor.step === step &&
+                            d.cursor.contextId === r.contextId
+                              ? "step"
+                              : undefined
+                          }
+                          onClick={() =>
+                            void move("navigate", step, r.contextId).catch(
+                              () => {},
+                            )
+                          }
+                        >
+                          {names[step]} · {states[r.steps[step]]}
+                        </button>
+                      ),
+                    )}
+                  </section>
+                ))}
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() =>
+                  void move("navigate", "problems").catch(() => {})
+                }
+              >
+                {names.problems} · {states[d.steps.problems]}
+              </button>
+            </nav>
+            <div className="routine-content">
+              {d.cursor.step === "inbox" && (
+                <RoutineInbox
+                  key={d.id}
                   routine={d}
-                  context={context}
-                  state={rc}
                   snapshot={snapshot}
                   act={act}
                   refresh={refresh}
                 />
               )}{" "}
-              {d.cursor.step === "enrichment" && (
-                <RoutineEnrichment
-                  key={rc.id}
-                  routine={d}
-                  context={context}
-                  snapshot={snapshot}
-                  refresh={refresh}
-                />
+              {d.cursor.step === "contexts" && (
+                <RoutineContexts routine={d} snapshot={snapshot} act={act} />
               )}{" "}
-              {d.cursor.step === "planning" && (
-                <RoutinePlanning context={context} />
+              {rc && context && (
+                <div data-theme={context.theme}>
+                  {!context.active && (
+                    <p role="alert">
+                      Dieser Kontext ist derzeit inaktiv. Sein gespeicherter
+                      Stand bleibt erhalten; andere Schritte kannst du weiter
+                      bearbeiten.
+                    </p>
+                  )}
+                  {d.cursor.step === "review" && (
+                    <RoutineReview
+                      key={rc.id}
+                      routine={d}
+                      context={context}
+                      state={rc}
+                      snapshot={snapshot}
+                      act={act}
+                      refresh={refresh}
+                    />
+                  )}{" "}
+                  {d.cursor.step === "enrichment" && (
+                    <RoutineEnrichment
+                      key={rc.id}
+                      routine={d}
+                      context={context}
+                      snapshot={snapshot}
+                      refresh={refresh}
+                    />
+                  )}{" "}
+                  {d.cursor.step === "planning" && (
+                    <RoutinePlanning context={context} />
+                  )}
+                </div>
               )}
+              {d.cursor.step === "problems" && (
+                <>
+                  <p>
+                    Diese Prüfung ist freiwillig. «Geprüft» bedeutet weiterhin
+                    nicht «behoben».
+                  </p>
+                  <Problems
+                    snapshot={snapshot}
+                    busy={busy}
+                    action={async (name, body) => {
+                      const result = await routineRequest(
+                        "/api/work/" + name,
+                        body,
+                      );
+                      await refreshSnapshot();
+                      return result;
+                    }}
+                  />
+                </>
+              )}
+              <div className="routine-controls">
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void move("skip", d.cursor.step, d.cursor.contextId).catch(
+                      () => {},
+                    )
+                  }
+                >
+                  Diesen Schritt überspringen · offen lassen
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void move(
+                      "complete",
+                      d.cursor.step,
+                      d.cursor.contextId,
+                    ).catch(() => {})
+                  }
+                >
+                  Diesen Schritt bewusst abschliessen und weiter
+                </button>
+                <Link href="/">Für jetzt pausieren</Link>
+              </div>
             </div>
-          )}
-          {d.cursor.step === "problems" && (
-            <>
-              <p>
-                Diese Prüfung ist freiwillig. «Geprüft» bedeutet weiterhin nicht
-                «behoben».
-              </p>
-              <Problems
-                snapshot={snapshot}
-                busy={busy}
-                action={async (name, body) => {
-                  const result = await routineRequest(
-                    "/api/work/" + name,
-                    body,
-                  );
-                  await refreshSnapshot();
-                  return result;
-                }}
-              />
-            </>
-          )}
-          <div className="routine-controls">
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() =>
-                void move("skip", d.cursor.step, d.cursor.contextId).catch(
-                  () => {},
-                )
-              }
-            >
-              Diesen Schritt überspringen · offen lassen
-            </button>
-            <button
-              disabled={busy}
-              onClick={() =>
-                void move("complete", d.cursor.step, d.cursor.contextId).catch(
-                  () => {},
-                )
-              }
-            >
-              Diesen Schritt bewusst abschliessen und weiter
-            </button>
-            <Link href="/">Für jetzt pausieren</Link>
           </div>
         </>
       )}

@@ -121,3 +121,7 @@ E6 ergänzt [lokale KI und gemeinsamen Fortschritt](docs/runbooks/ai-progress.md
 E8 ergänzt [Epics und SMART-Ziele](docs/runbooks/epics-smart-goals.md): native Todoist-Epics und Hierarchie, gezielte Ziel-/Checklisten-/Linkänderungen, prüfbare SMART- und Zerlegungsentwürfe, abgeleitetes Verständnis und Benutzerkorrekturen. Manueller Epic-Abschluss mit offenen Kindern nur nach vollständigem Trennnachweis oder Abbruch. [Architektur](docs/architecture/epics-smart-goals.md), [API](docs/integrations/epics-api.md), [Prüfbericht](docs/development/e8-verification.md). Manuelle E3–E8-Abnahmen bleiben offen.
 
 E9 ergänzt [TermiHub-Verbindung und Kalenderorientierung](docs/runbooks/termihub.md): bewusste Organisations-/Kalenderzuordnung, sichere externe Lesezugriffe, geteilte Arbeitsfenster und vorsichtige Zeitbudget-Spannen. [Architekturentscheid](docs/architecture/termihub-calendar.md), [Vertrag](docs/integrations/termihub.md), [Prüfstand](docs/development/e9-verification.md). Manuelle E3–E9-Abnahmen bleiben offen.
+
+### E9.1 – UI-Konsolidierung
+
+Die Oberfläche orientiert sich am verifizierten Sites-V2-Export. [Design-Audit](docs/design/e9.1-ui-audit.md), [gemeinsames Designsystem](docs/design/design-system.md) und [Prüfung/manuelle visuelle Abnahme](docs/development/e9.1-verification.md) beschreiben die Umsetzung. Referenzquellen und lokale Vergleichsbilder werden nicht veröffentlicht. Die fachliche manuelle E3–E9-Abnahme bleibt offen.

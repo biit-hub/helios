@@ -6,6 +6,7 @@ import { Problems } from "./problems";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Brand } from "@helios/ui";
+import { WorkbenchNavigation, SettingsJumpLinks } from "./workbench-navigation";
 import { themes, problemMessages } from "@helios/contracts";
 import type {
   ContextInput,
@@ -139,6 +140,9 @@ export function Workbench({
       className={"workspace" + (mobile ? " mobile-workspace" : "")}
       data-theme={current?.theme ?? "copper"}
     >
+      <a className="skip-link" href="#main-content">
+        Zum Inhalt
+      </a>
       <div className="work-shell">
         <header>
           <Brand />
@@ -177,68 +181,21 @@ export function Workbench({
           </div>
         </header>
         {!mobile && (
-          <nav
-            className="work-nav"
-            aria-label="Hauptnavigation"
-            onClickCapture={(event) => {
-              if (busy) {
-                event.preventDefault();
-                event.stopPropagation();
-              }
-            }}
-          >
-            <Link
-              aria-disabled={busy}
-              href="/morning"
-              aria-current={routine ? "page" : undefined}
-            >
-              Morgenroutine
-            </Link>
-            <Link
-              aria-disabled={busy}
-              aria-current={planning === "focus" ? "page" : undefined}
-              href={"/?context=" + selected}
-            >
-              Fokus
-            </Link>
-            <Link
-              aria-disabled={busy}
-              aria-current={planning === "plan" ? "page" : undefined}
-              href={"/plan?context=" + selected}
-            >
-              Tagesplan
-            </Link>
-            <Link
-              aria-disabled={busy}
-              aria-current={
-                !settings && !planning && !routine && !epics
-                  ? "page"
-                  : undefined
-              }
-              href={"/tasks?context=" + selected}
-            >
-              Aufgaben
-            </Link>
-            <Link
-              aria-disabled={busy}
-              aria-current={settings ? "page" : undefined}
-              href="/settings/contexts"
-            >
-              Einstellungen
-            </Link>
-            <Link
-              aria-disabled={busy}
-              aria-current={epics ? "page" : undefined}
-              href={"/epics?context=" + selected}
-            >
-              Epics
-            </Link>
-            <Link aria-disabled={busy} href="/settings/security">
-              Sicherheit
-            </Link>
-          </nav>
+          <WorkbenchNavigation
+            busy={busy}
+            contextId={selected}
+            view={
+              routine
+                ? "morning"
+                : settings
+                  ? "settings"
+                  : epics
+                    ? "epics"
+                    : (planning ?? "tasks")
+            }
+          />
         )}
-        <main>
+        <main id="main-content" tabIndex={-1}>
           <div className="eyebrow">
             {routine
               ? "IN DEINEM TEMPO"
@@ -284,6 +241,7 @@ export function Workbench({
           )}
           {snapshot && settings && (
             <>
+              <SettingsJumpLinks />
               <StepUp onError={setError} />
               <Connection
                 data={snapshot}
@@ -291,7 +249,7 @@ export function Workbench({
                 pause={pause}
                 action={action}
               />
-              <section className="card settings-panel">
+              <section id="contexts-settings" className="card settings-panel">
                 <div className="panel-heading">
                   <div>
                     <h2>Arbeitgeber & Privat</h2>
@@ -326,7 +284,9 @@ export function Workbench({
                 ))}
               </section>
               <TermiHubConnection onChange={load} />
-              <Problems snapshot={snapshot} busy={busy} action={action} />
+              <div id="integration-problems">
+                <Problems snapshot={snapshot} busy={busy} action={action} />
+              </div>
             </>
           )}
           {epics && current && snapshot && (
@@ -462,7 +422,7 @@ function Connection({
     [tokenSaved, setTokenSaved] = useState(false);
   const i = data.integration;
   return (
-    <section className="card settings-panel auth-card">
+    <section id="todoist-settings" className="card settings-panel auth-card">
       <h2>Todoist verbinden</h2>
       <p>
         Helios liest mit dem API-Token deine Aufgaben. Erst nach bewusster

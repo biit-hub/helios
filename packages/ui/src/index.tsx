@@ -1,11 +1,14 @@
+export { Icon } from "./icon";
 import type { ReactNode } from "react";
 export function Brand() {
   return (
     <a href="/" className="brand" aria-label="Helios Startseite">
-      <span aria-hidden="true" className="sun">
-        ☀
-      </span>{" "}
-      Helios
+      <span aria-hidden="true" className="brand-orb" />
+      <span className="brand-copy">
+        <span className="brand-kicker">Lokaler Fokusassistent</span>
+        <span className="brand-title">HELIOS</span>
+        <span className="brand-tagline">Bringt Licht ins Chaos</span>
+      </span>
     </a>
   );
 }
