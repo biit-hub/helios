@@ -1,5 +1,10 @@
 # Changelog
 
+## E9.1 – Design-Audit in Arbeit
+
+- Bestandsaufnahme und priorisierte UI-Konsolidierung dokumentiert; Designsystem-Bestandskatalog und synthetische Desktop-Bildstrecke ergänzt.
+- Vollständiger visueller Sites-V2-Vergleich wartet auf zuverlässig zugängliche Ansichten. Noch keine UI-Neugestaltung oder abgeschlossene E9.1-Abnahme.
+
 ## E9 – TermiHub-Integration (technisch geprüft)
 
 - Konfigurierbare verschlüsselte Verbindung, Step-up, verifizierte Organisations- und Kalenderzuordnungen, GET-only-Reader mit SSRF-/DNS-/Redirect-/TLS-Schutz.
