@@ -29,7 +29,9 @@ const warnings: Record<string, string> = {
   travel_unassigned: "Eine Reisezeit ist nicht sicher einem Termin zugeordnet.",
   no_work_data: "Keine Arbeitszeit im gelesenen Tag vorhanden.",
   source_timezone_changed: "Die Quellzeitzone ist uneinheitlich.",
-  snapshot_version_unsupported:
+  no_work_decision_conflict:
+    "Die bewusste Entscheidung ohne Arbeitszeit widerspricht neuen Arbeitseinsätzen. Bitte prüfen.",
+  snapshot_schema_changed:
     "Dieser gespeicherte Datenstand muss neu gelesen werden.",
 };
 const budget = (b: CalendarBudget) =>
@@ -48,9 +50,7 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
       {v.reliable && v.budget ? (
         <p>
           Orientierung für den ganzen Plantag:{" "}
-          <strong>{budget(v.budget)}</strong> innerhalb der gemeldeten
-          Arbeitszeiten nach festen und möglichen Belegungen. Bereits
-          verstrichene Zeit ist darin enthalten.
+          <strong>{budget(v.budget)}</strong>.
         </p>
       ) : (
         <p>
@@ -64,45 +64,53 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
           aktuelle Planungsgrundlage.
         </p>
       )}
-      {!!v.modes.length && (
+      <details>
+        <summary>Arbeitsfenster, Belegungen und Hinweise</summary>
         <p className="help">
-          Gemeldeter Arbeitsmodus: {v.modes.join(" · ")}. Die Kontextwahl bleibt
-          frei.
+          Die Orientierung umfasst den ganzen gemeldeten Plantag,
+          einschliesslich vergangener Zeit. Sie weist Aufgaben keine Uhrzeiten
+          zu und verändert bestätigte Pläne nicht.
         </p>
-      )}
-      {!!v.work.length && (
-        <p className="help">
-          Gemeldete Arbeitsfenster ({v.timezone}):{" "}
-          {v.work
-            .map(
-              (w) =>
-                `${new Date(w.start).toLocaleTimeString("de-CH", { timeZone: v.timezone, hour: "2-digit", minute: "2-digit" })}–${new Date(w.end).toLocaleTimeString("de-CH", { timeZone: v.timezone, hour: "2-digit", minute: "2-digit" })}`,
-            )
-            .join(" · ")}
-          . Arbeitsort schränkt die Kontextwahl nicht ein.
-        </p>
-      )}
-      {v.fixedMinutes !== null && (
-        <p className="help">
-          Feste Belegung innerhalb der Arbeitsfenster: {v.fixedMinutes} Min.
-        </p>
-      )}
-      {v.uncertainMinutes !== null && v.uncertainMinutes > 0 && (
-        <p className="help">
-          Unsichere Belegung: {v.uncertainMinutes} Min. Die Spanne
-          berücksichtigt deren mögliche Belegung.
-        </p>
-      )}
-      {!!v.warnings.length && (
-        <ul className="help">
-          {v.warnings.map((w) => (
-            <li key={w}>
-              {warnings[w] ??
-                "Dieser Datenstand ist nur eingeschränkt verwendbar."}
-            </li>
-          ))}
-        </ul>
-      )}
+        {!!v.modes.length && (
+          <p className="help">
+            Gemeldeter Arbeitsmodus: {v.modes.join(" · ")}. Die Kontextwahl
+            bleibt frei.
+          </p>
+        )}
+        {!!v.work.length && (
+          <p className="help">
+            Gemeldete Arbeitsfenster ({v.timezone}):{" "}
+            {v.work
+              .map(
+                (w) =>
+                  `${new Date(w.start).toLocaleTimeString("de-CH", { timeZone: v.timezone, hour: "2-digit", minute: "2-digit" })}–${new Date(w.end).toLocaleTimeString("de-CH", { timeZone: v.timezone, hour: "2-digit", minute: "2-digit" })}`,
+              )
+              .join(" · ")}
+            . Arbeitsort schränkt die Kontextwahl nicht ein.
+          </p>
+        )}
+        {v.fixedMinutes !== null && (
+          <p className="help">
+            Feste Belegung innerhalb der Arbeitsfenster: {v.fixedMinutes} Min.
+          </p>
+        )}
+        {v.uncertainMinutes !== null && v.uncertainMinutes > 0 && (
+          <p className="help">
+            Unsichere Belegung: {v.uncertainMinutes} Min. Die Spanne
+            berücksichtigt deren mögliche Belegung.
+          </p>
+        )}
+        {!!v.warnings.length && (
+          <ul className="help">
+            {v.warnings.map((w) => (
+              <li key={w}>
+                {warnings[w] ??
+                  "Dieser Datenstand ist nur eingeschränkt verwendbar."}
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
     </>
   );
 }

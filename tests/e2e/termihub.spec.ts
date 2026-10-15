@@ -182,7 +182,7 @@ test("TermiHub settings, guarded mappings, refreshed budget and unchanged confir
     .then((r) => r.json());
   expect(unchanged.plan).toEqual(before.plan);
   expect(unchanged.history).toEqual(before.history);
-  await page.screenshot({
+  await second.screenshot({
     path: "private/e9-calendar-stale.png",
     fullPage: true,
   });
