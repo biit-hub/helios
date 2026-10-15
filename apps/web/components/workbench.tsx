@@ -173,23 +173,39 @@ export function Workbench({
           </div>
         </header>
         {!mobile && (
-          <nav className="work-nav" aria-label="Hauptnavigation">
-            <Link href="/morning" aria-current={routine ? "page" : undefined}>
+          <nav
+            className="work-nav"
+            aria-label="Hauptnavigation"
+            onClickCapture={(event) => {
+              if (busy) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+          >
+            <Link
+              aria-disabled={busy}
+              href="/morning"
+              aria-current={routine ? "page" : undefined}
+            >
               Morgenroutine
             </Link>
             <Link
+              aria-disabled={busy}
               aria-current={planning === "focus" ? "page" : undefined}
               href={"/?context=" + selected}
             >
               Fokus
             </Link>
             <Link
+              aria-disabled={busy}
               aria-current={planning === "plan" ? "page" : undefined}
               href={"/plan?context=" + selected}
             >
               Tagesplan
             </Link>
             <Link
+              aria-disabled={busy}
               aria-current={
                 !settings && !planning && !routine ? "page" : undefined
               }
@@ -198,12 +214,15 @@ export function Workbench({
               Aufgaben
             </Link>
             <Link
+              aria-disabled={busy}
               aria-current={settings ? "page" : undefined}
               href="/settings/contexts"
             >
               Einstellungen
             </Link>
-            <Link href="/settings/security">Sicherheit</Link>
+            <Link aria-disabled={busy} href="/settings/security">
+              Sicherheit
+            </Link>
           </nav>
         )}
         <main>

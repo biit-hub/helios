@@ -198,11 +198,12 @@ export function createTaskService(
         }
         const scope = await taskScope(db, user, command.contextId);
         let projectId = scope.c?.projectId ?? null;
-        if (routineLink?.kind === "inbox") {
-          projectId = routineLink.sourceProjectId;
-          if (!(await allowedProject(db, scope.i, projectId)).inbox)
-            throw new WorkFault("ROUTINE_SCOPE_DENIED", 409);
-        }
+        if (routineLink?.kind === "inbox")
+          projectId = await routineInboxProject(
+            db,
+            scope.i,
+            routineLink.sourceProjectId,
+          );
         if (command.action === "create") {
           taskFields.parse(command.fields);
           if (command.contextId && command.projectId !== scope.c?.projectId)
@@ -520,4 +521,14 @@ function descriptionLinks(description: string) {
   }
   visit(fromMarkdown(description));
   return found;
+}
+
+async function routineInboxProject(
+  db: Db,
+  i: typeof integrations.$inferSelect,
+  projectId: string,
+) {
+  if (!(await allowedProject(db, i, projectId)).inbox)
+    throw new WorkFault("ROUTINE_SCOPE_DENIED", 409);
+  return projectId;
 }

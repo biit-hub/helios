@@ -1,45 +1,29 @@
+import { selectContexts } from "./context-selection";
+import { cursor } from "./steps";
 import { z } from "zod";
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import {
-  routineCommand,
-  entryKey,
-  type RoutineCommand,
-  type RoutineStep,
-  type RoutineCursor,
-} from "@helios/contracts";
+import { routineCommand, type RoutineCommand } from "@helios/contracts";
 import type { Database, Db } from "../planning/store";
 import type { WorkConfig } from "../work/config";
 import { createIdentityService } from "../identity/service";
 import { WorkFault } from "../work/service";
-import { contexts, integrations } from "../work/schema";
-import { dailyPlans } from "../planning/schema";
+import { integrations } from "../work/schema";
 import { localDay } from "../planning/selection";
 import { planningTimezone } from "../planning/service";
 import { fingerprint } from "../tasks/hash";
 import { createTodoistReader, type TodoistReader } from "../work/todoist";
-import {
-  routineDays,
-  routineContexts,
-  routineEvents,
-  type RoutineDay,
-} from "./schema";
+import { routineDays, routineEvents, type RoutineDay } from "./schema";
 import {
   ownedDay,
   current,
   ownedContext,
   advanceDay,
-  advanceContext,
   record,
   view,
   requireRevision,
 } from "./store";
-import {
-  freezeReview,
-  reviewEntries,
-  readReview,
-  effectiveFeedback,
-} from "./review";
+import { readReview } from "./review";
 import { createRoutineInbox } from "./inbox";
 import { createRoutineReview } from "./review-actions";
 import { enrichmentCandidates } from "./enrichment";
@@ -142,123 +126,6 @@ export function createRoutineService(
       return { day, timezone, routine: d ? await view(db, d) : null };
     });
   }
-  async function cursor(
-    db: Db,
-    d: RoutineDay,
-    input: RoutineCommand,
-    state?: "done" | "skipped_open",
-  ) {
-    const step = input.step ?? d.cursor.step;
-    const contextId = input.contextId ?? null;
-    const selected = await db
-      .select()
-      .from(routineContexts)
-      .where(
-        and(
-          eq(routineContexts.routineId, d.id),
-          eq(routineContexts.selected, true),
-        ),
-      )
-      .orderBy(asc(routineContexts.position));
-    if (["review", "enrichment", "planning"].includes(step)) {
-      if (!contextId || input.contextRevision === undefined)
-        throw new WorkFault("INVALID_REQUEST", 400);
-      const { r } = await ownedContext(db, d, contextId, input.contextRevision);
-      let next = r;
-      if (step === "review" && !r.reviewHistoryId)
-        next = await freezeReview(db, d, r);
-      if (state === "done" && step === "review") {
-        const feedback = await effectiveFeedback(db, next);
-        if (
-          reviewEntries(next).some(
-            (e) =>
-              !feedback.some(
-                (f) => f.entryKey === entryKey(e) && f.status !== "unknown",
-              ),
-          )
-        )
-          throw new WorkFault("REVIEW_STILL_OPEN", 409);
-      }
-      if (state === "done" && step === "planning") {
-        const [p] = await db
-          .select()
-          .from(dailyPlans)
-          .where(
-            and(eq(dailyPlans.contextId, contextId), eq(dailyPlans.day, d.day)),
-          );
-        if (p?.status !== "confirmed" || p.agenda?.pending.length)
-          throw new WorkFault("PLAN_NOT_CONFIRMED", 409);
-      }
-      await advanceContext(db, next, {
-        steps: {
-          ...next.steps,
-          [step]:
-            state ??
-            (next.steps[step as "review"] === "done" ? "done" : "started"),
-        },
-      });
-    } else
-      await db
-        .update(routineDays)
-        .set({
-          steps: {
-            ...d.steps,
-            [step]:
-              state ??
-              (d.steps[step as "inbox"] === "done" ? "done" : "started"),
-          },
-        })
-        .where(eq(routineDays.id, d.id));
-    const order: RoutineCursor[] = [
-      { step: "inbox", contextId: null },
-      { step: "contexts", contextId: null },
-      ...selected.flatMap((c) =>
-        (["review", "enrichment", "planning"] as RoutineStep[]).map((step) => ({
-          step,
-          contextId: c.contextId,
-        })),
-      ),
-      { step: "problems", contextId: null },
-    ];
-    const at = order.findIndex(
-      (x) => x.step === step && x.contextId === contextId,
-    );
-    if (at < 0) throw new WorkFault("ROUTINE_SCOPE_DENIED", 409);
-    const target = state
-      ? order[Math.min(at + 1, order.length - 1)]!
-      : order[at]!;
-    if (
-      state &&
-      ["review", "enrichment", "planning"].includes(target.step) &&
-      target.contextId
-    ) {
-      let { r: targetContext } = await ownedContext(db, d, target.contextId);
-      if (target.step === "review")
-        targetContext = await freezeReview(db, d, targetContext);
-      if (targetContext.steps[target.step as "review"] !== "done")
-        await advanceContext(db, targetContext, {
-          steps: { ...targetContext.steps, [target.step]: "started" },
-        });
-    } else if (
-      state &&
-      ["inbox", "contexts", "problems"].includes(target.step)
-    ) {
-      const [latest] = await db
-        .select()
-        .from(routineDays)
-        .where(eq(routineDays.id, d.id));
-      if (latest!.steps[target.step as "inbox"] !== "done")
-        await db
-          .update(routineDays)
-          .set({ steps: { ...latest!.steps, [target.step]: "started" } })
-          .where(eq(routineDays.id, d.id));
-    }
-    await db
-      .update(routineDays)
-      .set({ cursor: target })
-      .where(eq(routineDays.id, d.id));
-    return { cursor: target };
-  }
   const inbox = createRoutineInbox(database, config, reader, local);
   const review = createRoutineReview(database, config, reader, local);
   return {
@@ -335,49 +202,7 @@ export function createRoutineService(
       return local(action, h, raw, async (db, d, input) => {
         if (action === "start" || action === "resume") return {};
         if (action === "select-contexts") {
-          if (
-            !input.contextIds ||
-            new Set(input.contextIds).size !== input.contextIds.length
-          )
-            throw new WorkFault("INVALID_REQUEST", 400);
-          const all = await db
-            .select()
-            .from(contexts)
-            .where(eq(contexts.userId, d.userId));
-          if (
-            input.contextIds.some(
-              (id) => !all.some((c) => c.id === id && c.active),
-            )
-          )
-            throw new WorkFault("CONTEXT_NOT_FOUND", 404);
-          await db
-            .update(routineContexts)
-            .set({ selected: false })
-            .where(eq(routineContexts.routineId, d.id));
-          for (const [position, id] of input.contextIds.entries()) {
-            const [r] = await db
-              .select()
-              .from(routineContexts)
-              .where(
-                and(
-                  eq(routineContexts.routineId, d.id),
-                  eq(routineContexts.contextId, id),
-                ),
-              );
-            if (r) await advanceContext(db, r, { selected: true, position });
-            else
-              await db.insert(routineContexts).values({
-                id: randomUUID(),
-                routineId: d.id,
-                contextId: id,
-                position,
-                steps: {
-                  review: "open",
-                  enrichment: "open",
-                  planning: "open",
-                },
-              });
-          }
+          await selectContexts(db, d, input);
           return {};
         }
         if (action === "navigate" || action === "skip" || action === "complete")
@@ -391,16 +216,6 @@ export function createRoutineService(
                 ? "done"
                 : undefined,
           );
-        if (action === "inbox-defer") {
-          if (!input.taskId) throw new WorkFault("INVALID_REQUEST", 400);
-          await db
-            .update(routineDays)
-            .set({
-              deferredIds: [...new Set([...d.deferredIds, input.taskId])],
-            })
-            .where(eq(routineDays.id, d.id));
-          return { taskId: input.taskId };
-        }
         if (action === "inbox-reopen") {
           await db
             .update(routineDays)

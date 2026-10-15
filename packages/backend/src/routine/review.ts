@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
   entryKey,
   type PlanEntry,
+  type TodoistTask,
   type ReviewItem,
   type RoutineCommand,
 } from "@helios/contracts";
@@ -126,13 +127,7 @@ export async function readReview(
     try {
       const inspected = await tasks.inspect(h, r.contextId, e.taskId);
       basis = inspected.basis;
-      native =
-        entryKey({ taskId: inspected.task.id, source: inspected.task }) !==
-        entryKey(e)
-          ? "instance_changed"
-          : inspected.task.checked
-            ? "completed"
-            : "active";
+      native = nativeState(inspected.task, e);
     } catch (error) {
       if (error instanceof AuthFault) throw error;
       code = error instanceof WorkFault ? error.code : "REVIEW_SOURCE_UNKNOWN";
@@ -212,4 +207,10 @@ export function selectEntries(r: RoutineContext, input: RoutineCommand) {
     if (!e) throw new WorkFault("REVIEW_INSTANCE_CONFLICT", 409);
     return e;
   });
+}
+
+function nativeState(task: TodoistTask, e: PlanEntry): ReviewItem["native"] {
+  if (entryKey({ taskId: task.id, source: task }) !== entryKey(e))
+    return "instance_changed";
+  return task.checked ? "completed" : "active";
 }
