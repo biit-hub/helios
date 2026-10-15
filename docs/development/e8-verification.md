@@ -30,7 +30,7 @@ Native Epic-Übersicht/-Hierarchie; Ziel, vollständige Checklistenbearbeitung u
 ## Bisher ausgeführte Prüfungen
 
 - 109 Unit-/Vertragstests bestanden. Darunter AST-Erhalt/CRLF, mehrdeutige Abschnitte, Checklisten-CRUD, gefährliche Links und aus realen Modellfehlern abgeleitete SMART-Regressionen.
-- Vollständige PostgreSQL-Regression: 202 Fälle im ersten Gesamtlauf bestanden; anschliessend 23 E8-Fälle separat bestanden. Native Mehrstufigkeit, Abschlussnachweise/Unknown, Quellenkonflikte, Einzelpatch-Journal, Korrekturen, Scope/Origin und F1-Stop bei Konflikt/unbekannter Trennung/neuen Kindern geprüft.
+- Vollständige PostgreSQL-Regression: 202 Fälle im ersten Gesamtlauf bestanden; anschliessend 24 E8-Fälle auf frisch migrierter separater Datenbank bestanden. Native Mehrstufigkeit, Abschlussnachweise/Unknown, Quellenkonflikte, Einzelpatch-Journal, Korrekturen, Scope/Origin und F1-Stop bei Konflikt/unbekannter Trennung/neuen Kindern geprüft.
 - Produktionsbuild und Typprüfung bestanden; Editor in Controller/Felder/Links/Vorschau/Hierarchie/Anreicherung aufgeteilt.
 - Verschlüsselte isolierte E7-zu-E8-Upgrade-/Restore-Probe bestanden: elf Migrationen, 13 Tabellen verglichen, bestehende Plan-/Reserve-/Historien-/Unknown-/KI-/Routinewerte und Epic-Korrekturrevision erhalten. Geschützte Historien-/Routinequellen nach Restore unveränderlich. Keine gestarteten Worker, externen Calls oder Klartextdumpdateien.
 - Weitere abschliessende Browser-, Container-, Sicherheits- und CI-Ergebnisse werden vor Merge ergänzt.
@@ -52,3 +52,5 @@ Kein gemeinsamer atomarer Commit zwischen Todoist und PostgreSQL. Quellenrennen 
 Beim realen Browserablauf wurde der Reload nach externem Erfolg bis zur vollständigen Quellenübernahme gesperrt, damit nachfolgende Eingaben nicht überschrieben werden. Ausserdem enthielt die Checklisten-Leseantwort interne AST-Positionen; der strikte Änderungsvertrag wies diese korrekt zurück. Die API projiziert jetzt ausschliesslich text/checked, der Browser tut dies defensiv ebenfalls. Ein PostgreSQL-Lesen-/Vorschau-/Bestätigungs-Roundtrip sichert die Grenze. Keine Validierung wurde gelockert.
 
 Die visuelle Prüfung des synthetischen Epic-Editors führte zu eigenen konsistenten Feld-/Textarea-Stilen statt ungestalteter Browser-Standardfelder. Der E8-Browserablauf mit Ziel/Checkliste/Link, Reload und sicherem Trennen/Abschluss besteht; die vollständige Browserregression läuft bis zur Schlussprüfung weiter.
+
+Die finale E8-Risikosuite umfasst 24 bestandene PostgreSQL-Fälle. Ein zusätzlicher Test belegt, dass eine zu umfangreiche KI-Quelle die manuelle Ziel-/Checklistenansicht nicht blockiert. Historische Gesamtläufe wurden während der Erweiterung nicht als finaler Commitnachweis gewertet; CI prüft den unveränderten finalen Stand vollständig.

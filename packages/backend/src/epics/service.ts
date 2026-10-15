@@ -61,17 +61,26 @@ export function createEpicService(
       await reader.tasks(token, base.scope.c.projectId!),
       taskId,
     );
-    const source =
-      !inspection.task.checked && !inspection.task.is_deleted
-        ? await readSource(
-            database,
-            config,
-            reader,
-            base.user,
-            contextId,
-            taskId,
-          )
-        : null;
+    let source: Awaited<ReturnType<typeof readSource>> | null = null;
+    if (
+      !inspection.task.checked &&
+      !inspection.task.is_deleted &&
+      inspection.task.labels.includes("epic")
+    ) {
+      try {
+        source = await readSource(
+          database,
+          config,
+          reader,
+          base.user,
+          contextId,
+          taskId,
+        );
+      } catch (e) {
+        if (!(e instanceof WorkFault && e.code === "AI_SOURCE_TOO_LARGE"))
+          throw e;
+      }
+    }
     if (
       source &&
       fingerprint(source.inspection.task) !== fingerprint(inspection.task)

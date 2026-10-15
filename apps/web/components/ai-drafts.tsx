@@ -36,6 +36,8 @@ const labels: Record<AiPatch["kind"], string> = {
   subtask: "Eigenständig planbare Unteraufgabe",
 };
 const messages: Record<string, string> = {
+  AI_SOURCE_TOO_LARGE:
+    "Die KI-Quelle ist zu umfangreich. Ziele und Checklisten bleiben manuell bearbeitbar; bitte die Aufgabe oder einen kleineren Teilbaum gezielt prüfen.",
   AI_PROFILE_CHANGED:
     "Modell oder Prompt wurden geändert. Quelle prüfen und KI bewusst erneut versuchen.",
   AI_LOCAL_MODEL_REQUIRED:

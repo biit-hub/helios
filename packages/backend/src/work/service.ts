@@ -824,6 +824,8 @@ export function createWorkService(
   };
 }
 const workErrorMessages: Record<string, string> = {
+  AI_SOURCE_TOO_LARGE:
+    "Die KI-Quelle ist zu umfangreich. Ziele und Checklisten bleiben manuell bearbeitbar; bitte die Aufgabe oder einen kleineren Teilbaum gezielt prüfen.",
   MARKDOWN_AMBIGUOUS:
     "Der Ziel- oder Linkabschnitt ist mehrdeutig. Bitte die ursprüngliche Beschreibung prüfen.",
   DOCUMENT_LINK_INVALID:

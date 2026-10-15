@@ -556,3 +556,15 @@ it("API checklist values roundtrip through the strict preview/confirmation contr
   expect((await op(a.operationId)).status).toBe("succeeded");
   expect(h.f.state.tasks[0]!.description).toBe(p.after);
 });
+it("keeps manual goal/checklist details usable when AI context exceeds its bound", async () => {
+  const c = await prepare(true);
+  h.f.state.tasks[1]!.description = "Synthetischer Kontext ".repeat(500);
+  h.f.state.tasks[2]!.description = "Weiterer Kontext ".repeat(700);
+  const d = await epics().detail(headers(), c.id, "epic-root");
+  expect(d.goal).toBe("Handbuch veröffentlichen");
+  expect(d.checklist[0]?.text).toBe("Quellen sammeln");
+  expect(d.cache).toBeNull();
+  await expect(start(c.id, "smart")).rejects.toMatchObject({
+    code: "AI_SOURCE_TOO_LARGE",
+  });
+});
