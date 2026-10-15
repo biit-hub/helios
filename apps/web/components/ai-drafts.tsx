@@ -61,12 +61,14 @@ export function AiDraftPanel({
   taskId,
   snapshot,
   manualFields = {},
+  expectedInstanceKey,
 }: {
   kind: "capture" | "progress" | "clarification";
   contextId?: string | null;
   taskId?: string;
   snapshot: WorkSnapshot;
   manualFields?: Partial<TaskFields>;
+  expectedInstanceKey?: string;
 }) {
   const [input, setInput] = useState(""),
     [draft, setDraft] = useState<AiDraftView | null>(null),
@@ -153,7 +155,9 @@ export function AiDraftPanel({
     setAvailable(data.available);
     const filtered = data.drafts.filter(
       (d) =>
-        d.kind === kind || (kind === "clarification" && d.kind === "analysis"),
+        (!expectedInstanceKey || d.instanceKey === expectedInstanceKey) &&
+        (d.kind === kind ||
+          (kind === "clarification" && d.kind === "analysis")),
     );
     setRows((previous) =>
       filtered.map((d) => {
@@ -233,7 +237,7 @@ export function AiDraftPanel({
           setSaving(false);
       }
     }
-  }, [contextId, taskId, kind, applyNext]);
+  }, [contextId, taskId, kind, applyNext, expectedInstanceKey]);
   useEffect(() => {
     let alive = true;
     const refresh = () => {
@@ -352,6 +356,7 @@ export function AiDraftPanel({
             ...(taskId ? { taskId } : {}),
             input,
             ...(kind === "capture" ? { manualFields } : {}),
+            ...(expectedInstanceKey ? { expectedInstanceKey } : {}),
           })
             .then(select)
             .catch((e) => setError(e.message))

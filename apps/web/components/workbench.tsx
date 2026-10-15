@@ -1,4 +1,6 @@
 "use client";
+import { MorningRoutine } from "./morning-routine";
+import { Problems } from "./problems";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Brand } from "@helios/ui";
@@ -31,10 +33,12 @@ const at = (value: string | null) =>
   value ? new Date(value).toLocaleString("de-CH") : "Noch nicht abgerufen";
 export function Workbench({
   planning,
+  routine = false,
   settings = false,
   mobile = false,
 }: Readonly<{
   planning?: "focus" | "plan";
+  routine?: boolean;
   settings?: boolean;
   mobile?: boolean;
 }>) {
@@ -84,7 +88,7 @@ export function Workbench({
     };
   }, []);
   useEffect(() => {
-    if (!selected || settings || mobile || planning) return;
+    if (!selected || settings || mobile || planning || routine) return;
     const abort = new AbortController();
 
     request(
@@ -97,7 +101,7 @@ export function Workbench({
         if (e.name !== "AbortError") setError(e.message);
       });
     return () => abort.abort();
-  }, [selected, settings, mobile, planning, refreshId]);
+  }, [selected, settings, mobile, planning, refreshId, routine]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -170,6 +174,9 @@ export function Workbench({
         </header>
         {!mobile && (
           <nav className="work-nav" aria-label="Hauptnavigation">
+            <Link href="/morning" aria-current={routine ? "page" : undefined}>
+              Morgenroutine
+            </Link>
             <Link
               aria-current={planning === "focus" ? "page" : undefined}
               href={"/?context=" + selected}
@@ -183,7 +190,9 @@ export function Workbench({
               Tagesplan
             </Link>
             <Link
-              aria-current={!settings && !planning ? "page" : undefined}
+              aria-current={
+                !settings && !planning && !routine ? "page" : undefined
+              }
               href={"/tasks?context=" + selected}
             >
               Aufgaben
@@ -199,31 +208,37 @@ export function Workbench({
         )}
         <main>
           <div className="eyebrow">
-            {settings
-              ? "DEIN ARBEITSRAUM"
-              : mobile
-                ? "DEINE KONTEXTE"
-                : planning
-                  ? "DEIN TAG, DEIN FOKUS"
-                  : "DEINE AUFGABEN, BEWUSST VERWALTET"}
+            {routine
+              ? "IN DEINEM TEMPO"
+              : settings
+                ? "DEIN ARBEITSRAUM"
+                : mobile
+                  ? "DEINE KONTEXTE"
+                  : planning
+                    ? "DEIN TAG, DEIN FOKUS"
+                    : "DEINE AUFGABEN, BEWUSST VERWALTET"}
           </div>
           <h1>
-            {settings
-              ? "Alles am richtigen Platz."
-              : mobile
-                ? "Für wen startest du heute?"
-                : planning
-                  ? "Ein guter nächster Schritt."
-                  : (current?.name ?? "Deine Aufgaben")}
+            {routine
+              ? "Ein ruhiger Start in deinen Tag."
+              : settings
+                ? "Alles am richtigen Platz."
+                : mobile
+                  ? "Für wen startest du heute?"
+                  : planning
+                    ? "Ein guter nächster Schritt."
+                    : (current?.name ?? "Deine Aufgaben")}
           </h1>
           <p className="lead">
-            {settings
-              ? "Arbeitgeber und Privat bewusst einrichten. Jeder Kontext bleibt eigenständig."
-              : mobile
-                ? "Die gemeinsame Morgenroutine folgt in einer späteren Etappe."
-                : planning
-                  ? "Eine bewusste Auswahl und ein guter nächster Schritt. Jeder Kontext bleibt eigenständig."
-                  : "Ein ruhiger Überblick. Änderungen werden bewusst bestätigt und extern nachgewiesen."}
+            {routine
+              ? "Ein Schritt nach dem anderen. Du kannst jederzeit pausieren oder später fortsetzen."
+              : settings
+                ? "Arbeitgeber und Privat bewusst einrichten. Jeder Kontext bleibt eigenständig."
+                : mobile
+                  ? "Die gemeinsame Morgenroutine folgt in einer späteren Etappe."
+                  : planning
+                    ? "Eine bewusste Auswahl und ein guter nächster Schritt. Jeder Kontext bleibt eigenständig."
+                    : "Ein ruhiger Überblick. Änderungen werden bewusst bestätigt und extern nachgewiesen."}
           </p>
           {error && (
             <p role="alert" className="form-error">
@@ -284,7 +299,14 @@ export function Workbench({
           {planning && current && (
             <PlanningPanel key={current.id} context={current} mode={planning} />
           )}
-          {snapshot && !settings && !mobile && !planning && (
+          {routine && snapshot && (
+            <MorningRoutine
+              snapshot={snapshot}
+              refreshSnapshot={load}
+              onContextChange={setSelected}
+            />
+          )}
+          {snapshot && !settings && !mobile && !planning && !routine && (
             <TaskOverview
               snapshot={snapshot}
               current={current}
@@ -677,59 +699,6 @@ function ContextEditor({
         </button>
       </form>
     </article>
-  );
-}
-function Problems({
-  snapshot,
-  busy,
-  action,
-}: Readonly<{
-  snapshot: WorkSnapshot;
-  busy: boolean;
-  action: Action;
-}>) {
-  return (
-    <section className="card settings-panel">
-      <h2>Verbindungen & Probleme</h2>
-      {!snapshot.problems.length ? (
-        <p>Keine erfassten Verbindungsprobleme.</p>
-      ) : (
-        snapshot.problems.map((p) => (
-          <article key={p.id} className="problem-row">
-            <h3>{problemMessages[p.code]}</h3>
-            <p>
-              {snapshot.contexts.find((c) => c.id === p.contextId)?.name ??
-                "Todoist"}{" "}
-              ·{" "}
-              {p.status === "checked"
-                ? "Geprüft · weiterhin offen"
-                : p.status === "resolved"
-                  ? "Behoben durch erfolgreichen Abruf"
-                  : "Offen"}{" "}
-              · {p.occurrences} Auftreten
-            </p>
-            <p className="help">
-              {p.code} · {at(p.lastSeenAt)}
-            </p>
-            {p.status === "open" && (
-              <button
-                type="button"
-                disabled={busy}
-                className="secondary"
-                onClick={() =>
-                  void action("problem-check", {
-                    id: p.id,
-                    revision: p.revision,
-                  }).catch(() => {})
-                }
-              >
-                Als geprüft markieren
-              </button>
-            )}
-          </article>
-        ))
-      )}
-    </section>
   );
 }
 function TaskCard({

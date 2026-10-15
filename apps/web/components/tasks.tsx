@@ -277,20 +277,24 @@ function TaskOperations({ contextId }: { contextId: string }) {
     )
   );
 }
-function TaskEditor({
+export function TaskEditor({
   snapshot,
   context,
   taskId,
   close,
+  initialMode = "form",
+  expectedInstanceKey,
 }: {
   snapshot: WorkSnapshot;
   context?: ContextView;
   taskId?: string;
   close: () => void;
+  initialMode?: "form" | "progress" | "clarification";
+  expectedInstanceKey?: string;
 }) {
   const [aiMode, setAiMode] = useState<
     "form" | "progress" | "clarification" | "capture"
-  >("form");
+  >(initialMode);
   const [inspection, setInspection] = useState<TaskInspection | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -358,6 +362,13 @@ function TaskEditor({
       );
       setInspection(data);
       const t = data.task;
+      if (
+        expectedInstanceKey &&
+        entryKey({ taskId: t.id, source: t }) !== expectedInstanceKey
+      )
+        throw new Error(
+          "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
+        );
       const d = t.due?.datetime ?? t.due?.date ?? "";
       const absolute = /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(d);
       const instant = absolute ? new Date(d) : null;
@@ -409,7 +420,7 @@ function TaskEditor({
     } finally {
       setBusy(false);
     }
-  }, [taskId, context]);
+  }, [taskId, context, expectedInstanceKey]);
   useEffect(() => {
     const timer = setTimeout(() => void loadSource(), 0);
     return () => clearTimeout(timer);
@@ -655,6 +666,7 @@ function TaskEditor({
             <div hidden={aiMode !== "progress"}>
               <AiDraftPanel
                 kind="progress"
+                expectedInstanceKey={expectedInstanceKey}
                 contextId={context.id}
                 taskId={taskId}
                 snapshot={snapshot}
@@ -663,6 +675,7 @@ function TaskEditor({
             <div hidden={aiMode !== "clarification"}>
               <AiDraftPanel
                 kind="clarification"
+                expectedInstanceKey={expectedInstanceKey}
                 contextId={context.id}
                 taskId={taskId}
                 snapshot={snapshot}

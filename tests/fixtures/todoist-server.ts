@@ -61,6 +61,35 @@ const server = createServer(async (req, res) => {
       )
         throw new Error("Invalid fixture mode");
       f.state.mode = data.mode;
+      if (data.scenario === "routine") {
+        const template = structuredClone(f.state.tasks[1]!);
+        f.state.tasks = [
+          ...Array.from({ length: 2 }, (_, i) => ({
+            ...structuredClone(template),
+            id: "routine-browser-" + i,
+            project_id: "project:private/alpha",
+            parent_id: null,
+            section_id: "project:private/alpha:section:0",
+            content: "Synthetische Reviewaufgabe " + i,
+            description:
+              "## Checkliste\n- [ ] Quellen sammeln\n- [ ] Folien schreiben\n\n## Notizen\nFremd erhalten",
+            labels: [],
+            due: null,
+            deadline: null,
+          })),
+          ...Array.from({ length: 3 }, (_, i) => ({
+            ...structuredClone(template),
+            id: "routine-inbox-" + i,
+            project_id: "inbox:opaque",
+            parent_id: null,
+            section_id: null,
+            content: "Synthetischer Eingang " + i,
+            labels: [],
+            due: null,
+            deadline: null,
+          })),
+        ];
+      }
       if (data.scenario === "planning") {
         const template = structuredClone(f.state.tasks[1]!);
         const ids = ["project:private/alpha", "project:work/beta"];

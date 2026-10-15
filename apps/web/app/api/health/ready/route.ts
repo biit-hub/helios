@@ -28,12 +28,21 @@ export async function GET() {
     await database.pool.query(
       "SELECT clear_fingerprint,analysis_fingerprint,label_owned FROM ai_task_signals LIMIT 1",
     );
+    await database.pool.query(
+      "SELECT revision,cursor,steps FROM routine_days LIMIT 1",
+    );
+    await database.pool.query(
+      "SELECT review_history_id,steps FROM routine_contexts LIMIT 1",
+    );
+    await database.pool.query(
+      "SELECT status,operation_id,draft_id FROM review_feedback LIMIT 1",
+    );
     const r = await database.pool.query(
       "SELECT 1 FROM worker_heartbeats WHERE seen_at > now() - interval '35 seconds' LIMIT 1",
     );
     if (!r.rowCount) throw new Error("Worker unavailable");
     return Response.json(
-      { status: "ok", service: "web", stage: "E6" },
+      { status: "ok", service: "web", stage: "E7" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
