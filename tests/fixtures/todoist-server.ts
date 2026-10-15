@@ -9,7 +9,7 @@ const origin = new URL(
   process.env.TODOIST_TEST_ORIGIN ?? "http://127.0.0.1:3102/api/v1/",
 );
 if (origin.hostname !== "127.0.0.1") throw new Error("Loopback required");
-const f = fixture();
+let f = fixture();
 const server = createServer(async (req, res) => {
   try {
     if (req.url === "/assertions") {
@@ -29,6 +29,7 @@ const server = createServer(async (req, res) => {
       let raw = "";
       for await (const chunk of req) raw += chunk;
       const data = JSON.parse(raw);
+      if (data.reset === true) f = fixture();
       if (
         !["ok", "auth_error", "network", "rate_limit", "unexpected"].includes(
           data.mode,

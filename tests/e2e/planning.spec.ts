@@ -90,18 +90,14 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
     .getByRole("button", { name: "Als Fokus wählen", exact: true })
     .click();
   await expect(page.locator(".focus-hero h2")).toHaveText(title);
-  expect(await page.locator(".today-entry h3").allTextContents()).toEqual(
-    order,
-  );
+  await expect(page.locator(".today-entry h3")).toHaveText(order);
   const state = await page.context().storageState();
   const restarted = await chromium.launch();
   const restored = await restarted.newContext({ storageState: state });
   const reopened = await restored.newPage();
   await reopened.goto(baseURL + "/");
   await expect(reopened.locator(".focus-hero h2")).toHaveText(title);
-  expect(await reopened.locator(".today-entry h3").allTextContents()).toEqual(
-    order,
-  );
+  await expect(reopened.locator(".today-entry h3")).toHaveText(order);
   await restored.close();
   await restarted.close();
   await page.screenshot({ path: "private/e3-focus.png", fullPage: true });
