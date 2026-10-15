@@ -32,3 +32,7 @@ Kein Hintergrundpolling und keine neue Queue. Manuelle Refreshes nutzen dieselbe
 ## Tatsächlicher Prüfstand
 
 Offizielle Dokumentation und Quellverträge geprüft; synthetischer HTTP-Vertragsserver mit paginierten, offiziell strukturierten Antworten sowie echte PostgreSQL-/Browserabläufe getestet. Noch kein lesender Live-Vertragstest mit einem separaten Todoist-Testaccount ausgeführt: dafür lag kein freigegebener Testtoken vor. Keine Behauptung, dass ein produktiver Account abgeglichen wurde. Spätere Schreib-/Recurring-/Completed-/Webhooks-Verträge sind ausdrücklich nicht abgenommen. Siehe [E2-Prüfbericht](../development/e2-verification.md).
+
+## E8 – F1-Vertrag
+
+Der isolierte Live-Nachweis bestätigt native Parent-Kaskade und das Wiederöffnen des Parents beim Öffnen eines Kindes. Der Auftraggeber hat deshalb ausschliesslich Trennen oder Abbrechen bestätigt. IDs/Kommentare/mehrstufige Teilbäume bleiben beim Trennen im selben Projekt erhalten; erst vollständiger Nachweis erlaubt Epic-Close. [Architekturentscheid](../architecture/epics-smart-goals.md), [Prüfbericht](../development/e8-verification.md).

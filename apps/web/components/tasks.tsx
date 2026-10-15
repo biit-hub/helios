@@ -10,6 +10,7 @@ import type {
 } from "@helios/contracts";
 import type { ReactNode } from "react";
 import { entryKey } from "@helios/contracts";
+import { TaskDocument } from "./task-document";
 import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
 async function api(path: string, body?: unknown) {
@@ -40,7 +41,7 @@ const taskError: Record<string, string> = {
   HIERARCHY_CONFIRMATION_REQUIRED:
     "Diese Aktion betrifft die Hierarchie. Bitte die Auswirkung ausdrücklich bestätigen.",
   EPIC_CHILDREN_POLICY:
-    "Der gesonderte Epic-Abschluss mit offenen Kindern folgt in E8.",
+    "Epic-Abschluss benötigt die ausdrückliche Wahl: offene Teilbäume trennen oder abbrechen.",
   INTENT_EXPIRED:
     "Die Bestätigungsfrist ist abgelaufen. Nach Anmeldung bewusst fortsetzen.",
   rate_limit:
@@ -190,7 +191,7 @@ export function TaskCapture({ snapshot }: { snapshot: WorkSnapshot }) {
     </>
   );
 }
-function TaskOperations({ contextId }: { contextId: string }) {
+export function TaskOperations({ contextId }: { contextId: string }) {
   const [operationError, setOperationError] = useState("");
   const [rows, setRows] = useState<
     (TaskOperationView & { contextId: string | null })[]
@@ -225,10 +226,12 @@ function TaskOperations({ contextId }: { contextId: string }) {
                 <summary>Bestätigte Originaleingaben</summary>
                 <p>{r.input.fields?.content}</p>
                 <pre>
-                  {r.input.fields?.description ??
-                    r.input.comment ??
-                    r.input.waiting?.subject ??
-                    ""}
+                  {r.input.document
+                    ? documentSummary(r.input.document)
+                    : (r.input.fields?.description ??
+                      r.input.comment ??
+                      r.input.waiting?.subject ??
+                      "")}
                 </pre>
                 <p>
                   {r.input.fields?.due !== undefined
@@ -252,11 +255,18 @@ function TaskOperations({ contextId }: { contextId: string }) {
             </p>
             {r.result !== null && Array.isArray(r.result.effects) && (
               <p>
-                {(r.result.effects as { kind: string; status: string }[]).map(
-                  (x, i) => (
-                    <span key={i}>{x.kind}: nachgewiesen · </span>
-                  ),
-                )}
+                {(
+                  r.result.effects as {
+                    kind: string;
+                    status: string;
+                    title?: string;
+                  }[]
+                ).map((x, i) => (
+                  <span key={i}>
+                    {x.kind === "epic-detach" ? "Teilbaum getrennt" : x.kind}
+                    {x.title ? " «" + x.title + "»" : ""}: nachgewiesen ·{" "}
+                  </span>
+                ))}
               </p>
             )}
             {["unknown", "failed", "partial"].includes(r.status) && (
@@ -315,6 +325,7 @@ export function TaskEditor({
     [subject, setSubject] = useState(""),
     [followUp, setFollowUp] = useState(""),
     [hierarchy, setHierarchy] = useState(false),
+    [epicDetach, setEpicDetach] = useState(false),
     [destructive, setDestructive] = useState(false),
     [fun, setFun] = useState(false),
     [recurring, setRecurring] = useState(""),
@@ -361,6 +372,7 @@ export function TaskEditor({
           encodeURIComponent(taskId),
       );
       setInspection(data);
+      setEpicDetach(false);
       const t = data.task;
       if (
         expectedInstanceKey &&
@@ -466,6 +478,11 @@ export function TaskEditor({
         acknowledgeHierarchy: hierarchy,
         acknowledgeDestructive: destructive,
         acknowledgeRecurrenceChange: removeRecurrence,
+        ...(action === "close" &&
+        inspection?.task.labels.includes("epic") &&
+        epicDetach
+          ? { epicClosePolicy: "detach" as const }
+          : {}),
       };
       if (action === "create" || action === "update") {
         const allLabels = [
@@ -769,6 +786,14 @@ export function TaskEditor({
               ))}
             </details>
           </div>
+        )}
+        {inspection && context && (
+          <TaskDocument
+            key={inspection.basis}
+            context={context}
+            taskId={inspection.task.id}
+            snapshot={snapshot}
+          />
         )}
         <fieldset
           hidden={aiMode !== "form"}
@@ -1085,11 +1110,71 @@ export function TaskEditor({
                     checked={hierarchy}
                     onChange={(e) => setHierarchy(e.target.checked)}
                   />
-                  Ich bestätige die angezeigte Hierarchiewirkung: bei
-                  Abschnittswechseln Unteraufgabe abtrennen, bei Oberaufgaben
-                  alle angezeigten Kinder mitverschieben beziehungsweise
-                  mitabschliessen oder mitlöschen.
+                  {inspection.task.labels.includes("epic")
+                    ? "Ich bestätige die angezeigte Hierarchiewirkung. Für den Epic-Abschluss gilt ausschliesslich die unten ausdrücklich gewählte Trennung; beim Löschen werden Kinder mitgelöscht."
+                    : "Ich bestätige die angezeigte Hierarchiewirkung: bei Abschnittswechseln Unteraufgabe abtrennen, bei Oberaufgaben alle angezeigten Kinder mitverschieben beziehungsweise mitabschliessen oder mitlöschen."}
                 </label>
+              )}
+              {inspection.task.labels.includes("epic") && (
+                <section className="card">
+                  <h3>Epic manuell abschliessen</h3>
+                  {inspection.task.due?.is_recurring && (
+                    <p>
+                      Ein wiederholendes Epic kann nicht dauerhaft geschlossen
+                      werden. Wiederholung zuerst bewusst im Formular ändern
+                      oder entfernen.
+                    </p>
+                  )}
+                  {inspection.children.length > 0 && (
+                    <>
+                      <p>
+                        Der native Todoist-Abschluss würde offene Kinder
+                        mitabschliessen. Helios trennt deshalb die folgenden
+                        offenen Teilbäume vor dem Abschluss:
+                      </p>
+                      <ul>
+                        {inspection.children.map((c) => (
+                          <li key={c.id}>
+                            {c.content} ·{" "}
+                            {c.parentId === inspection.task.id
+                              ? "direktes Kind wird eigenständig"
+                              : "bleibt innerhalb des getrennten Teilbaums"}
+                          </li>
+                        ))}
+                      </ul>
+                      <p>
+                        Direkte offene Kinder werden im gleichen Projekt
+                        eigenständige Hauptaufgaben ohne Abschnitt. Ihre Kinder
+                        bleiben angehängt. IDs, Inhalte, Kommentare und
+                        historische Planreferenzen bleiben erhalten. Die
+                        bestehende Tagesauswahl wird nicht ergänzt. Ein neuer
+                        Vorschlag wird später bewusst geprüft. Das Epic wird
+                        erst nach vollständigem Nachweis nach Abgeschlossen
+                        verschoben und nativ geschlossen. Bei Fehlern bleibt es
+                        offen; bereits erfolgte Trennungen stehen im Journal.
+                      </p>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={epicDetach}
+                          onChange={(e) => setEpicDetach(e.target.checked)}
+                        />
+                        Alle angezeigten offenen Teilbäume bewusst trennen und
+                        anschliessend Epic abschliessen
+                      </label>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => {
+                          setEpicDetach(false);
+                          setDestructive(false);
+                        }}
+                      >
+                        Abbrechen – keine neue Änderung ausführen
+                      </button>
+                    </>
+                  )}
+                </section>
               )}
               <label className="check-label">
                 <input
@@ -1102,7 +1187,14 @@ export function TaskEditor({
               </label>
               <button
                 type="button"
-                disabled={pending || !destructive}
+                disabled={
+                  pending ||
+                  !destructive ||
+                  !!inspection.task.checked ||
+                  (inspection.task.labels.includes("epic") &&
+                    (!!inspection.task.due?.is_recurring ||
+                      (inspection.children.length > 0 && !epicDetach)))
+                }
                 onClick={() => void submit("close")}
               >
                 Aufgabe abschliessen
@@ -1128,4 +1220,13 @@ export function TaskEditor({
       </section>
     </div>
   );
+}
+
+function documentSummary(change: import("@helios/contracts").DocumentChange) {
+  if (change.kind === "goal") return "Ziel: " + change.value;
+  if (change.kind === "checklist")
+    return change.items
+      .map((p) => (p.checked ? "☑ " : "☐ ") + p.text)
+      .join("\n");
+  return change.label + " · " + change.url;
 }

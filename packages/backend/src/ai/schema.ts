@@ -20,6 +20,10 @@ import type {
   TodoistTask,
 } from "@helios/contracts";
 export type AiSource = {
+  userCorrection?: string;
+  childComments?: { taskId: string; comments: TaskInspection["comments"] }[];
+  ancestorCorrections?: { taskId: string; text: string; revision: number }[];
+  unknownChildren?: { id: string; content: string }[];
   inspection: TaskInspection;
   parent: TodoistTask | null;
   ancestors?: TodoistTask[];
@@ -97,6 +101,8 @@ export const aiTaskSignals = pgTable(
     }),
     labelOwned: boolean("label_owned").notNull().default(false),
     remainingMinutes: integer("remaining_minutes"),
+    epicCorrection: text("epic_correction").notNull().default(""),
+    correctionRevision: integer("correction_revision").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -824,6 +824,14 @@ export function createWorkService(
   };
 }
 const workErrorMessages: Record<string, string> = {
+  MARKDOWN_AMBIGUOUS:
+    "Der Ziel- oder Linkabschnitt ist mehrdeutig. Bitte die ursprüngliche Beschreibung prüfen.",
+  DOCUMENT_LINK_INVALID:
+    "Bitte einen sicheren HTTP-, HTTPS- oder Obsidian-Link ohne eingebettete Zugangsdaten angeben.",
+  EPIC_RECURRENCE_UNSAFE:
+    "Ein wiederholendes Epic würde als neue Instanz offen bleiben. Wiederholung zuerst bewusst ändern oder entfernen.",
+  EPIC_HIERARCHY_LIMIT:
+    "Das Epic enthält zu viele offene Kinder für diesen sicheren Einzeldurchlauf. Bitte zuerst Teilbäume prüfen.",
   AI_OUTCOME_UNRESOLVED:
     "Die externe Wirkung ist nicht eindeutig ausgeschlossen. Zuerst dieselbe Operation prüfen; unbekannte Writes werden nicht neu erzeugt.",
   AI_PROFILE_CHANGED:
@@ -869,7 +877,7 @@ const workErrorMessages: Record<string, string> = {
   FUN_PRIVATE_ONLY:
     "Das Label fun ist ausschliesslich für private Aufgaben vorgesehen.",
   EPIC_CHILDREN_POLICY:
-    "Der gesonderte Epic-Abschluss mit offenen Kindern folgt in E8.",
+    "Vor dem Epic-Abschluss alle offenen Teilbäume ausdrücklich zum Trennen bestätigen oder abbrechen.",
   WAITING_AMBIGUOUS:
     "Der Wartedetails-Abschnitt ist mehrdeutig oder enthält unbekannten Inhalt. Bitte zuerst direkt in Todoist prüfen.",
 

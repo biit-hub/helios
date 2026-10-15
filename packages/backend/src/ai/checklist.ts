@@ -1,42 +1,7 @@
-import { fromMarkdown } from "mdast-util-from-markdown";
+import { markdownSection } from "../tasks/markdown-section";
+const section = (text: string) => markdownSection(text, "Checkliste");
 import { WorkFault } from "../work/service";
 const conflict = () => new WorkFault("CHECKLIST_AMBIGUOUS", 409);
-function nodeText(value: unknown): string {
-  if (!value || typeof value !== "object") return "";
-  const n = value as { value?: string; children?: unknown[] };
-  return n.value ?? n.children?.map(nodeText).join("") ?? "";
-}
-function section(text: string) {
-  const nodes = fromMarkdown(text).children;
-  const headings = nodes
-    .map((n, index) => ({ n, index }))
-    .filter(
-      ({ n }) =>
-        n.type === "heading" && n.depth === 2 && nodeText(n) === "Checkliste",
-    );
-  if (
-    headings.some(
-      ({ n }) =>
-        !(
-          n.type === "heading" &&
-          n.children.length === 1 &&
-          n.children[0]?.type === "text"
-        ),
-    )
-  )
-    throw conflict();
-  if (headings.length > 1) throw conflict();
-  const match = headings[0];
-  if (!match) return null;
-  const start = match.n.position!.end.offset!;
-  let end = text.length;
-  for (const n of nodes.slice(match.index + 1))
-    if (n.type === "heading" && n.depth <= 2) {
-      end = n.position!.start.offset!;
-      break;
-    }
-  return { start, end };
-}
 export function readChecklist(text: string) {
   const s = section(text);
   if (!s) return [];

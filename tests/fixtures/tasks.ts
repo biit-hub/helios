@@ -123,10 +123,17 @@ export function taskFixture() {
       const match = path.match(/^tasks\/(.+?)(?:\/(move|close))?$/);
       const t = f.state.tasks.find((t) => t.id === match?.[1]);
       if (!t) return Response.json({}, { status: 404 });
-      const affected = [
-        t,
-        ...f.state.tasks.filter((c) => c.parent_id === t.id),
-      ];
+      const ids = new Set([t.id]);
+      let more = true;
+      while (more) {
+        more = false;
+        for (const c of f.state.tasks)
+          if (c.parent_id && ids.has(c.parent_id) && !ids.has(c.id)) {
+            ids.add(c.id);
+            more = true;
+          }
+      }
+      const affected = f.state.tasks.filter((c) => ids.has(c.id));
       if (method === "DELETE") {
         f.state.tasks = f.state.tasks.filter(
           (v) => !affected.some((c) => c.id === v.id),

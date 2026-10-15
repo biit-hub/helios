@@ -1,9 +1,13 @@
+import { validateEpicOutput } from "../epics/validation";
 import { dateIsGrounded, referenceDay, aiTimezone } from "./dates";
 import type { AiOutput, AiDraftView } from "@helios/contracts";
 import { WorkFault } from "../work/service";
 import type { AiSource } from "./schema";
 import { readChecklist } from "./checklist";
-const allowed = {
+const allowed: Record<AiDraftView["kind"], string[]> = {
+  smart: ["goal"],
+  epic: [],
+  decomposition: ["check-add", "subtask"],
   capture: [
     "title",
     "description-append",
@@ -38,7 +42,12 @@ export function validateOutput(
       task.content,
       task.description,
       ...source.inspection.comments.map((c) => c.content),
-      ...source.inspection.children.map((c) => c.content),
+      ...source.children.flatMap((c) => [c.content, c.description]),
+      ...(source.childComments ?? []).flatMap((c) =>
+        c.comments.map((v) => v.content),
+      ),
+      source.userCorrection ?? "",
+      ...(source.ancestorCorrections ?? []).map((c) => c.text),
     );
     for (const ancestor of source.ancestors ??
       (source.parent ? [source.parent] : []))
@@ -46,6 +55,7 @@ export function validateOutput(
     if (task.due?.date) evidenceTexts.push(task.due.date);
     if (task.deadline?.date) evidenceTexts.push(task.deadline.date);
   }
+  validateEpicOutput(kind, input, source, output, evidenceTexts);
   const seen = new Set<string>();
   const bad = () => {
     throw new WorkFault("AI_PATCH_INVALID", 409);
@@ -97,7 +107,10 @@ export function validateOutput(
       bad();
     if (
       p.kind === "subtask" &&
-      (p.reason.length < 20 || !input.includes(p.evidence))
+      (p.reason.length < 20 ||
+        !(kind === "decomposition"
+          ? evidenceTexts.some((t) => t.includes(p.evidence))
+          : input.includes(p.evidence)))
     )
       bad();
     if (
@@ -128,7 +141,16 @@ export function validateOutput(
     : [];
   const patches = output.patches.filter(
     (p) =>
-      !(p.kind === "check-add" && existing.some((x) => x.text === p.value)),
+      !(
+        ["check-add", "subtask"].includes(p.kind) &&
+        (existing.some(
+          (x) => x.text.toLocaleLowerCase() === p.value.toLocaleLowerCase(),
+        ) ||
+          source?.children.some(
+            (x) =>
+              x.content.toLocaleLowerCase() === p.value.toLocaleLowerCase(),
+          ))
+      ),
   );
   return patches.length === output.patches.length
     ? output

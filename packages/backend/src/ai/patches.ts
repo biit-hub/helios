@@ -6,11 +6,22 @@ import {
 } from "@helios/contracts";
 import type { AiDraft } from "./schema";
 import { patchChecklist, appendDescription } from "./checklist";
+import { patchDocument } from "../tasks/document";
 import { WorkFault } from "../work/service";
 import { fingerprint } from "../tasks/hash";
 export function patchCommand(d: AiDraft, p: DraftPatch): Partial<TaskCommand> {
   const source = d.source?.inspection.task;
   const value = p.edited;
+  if (p.kind === "goal")
+    return {
+      action: "update",
+      fields: {
+        description: patchDocument(source!.description, {
+          kind: "goal",
+          value,
+        }),
+      },
+    };
   if (p.kind === "comment") return { action: "comment", comment: value };
   if (p.kind === "subtask")
     return {

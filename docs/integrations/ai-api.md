@@ -20,3 +20,5 @@ Die gemeinsame UI setzt weitere ausgewählte Patches nach bestätigtem Einzelerg
 POST /api/ai/reopen nimmt id/revision an und öffnet einen bekannten fehlgeschlagenen E4-Schritt nur dann zur erneuten Bearbeitung, wenn keine Wirkung und kein ungeklärter externer Request vorliegen. Bereits verifizierte Patches bleiben verifiziert. Bei Unknown oder Teilerfolg ist nur die sichere Wiederaufnahme derselben Operation zulässig.
 
 Entwürfe speichern die ursprüngliche Zeitzone. Relative Angaben heute/morgen/übermorgen beziehen sich auf den lokalen Erstellungstag, auch nach einem Neustart. Eindeutige ISO-Daten und vollständige deutsche Datumsangaben sind zulässig; unbestimmtes «nächste Woche» erzeugt kein konkretes Datum. Deadline braucht zusätzlich ausdrücklichen Fristbeleg. Uhrzeiten werden nur als ausdrücklich belegter ISO-Zeitpunkt samt Offset übernommen.
+
+E8 erweitert die bestehenden Entwürfe um smart/epic/decomposition und den goal-Patch. Kein neuer Writer; [API](epics-api.md), [SMART-/Beleg-/Korrekturvertrag](../architecture/epics-smart-goals.md).

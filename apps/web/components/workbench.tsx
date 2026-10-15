@@ -1,4 +1,5 @@
 "use client";
+import { Epics } from "./epics";
 import { MorningRoutine } from "./morning-routine";
 import { Problems } from "./problems";
 import { useEffect, useState } from "react";
@@ -34,11 +35,13 @@ const at = (value: string | null) =>
 export function Workbench({
   planning,
   routine = false,
+  epics = false,
   settings = false,
   mobile = false,
 }: Readonly<{
   planning?: "focus" | "plan";
   routine?: boolean;
+  epics?: boolean;
   settings?: boolean;
   mobile?: boolean;
 }>) {
@@ -88,7 +91,7 @@ export function Workbench({
     };
   }, []);
   useEffect(() => {
-    if (!selected || settings || mobile || planning || routine) return;
+    if (!selected || settings || mobile || planning || routine || epics) return;
     const abort = new AbortController();
 
     request(
@@ -101,7 +104,7 @@ export function Workbench({
         if (e.name !== "AbortError") setError(e.message);
       });
     return () => abort.abort();
-  }, [selected, settings, mobile, planning, refreshId, routine]);
+  }, [selected, settings, mobile, planning, refreshId, routine, epics]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -207,7 +210,9 @@ export function Workbench({
             <Link
               aria-disabled={busy}
               aria-current={
-                !settings && !planning && !routine ? "page" : undefined
+                !settings && !planning && !routine && !epics
+                  ? "page"
+                  : undefined
               }
               href={"/tasks?context=" + selected}
             >
@@ -219,6 +224,13 @@ export function Workbench({
               href="/settings/contexts"
             >
               Einstellungen
+            </Link>
+            <Link
+              aria-disabled={busy}
+              aria-current={epics ? "page" : undefined}
+              href={"/epics?context=" + selected}
+            >
+              Epics
             </Link>
             <Link aria-disabled={busy} href="/settings/security">
               Sicherheit
@@ -315,6 +327,9 @@ export function Workbench({
               <Problems snapshot={snapshot} busy={busy} action={action} />
             </>
           )}
+          {epics && current && snapshot && (
+            <Epics key={current.id} context={current} snapshot={snapshot} />
+          )}
           {planning && current && (
             <PlanningPanel key={current.id} context={current} mode={planning} />
           )}
@@ -325,17 +340,22 @@ export function Workbench({
               onContextChange={setSelected}
             />
           )}
-          {snapshot && !settings && !mobile && !planning && !routine && (
-            <TaskOverview
-              snapshot={snapshot}
-              current={current}
-              list={list}
-              selected={selected}
-              busy={busy}
-              pause={pause}
-              action={action}
-            />
-          )}
+          {snapshot &&
+            !settings &&
+            !mobile &&
+            !planning &&
+            !routine &&
+            !epics && (
+              <TaskOverview
+                snapshot={snapshot}
+                current={current}
+                list={list}
+                selected={selected}
+                busy={busy}
+                pause={pause}
+                action={action}
+              />
+            )}
           {mobile && snapshot && (
             <section className="card">
               <h2>{current?.name}</h2>

@@ -25,3 +25,5 @@ export { createAiWorker } from "./ai/worker";
 
 export { createRoutineService } from "./routine/service";
 export * from "./routine/schema";
+
+export {createEpicService} from "./epics/service";

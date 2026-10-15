@@ -26,7 +26,7 @@ export async function GET() {
       "SELECT revision,status,manual_fields,timezone,claim,job_id FROM ai_drafts LIMIT 1",
     );
     await database.pool.query(
-      "SELECT clear_fingerprint,analysis_fingerprint,label_owned FROM ai_task_signals LIMIT 1",
+      "SELECT epic_correction,correction_revision,clear_fingerprint,analysis_fingerprint,label_owned FROM ai_task_signals LIMIT 1",
     );
     await database.pool.query(
       "SELECT revision,cursor,steps FROM routine_days LIMIT 1",
@@ -42,7 +42,7 @@ export async function GET() {
     );
     if (!r.rowCount) throw new Error("Worker unavailable");
     return Response.json(
-      { status: "ok", service: "web", stage: "E7" },
+      { status: "ok", service: "web", stage: "E8" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {

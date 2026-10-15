@@ -68,3 +68,7 @@ Alle relevanten Änderungen werden hier dokumentiert. SemVer gilt für ausdrück
 - Betriebs-, Backup-/Restore- und Entwicklungsdokumentation.
 
 Noch kein stabiler Tag, GitHub Release oder Docker-Hub-Image veröffentlicht.
+
+### E8 – Epics und SMART-Ziele
+
+Native Epic-Übersicht/-Hierarchie; gezielte Ziel-/Checklisten-/Linkbearbeitung mit Vorschau; lokale SMART-, Zerlegungs- und Verständnisentwürfe mit Benutzerkorrekturen. F1-Abschluss trennt offene Teilbäume nach Bestätigung und prüft deren Erhalt vor dem Epic-Close. Keine automatische Epic-Erledigung. Migration 0010 ergänzt abgeleitete Korrekturdaten. Manuelle E3–E8-Abnahmen bleiben offen.

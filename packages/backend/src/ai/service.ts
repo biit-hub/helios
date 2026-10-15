@@ -105,6 +105,11 @@ export function createAiService(
         }) !== input.expectedInstanceKey)
     )
       throw new WorkFault("PLAN_INSTANCE_CHANGED", 409);
+    if (
+      input.kind === "epic" &&
+      !source?.inspection.task.labels.includes("epic")
+    )
+      throw new WorkFault("AI_SCOPE_DENIED", 409);
     if (input.kind === "capture" && input.taskId)
       throw new WorkFault("AI_SCOPE_DENIED", 409);
     return identity.withActive(

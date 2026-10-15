@@ -34,3 +34,5 @@ E4: [Aufgaben-/Operationsvertrag](../integrations/tasks-api.md), [Bedienung](../
 E5: [Persistente Tagesordnung und zyklische Reserve](daily-order-reserve.md), additive Erweiterung desselben E3-Plans und E4-Journals.
 
 E7: [Persistente Morgenroutine und bestätigte Reviewregel](morning-routine-review.md).
+
+E8: [Native Epics, SMART, Markdown und bestätigter F1-Abschlussentscheid](epics-smart-goals.md).

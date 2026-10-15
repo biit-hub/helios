@@ -477,3 +477,7 @@ Die offiziellen [OpenAI-Projektanweisungen zu AGENTS.md](https://learn.chatgpt.c
 Dies ist ein konsistenter Zielentwurf, keine implementierte Anwendung. Vollstaendige Zuordnung aller 79 LH-Referenzen, F1-F5, Mobile und ADRs befindet sich im [Implementierungsplan](helios-implementation-plan.md). Reale offene Policy-/Integrationsentscheidungen befinden sich in [offene Entscheidungen](helios-open-decisions.md).
 
 Zuerst E1 freigeben: neues Projekt mit sichtbarer Login-/Enrollment-/TOTP-Oberflaeche, geschuetzter Desktop-/Mobilshell und nachgewiesenen Session-/Securityvertraegen. Danach lesende Todoist-/Kontexteinrichtung und frueher Fokusplan. Bis dahin werden kein Repository, Stack, Container oder Schema initialisiert und keine Todoist-Inhalte veraendert.
+
+## Umgesetzte E8-Präzisierung
+
+Der bestätigte [E8-Architekturentscheid](epics-smart-goals.md) konkretisiert F1 nach Live-Verträgen: bei offenen Kindern ausschliesslich Trennen oder Abbrechen. Keine lokale Sonderwahrheit. Ziel/Checkliste bleiben Todoist-Markdown; derselbe E4-/E6-Schreibpfad.
