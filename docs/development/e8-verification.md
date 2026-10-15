@@ -54,3 +54,11 @@ Beim realen Browserablauf wurde der Reload nach externem Erfolg bis zur vollstä
 Die visuelle Prüfung des synthetischen Epic-Editors führte zu eigenen konsistenten Feld-/Textarea-Stilen statt ungestalteter Browser-Standardfelder. Der E8-Browserablauf mit Ziel/Checkliste/Link, Reload und sicherem Trennen/Abschluss besteht; die vollständige Browserregression läuft bis zur Schlussprüfung weiter.
 
 Die finale E8-Risikosuite umfasst 24 bestandene PostgreSQL-Fälle. Ein zusätzlicher Test belegt, dass eine zu umfangreiche KI-Quelle die manuelle Ziel-/Checklistenansicht nicht blockiert. Historische Gesamtläufe wurden während der Erweiterung nicht als finaler Commitnachweis gewertet; CI prüft den unveränderten finalen Stand vollständig.
+
+## Finaler lokaler Prüfstand
+
+Code-Stand 355a27e: 109 Unit-/Vertragstests und vollständige PostgreSQL-Regression mit 208 bestandenen Fällen, davon 24 E8. Vollständige Browserregression: 12 bestanden, acht bewusst dem späteren mobilen Umfang vorbehalten. Lint, Typprüfung, Produktionsbuild, Produktions-Audit und Secretprüfung bestanden; keine Schemadrift. Gitleaks prüfte vorgemerkte Änderungen sowie vollständige Git-Historie ohne Funde.
+
+Finale Web-/Worker-Linuximages aus demselben eingefrorenen Code gebaut. Trivy jeweils null Secrets und null behebbare HIGH-/CRITICAL-Befunde. Isolierter Compose-Smoke mit elf Migrationen, drei gesunden Diensten, persistenter Queueprobe und E8-Readiness bestanden. Kein Imagepush und keine Produktion geändert. Die verschlüsselte isolierte Restore-Probe über 13 Tabellen bleibt erfolgreich.
+
+Die endgültigen GitHub-/CodeQL-/Sonar-Prüfungen werden auf dem exakten PR-Head verlangt. Der Mergeguard prüft zusätzlich beide CI-Ereignisse push/pull_request, Sonar-Gate, strikten Branchschutz und unverändertes main.
