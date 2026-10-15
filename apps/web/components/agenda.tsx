@@ -213,7 +213,9 @@ export function ConfirmedAgenda({
                     !available(entry) ||
                     plan.focusTaskId === entry.taskId
                   }
-                  aria-pressed={plan.focusTaskId === entry.taskId}
+                  aria-pressed={
+                    plan.focusTaskId === entry.taskId && available(entry)
+                  }
                   onClick={() =>
                     void action("agenda-focus", {
                       taskId: entry.taskId,
@@ -221,7 +223,7 @@ export function ConfirmedAgenda({
                     })
                   }
                 >
-                  {plan.focusTaskId === entry.taskId
+                  {plan.focusTaskId === entry.taskId && available(entry)
                     ? "Im Fokus"
                     : "Als Fokus wählen"}
                 </button>
