@@ -44,3 +44,8 @@ Am Ende kannst du bekannte Probleme prüfen oder den Schritt offen lassen. Diese
 7. Tagesplan bewusst bestätigen; keinen bestätigten Plan ersetzen. Offene Operationen dürfen keinen vollständigen Routineerfolg erzeugen. Probleme als geprüft markieren und ihren weiterhin offenen technischen Zustand ansehen.
 
 Diese Schritte sind noch nicht menschlich abgenommen. Die smartphoneoptimierte PWA folgt in E11; E8 wird nicht automatisch begonnen.
+
+
+## TermiHub ab E9
+
+Die bestehenden Schritte bleiben erhalten. Bei der Kontextwahl erscheint [Kalenderorientierung](termihub.md) mit Aktualität, Arbeitsfenstern und vorsichtiger Spanne. Arbeitszeiten dienen als Hinweis, keine automatische Aktivierung. Alle aktiven Arbeitgeber und Privat bleiben bewusst wählbar, auch ohne Daten oder bei Ausfall. Bereits gespeicherte Routineentscheidungen und bestätigte Pläne werden durch einen Refresh nicht ersetzt.

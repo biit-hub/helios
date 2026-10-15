@@ -481,3 +481,8 @@ Zuerst E1 freigeben: neues Projekt mit sichtbarer Login-/Enrollment-/TOTP-Oberfl
 ## Umgesetzte E8-Präzisierung
 
 Der bestätigte [E8-Architekturentscheid](epics-smart-goals.md) konkretisiert F1 nach Live-Verträgen: bei offenen Kindern ausschliesslich Trennen oder Abbrechen. Keine lokale Sonderwahrheit. Ziel/Checkliste bleiben Todoist-Markdown; derselbe E4-/E6-Schreibpfad.
+
+
+## E9-Umsetzungsergänzung
+
+[TermiHub und Snapshotentscheid](termihub-calendar.md) konkretisieren die historische Planung. Das vorhandene Backend/pg-boss verarbeitet externe Bearer-GETs. Additive Migrationen 0011–0014, vier abgeleitete Kalender-Tabellen; keine Kalenderinhalte für KI. Frische 15 Minuten, ausschliessliche Snapshotbereinigung nach 30 Tagen. Historische Planquellen bleiben unabhängig erhalten.

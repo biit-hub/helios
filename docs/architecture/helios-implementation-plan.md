@@ -353,4 +353,4 @@ Dieser Plan ist vollstaendig dokumentiert, nicht ausgefuehrt. Kein neues Reposit
 
 ## E8-Umsetzungsstand
 
-E8 ist ausdrücklich beauftragt; [Prüfbericht](../development/e8-verification.md) und [F1-Entscheid](epics-smart-goals.md) konkretisieren die historische Planung. Manuelle E3–E8-Abnahmen bleiben offen. E9 bleibt gesperrt.
+E8 ist ausdrücklich beauftragt; [Prüfbericht](../development/e8-verification.md) und [F1-Entscheid](epics-smart-goals.md) konkretisieren die historische Planung. Manuelle E3–E8-Abnahmen bleiben offen. E9 ist ausdrücklich beauftragt; [Umsetzungsstand und offene Nachweise](../development/e9-verification.md). E10 bleibt gesperrt.
