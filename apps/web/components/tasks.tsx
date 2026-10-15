@@ -10,6 +10,7 @@ import type {
 } from "@helios/contracts";
 import type { ReactNode } from "react";
 import { entryKey } from "@helios/contracts";
+import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
 async function api(path: string, body?: unknown) {
   const r = await fetch(path, {
@@ -24,6 +25,8 @@ async function api(path: string, body?: unknown) {
   return data;
 }
 const taskError: Record<string, string> = {
+  DRAFT_SUPERSEDED:
+    "Der definitiv fehlgeschlagene Schritt wurde zur Korrektur aufgehoben. Es wurde keine externe Änderung als Erfolg behauptet.",
   OUTCOME_UNKNOWN:
     "Das Ergebnis ist ungeklärt. Zuerst in Todoist prüfen; es wird nicht blind erneut geschrieben.",
   TASK_SOURCE_CONFLICT:
@@ -285,6 +288,9 @@ function TaskEditor({
   taskId?: string;
   close: () => void;
 }) {
+  const [aiMode, setAiMode] = useState<
+    "form" | "progress" | "clarification" | "capture"
+  >("form");
   const [inspection, setInspection] = useState<TaskInspection | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -593,6 +599,77 @@ function TaskEditor({
             Dialog schliessen / Entwurf verwerfen
           </button>
         </div>
+        <div className="ai-mode-switch">
+          <button
+            type="button"
+            aria-pressed={aiMode === "form"}
+            onClick={() => setAiMode("form")}
+          >
+            Formular
+          </button>
+          {!taskId ? (
+            <button
+              type="button"
+              aria-pressed={aiMode === "capture"}
+              onClick={() => setAiMode("capture")}
+            >
+              KI-Modus
+            </button>
+          ) : (
+            <>
+              <button type="button" onClick={() => setAiMode("progress")}>
+                Fortschritt dokumentieren
+              </button>
+              <button type="button" onClick={() => setAiMode("clarification")}>
+                Aufgabenklärung
+              </button>
+            </>
+          )}
+        </div>
+        {!taskId && (
+          <div hidden={aiMode !== "capture"}>
+            <AiDraftPanel
+              kind="capture"
+              snapshot={snapshot}
+              manualFields={{
+                ...(title ? { content: title } : {}),
+                ...(description ? { description } : {}),
+                ...(duration ? { duration: Number(duration) } : {}),
+                ...(date ? { due: date } : {}),
+                ...(deadline ? { deadline } : {}),
+                priority,
+                ...(labels
+                  ? {
+                      labels: labels
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    }
+                  : {}),
+              }}
+            />
+          </div>
+        )}
+        {taskId && context && (
+          <>
+            <div hidden={aiMode !== "progress"}>
+              <AiDraftPanel
+                kind="progress"
+                contextId={context.id}
+                taskId={taskId}
+                snapshot={snapshot}
+              />
+            </div>
+            <div hidden={aiMode !== "clarification"}>
+              <AiDraftPanel
+                kind="clarification"
+                contextId={context.id}
+                taskId={taskId}
+                snapshot={snapshot}
+              />
+            </div>
+          </>
+        )}
         {taskId && !inspection && (
           <p role="status">Aktuelle Todoist-Quelle wird geladen …</p>
         )}
@@ -681,6 +758,7 @@ function TaskEditor({
           </div>
         )}
         <fieldset
+          hidden={aiMode !== "form"}
           disabled={
             busy ||
             (!!taskId && !inspection) ||

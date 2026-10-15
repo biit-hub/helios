@@ -1,3 +1,4 @@
+import { ollamaFixture } from "./ollama";
 import { createServer } from "node:http";
 import { taskFixture as fixture } from "./tasks";
 if (
@@ -10,12 +11,15 @@ const origin = new URL(
 );
 if (origin.hostname !== "127.0.0.1") throw new Error("Loopback required");
 let f = fixture();
+const ai = { mode: "ok", calls: 0 };
 const server = createServer(async (req, res) => {
   try {
+    if (await ollamaFixture(req, res, ai)) return;
     if (req.url === "/assertions") {
       res.setHeader("Content-Type", "application/json");
       res.end(
         JSON.stringify({
+          aiCalls: ai.calls,
           reads: f.calls.filter((c) => c.method === "GET").length,
           writes: f.calls.filter((c) => c.method !== "GET").length,
           taskProjectIds: f.calls
@@ -29,7 +33,27 @@ const server = createServer(async (req, res) => {
       let raw = "";
       for await (const chunk of req) raw += chunk;
       const data = JSON.parse(raw);
-      if (data.reset === true) f = fixture();
+      if (data.reset === true) {
+        f = fixture();
+        ai.mode = "ok";
+        ai.calls = 0;
+      }
+      if (data.aiMode) ai.mode = data.aiMode;
+      if (data.scenario === "ai") {
+        const template = structuredClone(f.state.tasks[1]!);
+        f.state.tasks = [
+          {
+            ...template,
+            id: "synthetic-ai",
+            parent_id: null,
+            content: "Synthetische Präsentation vorbereiten",
+            description:
+              "## Ziel\nUnverändert\n\n## Checkliste\n- [ ] Quellen sammeln\n- [ ] Folien schreiben\n\n## Notizen\nFremden Abschnitt erhalten",
+            due: null,
+            deadline: null,
+          },
+        ];
+      }
       if (
         !["ok", "auth_error", "network", "rate_limit", "unexpected"].includes(
           data.mode,

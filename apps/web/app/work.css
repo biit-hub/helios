@@ -540,3 +540,46 @@ legend {
 .task-dialog::backdrop {
   background: #15203388;
 }
+
+.ai-mode-switch {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.ai-panel {
+  padding: 1rem 0;
+}
+.ai-panel textarea {
+  min-height: 6rem;
+}
+.ai-panel button {
+  margin: 0.4rem 0.5rem 0.4rem 0;
+}
+.ai-draft {
+  border-top: 1px solid var(--line, #d8d0c4);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.ai-patch {
+  border: 1px solid var(--line, #d8d0c4);
+  border-radius: 0.8rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.ai-patch legend {
+  font-weight: 650;
+}
+.ai-patch blockquote {
+  margin: 0.7rem 0;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--accent, #916b4f);
+}
+.ai-panel pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-mode-switch + div[hidden],
+fieldset[hidden] {
+  display: none;
+}

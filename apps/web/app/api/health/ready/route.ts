@@ -22,12 +22,18 @@ export async function GET() {
     await database.pool.query(
       "SELECT idempotency_key,request_hash,detail FROM planning_observations LIMIT 1",
     );
+    await database.pool.query(
+      "SELECT revision,status,manual_fields,timezone,claim,job_id FROM ai_drafts LIMIT 1",
+    );
+    await database.pool.query(
+      "SELECT clear_fingerprint,analysis_fingerprint,label_owned FROM ai_task_signals LIMIT 1",
+    );
     const r = await database.pool.query(
       "SELECT 1 FROM worker_heartbeats WHERE seen_at > now() - interval '35 seconds' LIMIT 1",
     );
     if (!r.rowCount) throw new Error("Worker unavailable");
     return Response.json(
-      { status: "ok", service: "web", stage: "E5" },
+      { status: "ok", service: "web", stage: "E6" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
