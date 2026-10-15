@@ -147,7 +147,7 @@ export function createWorkHarness<F extends { fetcher: typeof fetch }>(
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(clockStart ? new Date(clockStart) : new Date());
     await db.pool.query(
-      "TRUNCATE auth_user,auth_flows,auth_limits,auth_rate_limit,auth_verification,auth_totp_uses,security_events CASCADE",
+      "TRUNCATE auth_user,auth_flows,auth_limits,auth_rate_limit,auth_verification,auth_totp_uses,security_events,worker_heartbeats CASCADE",
     );
     f = fixture();
     work = createWorkService(db, config, createTodoistReader(f.fetcher));
