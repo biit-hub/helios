@@ -16,7 +16,8 @@ Abschluss und endgültige Löschung sind getrennt erkennbare Aktionen mit Bestä
 
 - Konflikt: Eingaben behalten; aktuelle Todoist-Quelle prüfen und den Entwurf bewusst neu aufbauen. Keine alten Daten blind überschreiben.
 - Fehlende Abschnitte: nur im angezeigten zugeordneten Projekt mit eigener Aktion einrichten. Mehrdeutige Namen zuerst direkt in Todoist klären.
-- Todoist 403 oder ignorierte Felder: Kontoberechtigung prüfen. Insbesondere Deadline/Dauer können im Testkonto fehlen; HTTP 200 ist kein Feldnachweis.
+- Todoist 403: Die Änderung ist mit den aktuellen Berechtigungen nicht erlaubt; Eingaben bleiben erhalten. Konto-, Projekt- und gegebenenfalls Tarifberechtigung prüfen. Aus HTTP 403 allein lässt sich der Tarif nicht sicher bestimmen. Das separate Free-Testkonto darf Deadline-Schreibversuche erwartungsgemäss ablehnen; Deadline-Erstellung/-Änderung/-Entfernung bleiben Helios-Funktionen. Die erfolgreiche Live-Abnahme mit erforderlichen Berechtigungen bleibt offen. Keine automatischen Tests mit produktiven Zugangsdaten oder Aufgaben.
+- Ignorierte Felder: HTTP 200 ist kein Feldnachweis. Den zurückgelesenen Deadline-Wert prüfen; ein geplantes Datum ersetzt keine Deadline. [Deadline-Testregeln und offener Live-Nachweis](../integrations/todoist.md#verbindliche-testhinweise).
 - Teilerfolg/unknown: Journal öffnen, erfolgreiche Schritte und Originaleingaben ansehen. Stand prüfen und bewusst fortsetzen liest zuerst nach. Fehlende Create-/Comment-ID bleibt ungeklärt; nicht blind ein zweites Mal anlegen.
 - Rate Limit: frühesten Retryzeitpunkt abwarten. Neue Anmeldung bei Sitzungswiderruf; alte Operationen erhalten keine neue Berechtigung von selbst.
 - Nach Erfolg Aufgaben aktualisieren. Native Kinder und bestätigte Tagesplanhistorie bleiben nachvollziehbar; betroffene noch ungeprüfte Projektionen sind unknown.

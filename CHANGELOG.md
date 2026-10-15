@@ -1,5 +1,10 @@
 # Changelog
 
+## Dokumentationspräzisierung – Todoist-Deadlines
+
+- Free-Testkonto und kostenpflichtiges Produktivkonto als mitgeteilte Testbedingungen eingeordnet; HTTP 403 bleibt ohne sichere Tarifdiagnose. Deadline-Erstellung/-Änderung/-Entfernung bleiben verbindlich.
+- Synthetische Erfolgs-/Ablehnungstests, Ausschluss produktiver Testzugriffe und offene berechtigungspflichtige Live-Abnahme ausdrücklich dokumentiert; keine Architektur- oder Laufzeitänderung.
+
 ## E7 – Persistente Morgenroutine und Review
 
 - Servergespeicherte lokale Routinetage, Kontextwahl, Revisionen, Wiederaufnahme und übersprungene offene Schritte.

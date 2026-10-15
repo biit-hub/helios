@@ -37,3 +37,5 @@
 - E8: Epic bleibt native Todoist-Aufgabe mit epic-Label; Ziel und Checkliste sind Markdownabschnitte in Todoist. Benutzerkorrekturen und KI-Verständnis sind abgeleitete Daten mit Quellfassung, keine zweite Aufgabenwahrheit. Fehlende Aufgaben beweisen keinen Abschluss; F1 nur nach verifiziertem nativen Vertrag und ausdrücklicher Entscheidung.
 
 - F1 nach Live-Nachweis ausdrücklich bestätigt: bei offenen Epic-Kindern nur bewusste Trennung aller offenen Teilbäume oder Abbruch. Vollständigen Trenn-/Inhalts-/Kommentar-/Hierarchienachweis vor Epic-Close verlangen; partial/unknown/conflict stoppen. Keine offene Behalten-Variante durch lokale Sonderwahrheit.
+
+- Deadline-Präzisierung vom 15.10.2026: Erstellen/Ändern/Entfernen bleiben verbindlich. Separates Todoist-Testkonto ist nach Auftraggeberangabe Free, Produktivkonto kostenpflichtig mit Deadlines. Erfolg/Ablehnung automatisch nur synthetisch testen; niemals produktive Zugangsdaten/Aufgaben verwenden. HTTP 403 ist keine sichere Tarifdiagnose. Erfolgreiche berechtigungspflichtige Live-Deadline-Abnahme bleibt offen; keine Architekturänderung.
