@@ -9,3 +9,6 @@ services:
   worker:
     environment:
       HELIOS_ENV: production
+
+# OLLAMA_BASE_URL / OLLAMA_MODEL / OLLAMA_TIMEOUT_SECONDS are inherited from compose.yaml.
+# Set the existing private LAN endpoint in the separate production environment.

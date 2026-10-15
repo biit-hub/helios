@@ -22,6 +22,7 @@ Vorschläge einzeln bearbeiten/ablehnen und Entscheidungen speichern. Beim Anwen
 
 - KI nicht verfügbar/Timeout/ungültige Antwort: Originaltext bleibt; Formular und bestehende Tagespläne weiterverwenden. Modell-/Netzkonfiguration prüfen, dann KI bewusst erneut versuchen.
 - Quelle verändert: aktuellen Todoist-Inhalt prüfen und neuen Entwurf erstellen. Einen alten Beschreibungsvorschlag nicht blind übernehmen.
+- Ein bekannter fehlgeschlagener Schritt ohne externe Wirkung kann bewusst wieder zur Bearbeitung geöffnet werden; verifizierte Schritte bleiben erhalten. Unknown oder ungeklärter Teilerfolg darf diesen Weg nicht nehmen.
 - Unknown nach Kommentar/Create: zuerst externe Wirkung prüfen und dieselbe E4-Operation bewusst fortsetzen. Keine neue identische Aufgabe oder Kommentarserie starten.
 - Mehrdeutige Checkliste: vorhandene Beschreibung bewusst korrigieren; Helios formatiert sie nicht pauschal neu.
 - Kontext/Token/Sitzung geändert: erneut anmelden beziehungsweise Zuordnung prüfen; alte Jobs verleihen keine Berechtigung.

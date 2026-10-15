@@ -2,13 +2,13 @@
 
 Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Todoist bleibt für Aufgaben führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E5 implementiert und lokal technisch geprüft, Tagesordnung und zyklische Reserve; kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
+**Stand: E6 implementiert mit lokaler KI über das private LAN; kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
 
 E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollziehbaren Vorschlägen, bewusster Bestätigung, sicherem Operationsjournal und kontextgetrennter Historie. Unteraufgaben behalten ihre Hierarchie.
 
 E4 ergänzt [Aufgabenverwaltung](docs/runbooks/tasks.md): Formularerfassung (ohne Projektwahl im nativen Eingang), Suche/Statusfilter, bewusste Bearbeitung, native Moves, Kommentare, Wartedetails, Abschluss und Löschung. Alle externen Änderungen verwenden dasselbe persistente Journal und den Worker aus E3. Wiederholungen werden instanzbezogen abgeschlossen; unbekannte Ergebnisse werden nicht blind wiederholt. Die manuelle E3-Abnahme bleibt ausdrücklich verschoben und offen.
 
-Geplant: lokale Ollama-Vorschläge, Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+Geplant: Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
 
 Für die aktuelle Entwicklung genügen lokale verschlüsselte Backups und isolierte Restore-Proben gemäss [Backup-Runbook](docs/runbooks/backup-restore.md). Eine NAS-Anbindung ist keine E3-Voraussetzung. Für die spätere Produktion sind automatische verschlüsselte Sicherungen auf einem Synology-NAS vorgesehen; Zielpfad und Zugang werden erst bei der Produktivinstallation konfiguriert.
 
@@ -114,4 +114,4 @@ docs              Anforderungen, Architektur, Entwicklung, Runbooks
 
 MIT-Lizenz. Ausschliesslich synthetische Beispieldaten.
 
-E6 ergänzt [lokale KI und gemeinsamen Fortschritt](docs/runbooks/ai-progress.md): prüfbare Erfassung, managed-only-Analyse, Ist klar und persistente Einzelpatch-Entwürfe. Die vorhandene Ubuntu-Ollama-Instanz wird über konfigurierbare OLLAMA_BASE_URL erreicht; Formular und gespeicherte Pläne bleiben ohne KI nutzbar. [Architektur](docs/architecture/local-ai-progress.md), [API](docs/integrations/ai-api.md), [Prüfbericht](docs/development/e6-verification.md). E6 ist in technischer Abnahme; manuelle E3–E5-Abnahmen bleiben offen.
+E6 ergänzt [lokale KI und gemeinsamen Fortschritt](docs/runbooks/ai-progress.md): prüfbare Erfassung, managed-only-Analyse, Ist klar und persistente Einzelpatch-Entwürfe. Die vorhandene Ubuntu-Ollama-Instanz wird über konfigurierbare OLLAMA_BASE_URL erreicht; Formular und gespeicherte Pläne bleiben ohne KI nutzbar. [Architektur](docs/architecture/local-ai-progress.md), [API](docs/integrations/ai-api.md), [Prüfbericht](docs/development/e6-verification.md). Die technische Integration wird über [PR #17](https://github.com/biit-hub/helios/pull/17) geprüft; manuelle E3–E5-Abnahmen bleiben offen.
