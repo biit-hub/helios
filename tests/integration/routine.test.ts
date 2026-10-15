@@ -819,3 +819,50 @@ it("never reports global completion while a selected context still has an extern
   await executor().runNext();
   expect((await reload()).complete).toBe(true);
 });
+
+it("accepts a native checked proof for the same instance without another close", async () => {
+  const { c, d, items } = await reviewSetup();
+  h.f.state.tasks[0]!.checked = true;
+  const out = (await act(d, "review-close", {
+    contextId: c.id,
+    contextRevision: d.contexts[0]!.revision,
+    items: [{ entryKey: items[0]!.entryKey, basis: items[0]!.basis! }],
+    acknowledgeDestructive: true,
+  })) as { outcomes: { status: string }[] };
+  expect(out.outcomes[0]!.status).toBe("completed");
+  expect((await db.db.select().from(reviewFeedback))[0]!.status).toBe(
+    "completed",
+  );
+  expect(h.f.control.calls).toHaveLength(0);
+});
+it("leaves native checked feedback unknown when credentials change during proof reads", async () => {
+  const { c, d, items } = await reviewSetup();
+  h.f.state.tasks[0]!.checked = true;
+  const base = reader();
+  const guarded = {
+    ...base,
+    comments: async (...args: Parameters<typeof base.comments>) => {
+      const result = await base.comments(...args);
+      await db.db.update(integrations).set({ credentialVersion: key() });
+      return result;
+    },
+  };
+  const out = (await createRoutineService(db, config, guarded).handle(
+    "review-close",
+    headers(),
+    {
+      key: key(),
+      id: d.id,
+      revision: d.revision,
+      contextId: c.id,
+      contextRevision: d.contexts[0]!.revision,
+      items: [{ entryKey: items[0]!.entryKey, basis: items[0]!.basis! }],
+      acknowledgeDestructive: true,
+    },
+  )) as { outcomes: { status: string }[] };
+  expect(out.outcomes[0]!.status).toBe("unknown");
+  expect((await db.db.select().from(reviewFeedback))[0]!.status).toBe(
+    "unknown",
+  );
+  expect(h.f.control.calls).toHaveLength(0);
+});

@@ -7,7 +7,7 @@ import {
   type PlanEntry,
 } from "@helios/contracts";
 import { createIdentityService } from "../identity/service";
-import { createTaskService } from "../tasks/service";
+import { taskScope, createTaskService } from "../tasks/service";
 import { aiDrafts } from "../ai/schema";
 import { WorkFault } from "../work/service";
 import type { Database, Db } from "../planning/store";
@@ -122,7 +122,8 @@ export function createRoutineReview(
           .select()
           .from(reviewFeedback)
           .where(eq(reviewFeedback.id, item.feedbackId));
-        return { d, row };
+        const scope = await taskScope(db, user, decision.contextId);
+        return { d, row, scope };
       });
       if (f.row?.operationId || f.row?.status === "completed") {
         return {
@@ -180,6 +181,13 @@ export function createRoutineReview(
         await identity.withActive(h, { mutation: true }, async (db, user) => {
           const d = await ownedDay(db, user, decision.id);
           current(d);
+          const now = await taskScope(db, user, decision.contextId);
+          if (
+            now.i.credentialVersion !== f.scope.i.credentialVersion ||
+            now.i.revision !== f.scope.i.revision ||
+            now.c?.revision !== f.scope.c?.revision
+          )
+            throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
           const [rc] = await db
             .select()
             .from(routineContexts)
