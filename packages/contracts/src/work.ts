@@ -54,9 +54,14 @@ export const todoistTaskSchema = z.object({
     .nullable()
     .optional(),
   updated_at: z.string().nullable().optional(),
+  added_at: z.string().max(100).nullable().optional(),
 });
 export type TodoistTask = z.infer<typeof todoistTaskSchema>;
 export const problemMessages = {
+  worker_unavailable:
+    "Der zuletzt bekannte Worker meldet sich nicht mehr. Offene Operationen und Workerbetrieb prüfen.",
+  auth_recovery:
+    "Ein Wiederherstellungsverfahren wurde benutzt. Sicherheitsstatus und Wiederherstellungscodes bewusst prüfen.",
   ai_failed:
     "Eine lokale KI-Analyse ist fehlgeschlagen. Originaleingabe und Entwurf bleiben erhalten; Entwurfsstatus prüfen.",
   task_operation_failed:

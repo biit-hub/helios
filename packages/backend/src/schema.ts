@@ -16,3 +16,5 @@ export * from "./work/schema";
 export * from "./planning/schema";
 
 export * from "./ai/schema";
+
+export * from "./routine/schema";

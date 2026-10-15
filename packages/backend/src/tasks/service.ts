@@ -1,3 +1,4 @@
+import { linkRoutine, type RoutineLink } from "../routine/journal";
 import { fingerprint } from "./hash";
 import { z } from "zod";
 import { fromMarkdown } from "mdast-util-from-markdown";
@@ -27,6 +28,7 @@ import { linkDraft, resumeDraftLink, type DraftLink } from "../ai/store";
 import { readWaiting } from "./waiting";
 import { linkPlan, type PlanLink } from "../planning/agenda-store";
 export type TaskPayload = {
+  routineLink?: RoutineLink;
   analysisLink?: import("../ai/status-policy").AnalysisLink;
   draftLink?: DraftLink;
   planLink?: PlanLink;
@@ -160,6 +162,7 @@ export function createTaskService(
     raw: unknown,
     planLink?: PlanLink,
     draftLink?: DraftLink,
+    routineLink?: RoutineLink,
   ) {
     const command = taskCommand.parse(raw);
     if (command.fields?.recurring && command.fields.due !== undefined)
@@ -167,11 +170,13 @@ export function createTaskService(
     if (command.action === "plan-select" && !planLink)
       throw new WorkFault("INVALID_REQUEST");
     const hash = fingerprint(
-      draftLink
-        ? { command, draftLink }
-        : planLink
-          ? { command, planLink }
-          : command,
+      routineLink
+        ? { command, routineLink }
+        : draftLink
+          ? { command, draftLink }
+          : planLink
+            ? { command, planLink }
+            : command,
     );
     const base = await identity.withActive(
       h,
@@ -193,6 +198,11 @@ export function createTaskService(
         }
         const scope = await taskScope(db, user, command.contextId);
         let projectId = scope.c?.projectId ?? null;
+        if (routineLink?.kind === "inbox") {
+          projectId = routineLink.sourceProjectId;
+          if (!(await allowedProject(db, scope.i, projectId)).inbox)
+            throw new WorkFault("ROUTINE_SCOPE_DENIED", 409);
+        }
         if (command.action === "create") {
           taskFields.parse(command.fields);
           if (command.contextId && command.projectId !== scope.c?.projectId)
@@ -234,10 +244,16 @@ export function createTaskService(
     const project = await reader.project(token, projectId);
     if (project.is_archived || project.is_deleted)
       throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+    if (routineLink?.kind === "inbox" && !project.inbox_project)
+      throw new WorkFault("ROUTINE_SCOPE_DENIED", 409);
     let source: TodoistTask | null = null,
       children: TodoistTask[] = [];
     if (!["create", "sections"].includes(command.action)) {
-      if (!command.taskId || !command.basis || !scope.c)
+      if (
+        !command.taskId ||
+        !command.basis ||
+        (!scope.c && routineLink?.kind !== "inbox")
+      )
         throw new WorkFault("INVALID_REQUEST");
       source = await reader.task(token, command.taskId);
       if (source.project_id !== projectId || source.is_deleted)
@@ -287,6 +303,7 @@ export function createTaskService(
     const payload: TaskPayload = {
       ...(planLink ? { planLink } : {}),
       ...(draftLink ? { draftLink } : {}),
+      ...(routineLink ? { routineLink } : {}),
       command,
       projectId,
       contextRevision: scope.c?.revision ?? null,
@@ -329,6 +346,7 @@ export function createTaskService(
           throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
         if (planLink) await linkPlan(db, planLink, id);
         if (draftLink) await linkDraft(db, user, draftLink, id, command);
+        if (routineLink) await linkRoutine(db, user, routineLink, command, id);
         await db.insert(planOperations).values({
           id,
           userId: user,
@@ -400,6 +418,10 @@ export function createTaskService(
     async enqueueDraft(h: Headers, input: unknown, link: DraftLink) {
       await identity.withActive(h, { mutation: true }, async () => {});
       return enqueue(h, input, undefined, link);
+    },
+    async enqueueRoutine(h: Headers, input: unknown, link: RoutineLink) {
+      await identity.withActive(h, { mutation: true }, async () => {});
+      return enqueue(h, input, undefined, undefined, link);
     },
     async enqueueLinked(h: Headers, input: unknown, link: PlanLink) {
       await identity.withActive(h, { mutation: true }, async () => {});

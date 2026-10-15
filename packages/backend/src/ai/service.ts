@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
+  entryKey,
   aiRequest,
   draftEdit,
   draftRef,
@@ -95,6 +96,15 @@ export function createAiService(
             input.taskId,
           )
         : null;
+    if (
+      input.expectedInstanceKey &&
+      (!source ||
+        entryKey({
+          taskId: source.inspection.task.id,
+          source: source.inspection.task,
+        }) !== input.expectedInstanceKey)
+    )
+      throw new WorkFault("PLAN_INSTANCE_CHANGED", 409);
     if (input.kind === "capture" && input.taskId)
       throw new WorkFault("AI_SCOPE_DENIED", 409);
     return identity.withActive(

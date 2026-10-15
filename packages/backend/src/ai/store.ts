@@ -3,6 +3,7 @@ import { queueFollowUp } from "./follow-up";
 import { readChecklist } from "./checklist";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
+import { entryKey } from "@helios/contracts";
 import type { AiDraftView, TaskCommand } from "@helios/contracts";
 import { aiDrafts, aiTaskSignals, type AiDraft, type AiSource } from "./schema";
 import type { Db } from "../planning/store";
@@ -166,6 +167,12 @@ export function draftView(d: AiDraft, clear = false): AiDraftView {
   }).format(new Date());
   return {
     id: d.id,
+    instanceKey: d.source
+      ? entryKey({
+          taskId: d.source.inspection.task.id,
+          source: d.source.inspection.task,
+        })
+      : null,
     contextId: d.contextId,
     taskId: d.taskId,
     kind: d.kind,

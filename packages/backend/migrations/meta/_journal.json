@@ -64,6 +64,13 @@
       "when": 1792051640454,
       "tag": "0008_gifted_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792059571404,
+      "tag": "0009_simple_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }
