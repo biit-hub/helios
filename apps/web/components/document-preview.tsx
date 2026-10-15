@@ -5,11 +5,11 @@ export function DocumentPreview({
   model,
   context,
   taskId,
-}: {
+}: Readonly<{
   model: DocumentModel;
   context: import("@helios/contracts").ContextView;
   taskId: string;
-}) {
+}>) {
   const { setError, setBusy, preview, operation, setOperation, key, pending } =
     model;
   return (
@@ -59,13 +59,13 @@ export function DocumentPreview({
         </section>
       )}
       {operation && (
-        <p role="status">
+        <output>
           Operationsstand: {operation.status}
           {operation.code ? " · " + operation.code : ""}.{" "}
           {operation.status === "succeeded"
             ? "In Todoist nachgewiesen."
             : "Erst der externe Nachweis bestätigt die Speicherung; Journal unten prüfen."}
-        </p>
+        </output>
       )}
     </>
   );

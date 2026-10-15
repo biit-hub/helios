@@ -373,19 +373,7 @@ export function createTaskExecutor(
       )
         throw new WorkFault("FUN_EPIC_CONFLICT", 409);
     }
-    async function mutate(
-      token: string,
-      kind: string,
-      path: string,
-      body?: Record<string, unknown>,
-      target?: TodoistTask,
-    ) {
-      await authorize();
-      if (
-        ["create", "update"].includes(kind) ||
-        (kind === "move" && command.action === "move")
-      )
-        await checkFun(token);
+    async function validateLinkedMutations(token: string) {
       if (payload.analysisLink)
         await validateAnalysisMutation(database, config, reader, op, payload);
       if (payload.draftLink)
@@ -407,22 +395,39 @@ export function createTaskExecutor(
           payload,
           op.id,
         );
-      if (payload.source) await fresh(token);
-      if (kind === "epic-detach" && target) {
-        const current = await reader.task(token, target.id);
-        if (fingerprint(current) !== fingerprint(target))
+    }
+    async function assertDetachSource(token: string, target: TodoistTask) {
+      const current = await reader.task(token, target.id);
+      if (fingerprint(current) !== fingerprint(target))
+        throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+      for (const child of [
+        target,
+        ...descendants(payload.children, target.id),
+      ]) {
+        if (
+          fingerprint(await reader.comments(token, child.id)) !==
+          fingerprint(payload.epicClosure?.comments[child.id] ?? [])
+        )
           throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
-        for (const child of [
-          target,
-          ...descendants(payload.children, target.id),
-        ]) {
-          if (
-            fingerprint(await reader.comments(token, child.id)) !==
-            fingerprint(payload.epicClosure?.comments[child.id] ?? [])
-          )
-            throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
-        }
       }
+    }
+    async function mutate(
+      token: string,
+      kind: string,
+      path: string,
+      body?: Record<string, unknown>,
+      target?: TodoistTask,
+    ) {
+      await authorize();
+      if (
+        ["create", "update"].includes(kind) ||
+        (kind === "move" && command.action === "move")
+      )
+        await checkFun(token);
+      await validateLinkedMutations(token);
+      if (payload.source) await fresh(token);
+      if (kind === "epic-detach" && target)
+        await assertDetachSource(token, target);
       await save({
         pending: {
           kind,

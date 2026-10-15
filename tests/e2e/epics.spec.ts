@@ -5,6 +5,8 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   page,
   baseURL,
 }, info) => {
+  // Die eigenständige mobile Routine ist E11; E8 bietet bewusst eine Desktop-Epicansicht.
+  // Die gemeinsamen API-/MFA-/Scope-Verträge werden unabhängig davon serverseitig geprüft.
   test.skip(
     info.project.name !== "desktop",
     "Desktop-Epicansicht; mobile Routine bleibt E11.",
@@ -37,15 +39,14 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   await page.getByRole("button", { name: "Epic öffnen", exact: true }).click();
   const doc = page.locator(".task-document");
   await doc.locator("summary").first().click();
-  await expect(doc.getByRole("textbox",{name:"Ziel",exact:true})).toHaveValue(
-    "Handbuch veröffentlichen",
-    {timeout:20000},
-  );
+  await expect(
+    doc.getByRole("textbox", { name: "Ziel", exact: true }),
+  ).toHaveValue("Handbuch veröffentlichen", { timeout: 20000 });
   await expect(
     doc.getByRole("link", { name: "Synthetische Quellen", exact: true }),
   ).toBeVisible();
   await doc
-    .getByRole("textbox",{name:"Ziel",exact:true})
+    .getByRole("textbox", { name: "Ziel", exact: true })
     .fill("Geprüftes synthetisches Handbuch veröffentlichen");
   await doc
     .getByRole("button", { name: "Zieländerung prüfen", exact: true })
@@ -103,7 +104,9 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   await page.getByRole("button", { name: "Epic öffnen", exact: true }).click();
   await page.locator(".task-document summary").first().click();
   await expect(
-    page.locator(".task-document").getByRole("textbox",{name:"Ziel",exact:true}),
+    page
+      .locator(".task-document")
+      .getByRole("textbox", { name: "Ziel", exact: true }),
   ).toHaveValue("Geprüftes synthetisches Handbuch veröffentlichen");
   await page
     .getByRole("button", {

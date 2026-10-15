@@ -14,18 +14,18 @@ export function TaskDocument({
   context,
   taskId,
   snapshot,
-}: {
+}: Readonly<{
   context: ContextView;
   taskId: string;
   snapshot: WorkSnapshot;
-}) {
+}>) {
   const controller = useTaskDocument(context, taskId),
     { detail, error } = controller;
   return (
     <details className="card task-document">
       <summary>Ziel, Checkliste und Dokumentenlinks</summary>
       {error && <p role="alert">{error}</p>}
-      {!detail && !error && <p role="status">Details werden geladen …</p>}
+      {!detail && !error && <output>Details werden geladen …</output>}
       {detail && (
         <DocumentBody
           controller={controller}
@@ -42,12 +42,12 @@ function DocumentBody({
   context,
   taskId,
   snapshot,
-}: {
+}: Readonly<{
   controller: DocumentController;
   context: ContextView;
   taskId: string;
   snapshot: WorkSnapshot;
-}) {
+}>) {
   const model = { ...controller, detail: controller.detail! } as DocumentModel,
     { detail, pending, setBusy, setError, load } = model;
   return (

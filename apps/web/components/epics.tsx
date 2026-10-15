@@ -11,10 +11,10 @@ import { TaskEditor, TaskOperations } from "./tasks";
 export function Epics({
   context,
   snapshot,
-}: {
+}: Readonly<{
   context: ContextView;
   snapshot: WorkSnapshot;
-}) {
+}>) {
   const [rows, setRows] = useState<EpicListItem[] | null>(null),
     [selected, setSelected] = useState<string | null>(() =>
       typeof window === "undefined"
@@ -61,7 +61,7 @@ export function Epics({
         Epics aus Todoist aktualisieren
       </button>
       {error && <p role="alert">{error}</p>}
-      {(!rows || busy) && <p role="status">Epics werden geladen …</p>}
+      {(!rows || busy) && <output>Epics werden geladen …</output>}
       {rows?.length === 0 && (
         <p>
           Noch keine Epics in diesem Kontext bekannt. Aufgaben bewusst
@@ -71,13 +71,7 @@ export function Epics({
       <div className="epic-grid">
         {rows?.map((row) => (
           <article className="card" key={row.task.id}>
-            <p>
-              {row.state === "unknown"
-                ? "Status unbekannt"
-                : row.task.checked || row.state === "completed"
-                  ? "Nativ abgeschlossen"
-                  : "Offen"}
-            </p>
+            <p>{epicStatus(row)}</p>
             <h3>{row.task.content}</h3>
             <p>
               {row.goalConflict
@@ -129,4 +123,11 @@ export function Epics({
       <TaskOperations contextId={context.id} />
     </section>
   );
+}
+
+function epicStatus(row: EpicListItem) {
+  if (row.state === "unknown") return "Status unbekannt";
+  if (row.task.checked || row.state === "completed")
+    return "Nativ abgeschlossen";
+  return "Offen";
 }

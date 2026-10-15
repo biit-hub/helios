@@ -260,9 +260,10 @@ export function TaskOperations({ contextId }: { contextId: string }) {
                     kind: string;
                     status: string;
                     title?: string;
+                    requestId?: string;
                   }[]
-                ).map((x, i) => (
-                  <span key={i}>
+                ).map((x) => (
+                  <span key={x.requestId ?? x.kind + ":" + x.title}>
                     {x.kind === "epic-detach" ? "Teilbaum getrennt" : x.kind}
                     {x.title ? " «" + x.title + "»" : ""}: nachgewiesen ·{" "}
                   </span>

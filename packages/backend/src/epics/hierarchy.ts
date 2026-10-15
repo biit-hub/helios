@@ -38,16 +38,9 @@ export async function knownHierarchy(
       proved.push(existing);
       continue;
     }
-    try {
-      const fresh = await reader.task(token, t.id);
-      if (fresh.project_id === scope.projectId && !fresh.is_deleted)
-        proved.push(fresh);
-      else unknown.push({ id: t.id, content: t.content });
-    } catch (e) {
-      if (e instanceof TodoistFault && e.code === "task_unavailable")
-        unknown.push({ id: t.id, content: t.content });
-      else throw e;
-    }
+    const fresh = await readKnownChild(reader, token, t, scope.projectId);
+    if (fresh) proved.push(fresh);
+    else unknown.push({ id: t.id, content: t.content });
   }
   // Historical parents alone do not establish a current native relationship.
   const current = descendants(proved, root);
@@ -55,4 +48,20 @@ export async function knownHierarchy(
     if (!current.some((r) => r.id === t.id))
       unknown.push({ id: t.id, content: t.content });
   return { children: current, unknownChildren: unknown };
+}
+
+async function readKnownChild(
+  reader: TodoistReader,
+  token: string,
+  t: TodoistTask,
+  projectId: string,
+) {
+  try {
+    const fresh = await reader.task(token, t.id);
+    if (fresh.project_id === projectId && !fresh.is_deleted) return fresh;
+    return null;
+  } catch (e) {
+    if (e instanceof TodoistFault && e.code === "task_unavailable") return null;
+    throw e;
+  }
 }

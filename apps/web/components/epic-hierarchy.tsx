@@ -5,11 +5,11 @@ export function EpicHierarchy({
   model,
   context,
   taskId,
-}: {
+}: Readonly<{
   model: DocumentModel;
   context: import("@helios/contracts").ContextView;
   taskId: string;
-}) {
+}>) {
   const { detail } = model;
   return (
     <>

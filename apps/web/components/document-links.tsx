@@ -1,7 +1,7 @@
 "use client";
 import type { DocumentModel } from "./use-task-document";
 
-export function DocumentLinks({ model }: { model: DocumentModel }) {
+export function DocumentLinks({ model }: Readonly<{ model: DocumentModel }>) {
   const {
     detail,
     setPreview,
@@ -18,8 +18,8 @@ export function DocumentLinks({ model }: { model: DocumentModel }) {
     <>
       {" "}
       <h3>Dokumentenlinks</h3>
-      {detail.inspection.links.map((l, i) => (
-        <p key={i}>
+      {detail.inspection.links.map((l) => (
+        <p key={l.url + ":" + l.label}>
           <a href={l.url} target="_blank" rel="noopener noreferrer">
             {l.label}
           </a>{" "}
@@ -39,7 +39,7 @@ export function DocumentLinks({ model }: { model: DocumentModel }) {
       ))}
       <fieldset disabled={pending || detail.inspection.task.checked}>
         <label>
-          Linkbezeichnung
+          <span>Linkbezeichnung</span>
           <input
             value={linkLabel}
             onChange={(e) => {
@@ -49,7 +49,7 @@ export function DocumentLinks({ model }: { model: DocumentModel }) {
           />
         </label>
         <label>
-          Dokumentenadresse (HTTP, HTTPS oder Obsidian)
+          <span>Dokumentenadresse (HTTP, HTTPS oder Obsidian)</span>
           <input
             value={linkUrl}
             onChange={(e) => {

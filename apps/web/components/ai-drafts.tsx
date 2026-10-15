@@ -309,35 +309,8 @@ export function AiDraftPanel({
     !draft.operationId &&
     !conflict;
   return (
-    <section
-      className="ai-panel"
-      aria-label={
-        kind === "capture"
-          ? "KI-Aufgabenerfassung"
-          : kind === "progress"
-            ? "Fortschritt dokumentieren"
-            : kind === "smart"
-              ? "SMART-Ziel prüfen"
-              : kind === "epic"
-                ? "Epic-Verständnis prüfen"
-                : kind === "decomposition"
-                  ? "Aufgabe sinnvoll zerlegen"
-                  : "Aufgabenklärung"
-      }
-    >
-      <h3>
-        {kind === "capture"
-          ? "Aus Gedanken wird ein prüfbarer Entwurf"
-          : kind === "progress"
-            ? "Fortschritt dokumentieren"
-            : kind === "smart"
-              ? "SMART-Ziel prüfen"
-              : kind === "epic"
-                ? "Epic-Verständnis prüfen"
-                : kind === "decomposition"
-                  ? "Aufgabe sinnvoll zerlegen"
-                  : "Aufgabe gemeinsam klären"}
-      </h3>
+    <section className="ai-panel" aria-label={kindText[kind].label}>
+      <h3>{kindText[kind].title}</h3>
       <p>
         Die KI läuft auf deinem lokalen KI-Server. Vorschläge ändern noch keine
         Aufgabe.
@@ -349,17 +322,7 @@ export function AiDraftPanel({
         </p>
       )}
       <label>
-        {kind === "capture"
-          ? "Aufgabe in eigenen Worten"
-          : kind === "progress"
-            ? "Was hast du erledigt?"
-            : kind === "smart"
-              ? "Bekannte Zielinformationen / Antworten auf SMART-Fragen"
-              : kind === "epic"
-                ? "Deine Korrektur zum Epic-Verständnis (vorrangig)"
-                : kind === "decomposition"
-                  ? "Welche Arbeitspakete sind bekannt?"
-                  : "Deine Antwort auf die Klärungsfragen"}
+        <span>{kindText[kind].input}</span>
         <textarea
           maxLength={8000}
           disabled={busy || waiting}
@@ -482,18 +445,18 @@ export function AiDraftPanel({
                 <section>
                   <h4>Abgeleitetes Epic-Verständnis</h4>
                   <p>{draft.output.understanding.summary}</p>
-                  {draft.output.understanding.contributions.map((c, i) => (
-                    <p key={i}>
+                  {draft.output.understanding.contributions.map((c) => (
+                    <p key={c.taskId}>
                       Aufgabe {c.taskId}: {c.reason} · Beleg: «{c.evidence}»
                     </p>
                   ))}
-                  {draft.output.understanding.dependencies.map((d, i) => (
-                    <p key={i}>
+                  {draft.output.understanding.dependencies.map((d) => (
+                    <p key={d.from + ":" + d.to}>
                       Abhängigkeit {d.from} → {d.to}: «{d.evidence}»
                     </p>
                   ))}
-                  {draft.output.understanding.nextSteps.map((n, i) => (
-                    <p key={i}>
+                  {draft.output.understanding.nextSteps.map((n) => (
+                    <p key={n.taskId + ":" + n.text}>
                       Nächster Schritt ({n.taskId}): {n.text} · «{n.evidence}»
                     </p>
                   ))}
@@ -649,6 +612,17 @@ export function AiDraftPanel({
               </p>
             </>
           )}
+          {editable &&
+            values.length === 0 &&
+            ["smart", "epic", "decomposition"].includes(kind) && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void action("reject")}
+              >
+                Einschätzung ablehnen
+              </button>
+            )}
           {editable && (
             <>
               <button
@@ -771,3 +745,39 @@ export function AiDraftPanel({
     </section>
   );
 }
+
+const kindText: Record<
+  "capture" | "progress" | "clarification" | "smart" | "epic" | "decomposition",
+  { label: string; title: string; input: string }
+> = {
+  capture: {
+    label: "KI-Aufgabenerfassung",
+    title: "Aus Gedanken wird ein prüfbarer Entwurf",
+    input: "Aufgabe in eigenen Worten",
+  },
+  progress: {
+    label: "Fortschritt dokumentieren",
+    title: "Fortschritt dokumentieren",
+    input: "Was hast du erledigt?",
+  },
+  clarification: {
+    label: "Aufgabenklärung",
+    title: "Aufgabe gemeinsam klären",
+    input: "Deine Antwort auf die Klärungsfragen",
+  },
+  smart: {
+    label: "SMART-Ziel prüfen",
+    title: "SMART-Ziel prüfen",
+    input: "Bekannte Zielinformationen / Antworten auf SMART-Fragen",
+  },
+  epic: {
+    label: "Epic-Verständnis prüfen",
+    title: "Epic-Verständnis prüfen",
+    input: "Deine Korrektur zum Epic-Verständnis (vorrangig)",
+  },
+  decomposition: {
+    label: "Aufgabe sinnvoll zerlegen",
+    title: "Aufgabe sinnvoll zerlegen",
+    input: "Welche Arbeitspakete sind bekannt?",
+  },
+};

@@ -16,7 +16,9 @@ export type Preview = {
 export function useTaskDocument(context: ContextView, taskId: string) {
   const [detail, setDetail] = useState<EpicDetail | null>(null),
     [goal, setGoal] = useState(""),
-    [items, setItems] = useState<{ text: string; checked: boolean }[]>([]),
+    [items, setItems] = useState<
+      { id: string; text: string; checked: boolean }[]
+    >([]),
     [correction, setCorrection] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -32,7 +34,13 @@ export function useTaskDocument(context: ContextView, taskId: string) {
     const d: EpicDetail = await request(path);
     setDetail(d);
     setGoal(d.goal);
-    setItems(d.checklist.map(({ text, checked }) => ({ text, checked })));
+    setItems(
+      d.checklist.map(({ text, checked }) => ({
+        id: crypto.randomUUID(),
+        text,
+        checked,
+      })),
+    );
     setCorrection(d.correction);
     setPreview(null);
     return d;
@@ -44,7 +52,13 @@ export function useTaskDocument(context: ContextView, taskId: string) {
         if (alive) {
           setDetail(d);
           setGoal(d.goal);
-          setItems(d.checklist.map(({ text, checked }) => ({ text, checked })));
+          setItems(
+            d.checklist.map(({ text, checked }) => ({
+              id: crypto.randomUUID(),
+              text,
+              checked,
+            })),
+          );
           setCorrection(d.correction);
         }
       })
@@ -103,6 +117,13 @@ export function useTaskDocument(context: ContextView, taskId: string) {
     (!!operation &&
       ["queued", "running", "unknown", "partial"].includes(operation.status));
   async function propose(change: DocumentChange) {
+    const cleanChange =
+      change.kind === "checklist"
+        ? {
+            kind: "checklist" as const,
+            items: change.items.map(({ text, checked }) => ({ text, checked })),
+          }
+        : change;
     setBusy(true);
     setError("");
     try {
@@ -110,7 +131,7 @@ export function useTaskDocument(context: ContextView, taskId: string) {
         await request("/api/epics/preview", {
           contextId: context.id,
           taskId,
-          change,
+          change: cleanChange,
         }),
       );
       key.current = crypto.randomUUID();

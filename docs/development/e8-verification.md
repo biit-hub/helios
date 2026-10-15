@@ -62,3 +62,13 @@ Code-Stand 355a27e: 109 Unit-/Vertragstests und vollständige PostgreSQL-Regress
 Finale Web-/Worker-Linuximages aus demselben eingefrorenen Code gebaut. Trivy jeweils null Secrets und null behebbare HIGH-/CRITICAL-Befunde. Isolierter Compose-Smoke mit elf Migrationen, drei gesunden Diensten, persistenter Queueprobe und E8-Readiness bestanden. Kein Imagepush und keine Produktion geändert. Die verschlüsselte isolierte Restore-Probe über 13 Tabellen bleibt erfolgreich.
 
 Die endgültigen GitHub-/CodeQL-/Sonar-Prüfungen werden auf dem exakten PR-Head verlangt. Der Mergeguard prüft zusätzlich beide CI-Ereignisse push/pull_request, Sonar-Gate, strikten Branchschutz und unverändertes main.
+
+## Reviewnacharbeit
+
+[PR #19](https://github.com/biit-hub/helios/pull/19) nach develop. CodeQL und Sonar-Gate des ersten Reviewstands bestanden. Zusätzlich gemeldete neue Komplexität wurde in Prompttabellen, kleinen Reader-/Markdownfunktionen und zentralen Writer-Vorprüfungen reduziert; keine Qualitätsregel wurde abgeschaltet. Prompt und JSON-Schema bleiben für alle sieben Arten bytegleich zum bereits real geprüften Modellvertrag. Neue UI-Listen verwenden stabile Quellschlüssel beziehungsweise rein lokale Checkbox-IDs; diese werden vor jedem API-Aufruf entfernt. Zugängliche Statusausgaben und eindeutige Labels wurden ergänzt.
+
+Eine patchlose E8-Einschätzung kann ausdrücklich abgelehnt werden, bleibt revisionsgeschützt erhalten und fällt unter dieselbe 30-Tage-Bereinigung wie andere abgelehnte Entwürfe. Eine ältere KI-Einschätzung darf dadurch nicht wieder erscheinen. Der zusätzliche Fall erweitert die E8-PostgreSQL-Suite auf 25 bestandene Fälle; CI führt die gesamte Regression des finalen Heads aus.
+
+Hinweise auf await in Schleifen wurden fachlich geprüft: native Teilbaum-Mutationen bleiben zwingend sequenziell, weil jeder Trennnachweis Voraussetzung des nächsten Effekts ist. Auch begrenzte Todoist-Quellen-/Kommentarabfragen vermeiden bewusst unkontrollierte Requestbursts. Der bedingte mobile Browser-Skip ist mit E11 begründet, keine ausgelassene Desktop-Abnahme.
+
+Das finale Workerimage erreicht den konfigurierten privaten Ollama-Endpunkt und das installierte Modell. Eine echte strukturierte synthetische SMART-Inferenz aus dem Container mit nachgeschalteter semantischer Prüfung bestand im ersten Versuch. Anonyme Epic-/Work-/Protected-HTTP-Zugriffe der isolierten E8-Compose-Umgebung lieferten jeweils 401.

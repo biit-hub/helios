@@ -14,8 +14,8 @@ function replaceBody(text: string, name: string, value: string) {
     nl = text.includes("\r\n") ? "\r\n" : "\n";
   if (!s) return text + (text ? nl + nl : "") + "## " + name + nl + value;
   const body = text.slice(s.start, s.end),
-    leading = body.match(/^\s*/)?.[0] ?? "",
-    trailing = body.match(/\s*$/)?.[0] ?? "";
+    leading = body.slice(0, body.length - body.trimStart().length),
+    trailing = body.slice(body.trimEnd().length);
   const before = leading || nl,
     after = trailing || (s.end < text.length ? nl + nl : "");
   return text.slice(0, s.start) + before + value + after + text.slice(s.end);
@@ -57,20 +57,27 @@ function replaceChecklist(
           at = old.marker - old.start;
         return (
           line.slice(0, at) +
-          (p.checked ? (old.checked ? line[at] : "x") : " ") +
+          checkboxMarker(p.checked, old.checked, line[at]!) +
           line.slice(at + 1)
         );
       })
       .join(nl),
   );
 }
+function checkboxMarker(
+  checked: boolean,
+  wasChecked: boolean,
+  original: string,
+) {
+  if (!checked) return " ";
+  if (wasChecked) return original;
+  return "x";
+}
 export function patchDocument(text: string, change: DocumentChange) {
-  const out =
-    change.kind === "goal"
-      ? patchGoal(text, change)
-      : change.kind === "checklist"
-        ? replaceChecklist(text, change)
-        : patchLink(text, change);
+  let out: string;
+  if (change.kind === "goal") out = patchGoal(text, change);
+  else if (change.kind === "checklist") out = replaceChecklist(text, change);
+  else out = patchLink(text, change);
   if (out.length > 12000) throw new WorkFault("INVALID_REQUEST");
   return out;
 }

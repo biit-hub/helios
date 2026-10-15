@@ -8,12 +8,12 @@ export function EpicEnrichment({
   context,
   taskId,
   snapshot,
-}: {
+}: Readonly<{
   model: DocumentModel;
   context: import("@helios/contracts").ContextView;
   taskId: string;
   snapshot: import("@helios/contracts").WorkSnapshot;
-}) {
+}>) {
   const [smartOpen, setSmartOpen] = useState(false),
     [decompositionOpen, setDecompositionOpen] = useState(false),
     [understandingOpen, setUnderstandingOpen] = useState(false);
@@ -78,8 +78,8 @@ export function EpicEnrichment({
               </p>
               <p>{detail.cache.output.understanding?.summary}</p>
               <p>Unsicherheit: {detail.cache.output.uncertainty}</p>
-              {detail.cache.output.understanding?.contributions.map((c, i) => (
-                <p key={i}>
+              {detail.cache.output.understanding?.contributions.map((c) => (
+                <p key={c.taskId}>
                   <a
                     href={
                       "/tasks?context=" +
@@ -95,13 +95,13 @@ export function EpicEnrichment({
                   · Einschätzung: {c.reason} · Quellbeleg: «{c.evidence}»
                 </p>
               ))}
-              {detail.cache.output.understanding?.dependencies.map((d, i) => (
-                <p key={i}>
+              {detail.cache.output.understanding?.dependencies.map((d) => (
+                <p key={d.from + ":" + d.to}>
                   Bekannte Abhängigkeit {d.from} → {d.to}: «{d.evidence}»
                 </p>
               ))}
-              {detail.cache.output.understanding?.nextSteps.map((n, i) => (
-                <p key={i}>
+              {detail.cache.output.understanding?.nextSteps.map((n) => (
+                <p key={n.taskId + ":" + n.text}>
                   Vorgeschlagener nächster Schritt: {n.text} · «{n.evidence}»
                 </p>
               ))}
@@ -115,7 +115,7 @@ export function EpicEnrichment({
             <p>Noch kein abgeleitetes Verständnis gespeichert.</p>
           )}
           <label>
-            Deine verbindliche Korrektur
+            <span>Deine verbindliche Korrektur</span>
             <textarea
               maxLength={4000}
               value={correction}

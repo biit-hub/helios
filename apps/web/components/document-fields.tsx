@@ -1,7 +1,7 @@
 "use client";
 import type { DocumentModel } from "./use-task-document";
 
-export function DocumentFields({ model }: { model: DocumentModel }) {
+export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
   const {
     detail,
     goal,
@@ -22,7 +22,7 @@ export function DocumentFields({ model }: { model: DocumentModel }) {
         }
       >
         <label>
-          Ziel
+          <span>Ziel</span>
           <textarea
             value={goal}
             maxLength={6000}
@@ -46,7 +46,7 @@ export function DocumentFields({ model }: { model: DocumentModel }) {
         </button>
         <h3>Checkliste</h3>
         {items.map((item, i) => (
-          <div className="checklist-row" key={i}>
+          <div className="checklist-row" key={item.id}>
             <input
               type="checkbox"
               aria-label={"Punkt " + (i + 1) + " erledigt"}
@@ -104,7 +104,10 @@ export function DocumentFields({ model }: { model: DocumentModel }) {
         <button
           type="button"
           onClick={() => {
-            setItems([...items, { text: "", checked: false }]);
+            setItems([
+              ...items,
+              { id: crypto.randomUUID(), text: "", checked: false },
+            ]);
             setPreview(null);
           }}
         >

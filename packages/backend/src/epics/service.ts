@@ -118,11 +118,7 @@ export function createEpicService(
         )
         .orderBy(desc(aiDrafts.createdAt))
         .limit(20);
-      const cache = drafts.find(
-        (d) =>
-          d.output?.understanding &&
-          !["rejected", "cancelled"].includes(d.status),
-      );
+      const cache = drafts.find((d) => d.output?.understanding);
       return {
         inspection,
         ...markdownView(inspection.task.description),

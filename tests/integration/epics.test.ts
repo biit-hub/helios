@@ -568,3 +568,27 @@ it("keeps manual goal/checklist details usable when AI context exceeds its bound
     code: "AI_SOURCE_TOO_LARGE",
   });
 });
+it("does not revive an older Epic assessment after the latest one is explicitly rejected", async () => {
+  const c = await prepare(true);
+  const understanding = {
+    summary: "Synthetische Einschätzung",
+    contributions: [],
+    dependencies: [],
+    nextSteps: [],
+  };
+  await runDraft(
+    await start(c.id, "epic", "Erste Einschätzung"),
+    out({ understanding }),
+  );
+  advance(1);
+  const latest = await runDraft(
+    await start(c.id, "epic", "Zweite Einschätzung"),
+    out({ understanding }),
+  );
+  await ai().handle("reject", headers(), {
+    id: latest.id,
+    revision: latest.revision,
+  });
+  expect((await epics().detail(headers(), c.id, "epic-root")).cache).toBeNull();
+  expect(h.f.control.calls).toHaveLength(0);
+});

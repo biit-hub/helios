@@ -26,7 +26,8 @@ export function cacheView(
   correction: string,
   currentModel: string,
 ): EpicDetail["cache"] {
-  if (!cache?.output) return null;
+  if (!cache?.output || ["rejected", "cancelled"].includes(cache.status))
+    return null;
   const fresh =
     !!source &&
     cache.sourceFingerprint === sourceHash(source) &&

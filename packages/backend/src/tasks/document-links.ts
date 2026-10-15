@@ -33,12 +33,7 @@ export function descriptionLinks(description: string) {
       identifier?: string;
       children?: unknown[];
     };
-    const url =
-      n.type === "link"
-        ? n.url
-        : n.type === "linkReference"
-          ? definitions.get(n.identifier!.toLowerCase())
-          : undefined;
+    const url = linkUrl(n, definitions);
     if (url && safeDocumentUrl(url))
       found.push({ url, label: nodeText(n) || url });
     for (const c of n.children ?? []) visit(c);
@@ -79,12 +74,7 @@ export function patchLink(
         children?: unknown[];
         position?: { start: { offset: number }; end: { offset: number } };
       };
-      const url =
-        n.type === "link"
-          ? n.url
-          : n.type === "linkReference"
-            ? definitions.get(n.identifier!.toLowerCase())
-            : undefined;
+      const url = linkUrl(n, definitions);
       if (url === target && n.position)
         matches.push({
           start: n.position.start.offset,
@@ -97,4 +87,14 @@ export function patchLink(
     const m = matches[0]!;
     return text.slice(0, m.start) + link + text.slice(m.end);
   }
+}
+
+function linkUrl(
+  n: { type: string; url?: string; identifier?: string },
+  definitions: Map<string, string>,
+) {
+  if (n.type === "link") return n.url;
+  if (n.type === "linkReference")
+    return definitions.get(n.identifier!.toLowerCase());
+  return undefined;
 }
