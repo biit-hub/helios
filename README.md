@@ -2,13 +2,13 @@
 
 Helios ist eine selbst betriebene Anwendung für einen ruhigen Arbeitsalltag: Morgenroutine, überschaubare Tagesauswahl und ein konkreter nächster Schritt. Todoist bleibt für Aufgaben führend; lokale KI bietet prüfbare Vorschläge.
 
-**Stand: E6 implementiert mit lokaler KI über das private LAN; kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
+**Stand: E7 implementiert; kein stabiles Release.** Implementiert sind die geschützte responsive Shell, lokale Einzelkonto-Einrichtung, Benutzername/Passwort mit Argon2id, obligatorisches TOTP, einmalige Recovery-Codes, widerrufbare PostgreSQL-Sitzungen und Step-up für Sicherheitsaktionen. Hinzu kommen dynamische Privat-/Arbeitgeberkontexte, sechs Farbschemata, verschlüsselte Todoist-Verbindung, Projektzuordnung und lesende Aufgaben-/Kommentardetails.
 
 E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollziehbaren Vorschlägen, bewusster Bestätigung, sicherem Operationsjournal und kontextgetrennter Historie. Unteraufgaben behalten ihre Hierarchie.
 
 E4 ergänzt [Aufgabenverwaltung](docs/runbooks/tasks.md): Formularerfassung (ohne Projektwahl im nativen Eingang), Suche/Statusfilter, bewusste Bearbeitung, native Moves, Kommentare, Wartedetails, Abschluss und Löschung. Alle externen Änderungen verwenden dasselbe persistente Journal und den Worker aus E3. Wiederholungen werden instanzbezogen abgeschlossen; unbekannte Ergebnisse werden nicht blind wiederholt. Die manuelle E3-Abnahme bleibt ausdrücklich verschoben und offen.
 
-Geplant: Morgenroutine, Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+Geplant: Epics, lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
 
 Für die aktuelle Entwicklung genügen lokale verschlüsselte Backups und isolierte Restore-Proben gemäss [Backup-Runbook](docs/runbooks/backup-restore.md). Eine NAS-Anbindung ist keine E3-Voraussetzung. Für die spätere Produktion sind automatische verschlüsselte Sicherungen auf einem Synology-NAS vorgesehen; Zielpfad und Zugang werden erst bei der Produktivinstallation konfiguriert.
 
@@ -17,6 +17,8 @@ E5 erweitert denselben Tagesplan um persistente Haupt-/Reserveordnung mit Drag-a
 E4: [API-Vertrag](docs/integrations/tasks-api.md), [Prüfbericht](docs/development/e4-verification.md).
 
 E3-Details: [Architektur](docs/architecture/planning-focus.md), [API](docs/integrations/planning-api.md), [Prüfbericht](docs/development/e3-verification.md).
+
+E7 verbindet die vorhandenen Funktionen zu einer [persistenten Morgenroutine](docs/runbooks/morning-routine.md) unter /morning: Eingang ohne KI, freie Kontextwahl, letzter relevanter bestätigter Kontextplan im Review, gemeinsamer E6-Fortschrittsdialog, dynamische Klärung und bewusste Tagesplanung. Jeder Schritt ist überspringbar und bleibt dann offen. Der Stand wird auch nach Browserneustart vom Server geladen. [Architektur](docs/architecture/morning-routine-review.md), [API](docs/integrations/routine-api.md), [Prüfbericht](docs/development/e7-verification.md). Manuelle E3–E7-Abnahmen bleiben offen.
 
 ## Schnellstart mit Docker Compose
 

@@ -22,6 +22,7 @@ export function safeReturnTo(value: unknown) {
       "/",
       "/tasks",
       "/plan",
+      "/morning",
       "/mobile",
       "/settings/security",
       "/settings/contexts",

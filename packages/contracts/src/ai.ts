@@ -59,6 +59,7 @@ export const aiRequest = z.strictObject({
   taskId: z.string().min(1).max(200).optional(),
   input: z.string().max(8000),
   manualFields: taskPatch.optional(),
+  expectedInstanceKey: z.string().min(1).max(500).optional(),
 });
 export const draftEdit = z.strictObject({
   id: z.uuid(),
@@ -85,6 +86,7 @@ export const draftApply = draftRef.extend({
   confirmProject: z.boolean(),
 });
 export type AiDraftView = {
+  instanceKey?: string | null;
   id: string;
   contextId: string | null;
   taskId: string | null;

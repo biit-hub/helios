@@ -1,4 +1,9 @@
 import {
+  authorizeRoutine,
+  validateRoutineMutation,
+  finishRoutine,
+} from "../routine/journal";
+import {
   authorizeAnalysis,
   validateAnalysisMutation,
   finishAnalysis,
@@ -125,6 +130,14 @@ export function createTaskExecutor(
               Math.ceil((s.i.nextAllowedAt.getTime() - Date.now()) / 1000),
             );
           await allowedProject(db, s.i, payload.projectId);
+          if (payload.routineLink)
+            await authorizeRoutine(
+              db,
+              op.userId,
+              payload.routineLink,
+              command,
+              op.id,
+            );
           return s;
         },
       );
@@ -287,7 +300,10 @@ export function createTaskExecutor(
               eq(contexts.active, true),
             ),
           );
-        if (target?.kind !== "private")
+        if (
+          target?.kind !== "private" &&
+          !(payload.routineLink?.kind === "inbox" && !target)
+        )
           throw new WorkFault("FUN_PRIVATE_ONLY", 409);
       }
       if (!labels) return;
@@ -337,6 +353,15 @@ export function createTaskExecutor(
         );
       if (payload.planLink?.action === "add")
         await validatePlanAddition(reader, token, payload.planLink);
+      if (payload.routineLink)
+        await validateRoutineMutation(
+          database,
+          reader,
+          token,
+          op.userId,
+          payload,
+          op.id,
+        );
       if (payload.source) await fresh(token);
       await save({
         pending: {
@@ -627,6 +652,8 @@ export function createTaskExecutor(
           draftSource,
           code,
         );
+      if (payload.routineLink)
+        await finishRoutine(db, payload.routineLink, op.id, status);
       if (!error && payload.planLink)
         await finishPlanLink(db, payload.planLink, op.id);
       await db

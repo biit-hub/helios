@@ -22,3 +22,6 @@ export { createTaskService } from "./tasks/service";
 
 export { createAiService } from "./ai/service";
 export { createAiWorker } from "./ai/worker";
+
+export { createRoutineService } from "./routine/service";
+export * from "./routine/schema";

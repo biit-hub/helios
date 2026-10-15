@@ -583,3 +583,6 @@ legend {
 fieldset[hidden] {
   display: none;
 }
+
+/* E7 uses the shared warm card, context and form tokens. */
+.routine-nav{display:flex;flex-wrap:wrap;gap:.7rem;margin:1.5rem 0}.routine-nav section{border:1px solid var(--border);border-radius:1rem;padding:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.routine-nav [aria-current=step]{outline:3px solid var(--accent);outline-offset:2px}.routine-step{margin-block:1.5rem}.routine-actions,.routine-controls,.routine-contexts{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-block:1rem}.routine-review-card,.routine-inbox-card,.routine-bulk{border-block-start:1px solid var(--border);padding-block:1rem}.routine-inbox-card pre{white-space:pre-wrap;overflow-wrap:anywhere}.routine-gentle{background:var(--surface);border-inline-start:3px solid var(--accent);padding:1rem}.routine-review-card .check-label{align-items:flex-start}.routine-controls{border-top:1px solid var(--border);padding-top:1.5rem}.routine-controls a{margin-left:auto}

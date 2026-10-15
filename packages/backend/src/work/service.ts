@@ -1,3 +1,4 @@
+import { runtimeProblems } from "./runtime-problems";
 import { readWaiting } from "../tasks/waiting";
 import { randomUUID, createHash } from "node:crypto";
 import { eq, and, sql } from "drizzle-orm";
@@ -699,6 +700,7 @@ export function createWorkService(
               await problem(db, i, "stale_cache", c.id);
           }
         }
+        await runtimeProblems(db, i);
         const issues = await db
           .select()
           .from(s.integrationProblems)
@@ -871,6 +873,24 @@ const workErrorMessages: Record<string, string> = {
   WAITING_AMBIGUOUS:
     "Der Wartedetails-Abschnitt ist mehrdeutig oder enthält unbekannten Inhalt. Bitte zuerst direkt in Todoist prüfen.",
 
+  PROGRESS_DRAFT_REQUIRED:
+    "Den Teilfortschritt zuerst im gemeinsamen Fortschrittsdialog dokumentieren. Die Originaleingabe bleibt im Entwurf erhalten.",
+  ROUTINE_CONFLICT:
+    "Der gespeicherte Routinenstand wurde zwischenzeitlich geändert. Eingaben erhalten, Stand neu laden und bewusst erneut auswählen.",
+  ROUTINE_DAY_CHANGED:
+    "Der lokale Kalendertag hat gewechselt. Den heutigen Routinenstand laden; der bisherige Tag bleibt erhalten.",
+  REVIEW_STILL_OPEN:
+    "Es fehlen noch ausdrückliche Rückmeldungen. Du kannst den Rückblick auch überspringen und offen lassen.",
+  REVIEW_INSTANCE_CONFLICT:
+    "Die historische Taskinstanz passt nicht mehr zur gewählten Rückmeldung. Quelle und gespeicherten Stand erneut prüfen.",
+  REVIEW_SOURCE_UNKNOWN:
+    "Der historische oder externe Zustand ist ungeklärt. Der Rückblick bleibt erhalten und wiederaufnehmbar.",
+  REVIEW_OUTCOME_UNRESOLVED:
+    "Für diese Rückmeldung läuft bereits eine Operation oder ein Abschluss ist nachgewiesen. Den Einzelergebnisstand prüfen.",
+  PLAN_NOT_CONFIRMED:
+    "Der heutige Kontextplan ist noch nicht vollständig bestätigt. Du kannst die Planung offen lassen.",
+  INBOX_UNAVAILABLE:
+    "Der native Todoist-Eingang ist momentan nicht zugänglich. Andere Routinenabschnitte bleiben nutzbar.",
   PLAN_TASK_UNAVAILABLE:
     "Diese Aufgabe ist aktuell nicht für den Tagesplan geeignet. Aufgabenstand und Kontext prüfen.",
   PLAN_INSTANCE_CHANGED:

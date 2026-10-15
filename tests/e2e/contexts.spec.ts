@@ -143,11 +143,16 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   expect(stats.writes).toBe(0);
   expect(stats.reads).toBeGreaterThan(10);
   expect(stats.taskProjectIds).not.toContain("inbox:opaque");
-  expect(
-    stats.taskProjectIds.every((p: string) =>
-      projects.slice(0, 2).some((v) => v.id === p),
-    ),
-  ).toBe(true);
+  // The E6 worker may read every active managed context while this E2 flow runs.
+  const owned = await page.request.get("/api/work").then((r) => r.json());
+  const managed = owned.contexts
+    .filter(
+      (c: { active: boolean; configured: boolean }) => c.active && c.configured,
+    )
+    .map((c: { projectId: string }) => c.projectId);
+  expect(stats.taskProjectIds.every((id: string) => managed.includes(id))).toBe(
+    true,
+  );
   const mobile = await browser.newContext({
     userAgent: devices["iPhone 13"]!.userAgent,
     viewport: devices["iPhone 13"]!.viewport,
