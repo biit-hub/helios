@@ -1,0 +1,740 @@
+/* E9.1: shared composition based on the verified Sites V2 reference. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-field: 14px;
+  --radius-card: 24px;
+  --radius-pill: 999px;
+  --shadow-card: 0 18px 50px #24303d0a;
+  --error: #8d3026;
+  --error-soft: #fff1ec;
+}
+body {
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+.brand {
+  gap: 18px;
+  font-weight: 400;
+}
+.brand-orb {
+  display: block;
+  position: relative;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 38% 30%,
+    #fffef9,
+    #ffe6a4 25%,
+    #edb64f 62%,
+    #ba6a1f
+  );
+  box-shadow:
+    0 0 0 7px #efbd5f1a,
+    0 8px 24px #ba6a1f26;
+}
+.brand-orb::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  background: #fffef9;
+  box-shadow: 0 0 15px #fff2cc;
+}
+.brand-copy {
+  display: grid;
+  gap: 3px;
+}
+.brand-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.brand-title {
+  font-size: 28px;
+  letter-spacing: 3px;
+  line-height: 1.2;
+}
+.brand-tagline {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ui-icon {
+  flex: none;
+  vertical-align: middle;
+}
+.workspace {
+  --line: var(--border);
+  --ink: var(--text);
+  --glow: color-mix(in srgb, var(--soft) 65%, transparent);
+  background:
+    radial-gradient(ellipse at top, var(--glow), transparent 560px),
+    var(--background);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.work-shell {
+  max-width: 1360px;
+  padding-inline: 28px;
+}
+.work-shell > header {
+  padding: 32px 0 26px;
+  border: 0;
+  gap: 24px;
+}
+.context-picker {
+  max-width: 72%;
+}
+.context-picker > .help {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.workspace .context-pill,
+.workspace .theme-choice {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 9px 14px;
+}
+.workspace .context-pill[aria-pressed="true"],
+.workspace .theme-choice[aria-pressed="true"] {
+  border-width: 1px;
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.work-nav {
+  margin: 0;
+  padding: 8px;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.work-nav a {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+.work-nav a:hover {
+  color: var(--accent);
+  background: var(--soft);
+}
+.work-nav a[aria-current] {
+  background: var(--soft);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  font-weight: 700;
+}
+.work-nav a:last-child {
+  margin-left: auto;
+}
+.work-shell main {
+  padding-block: 30px 48px;
+  min-height: 65vh;
+}
+.work-shell h1 {
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.18;
+  letter-spacing: -1.2px;
+  margin: 10px 0;
+}
+.work-shell .eyebrow {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+}
+.work-shell .lead {
+  max-width: 760px;
+  font-size: 15px;
+  margin-block: 10px 24px;
+}
+.workspace h2 {
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: -0.4px;
+}
+.workspace h3 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.workspace p {
+  line-height: 1.6;
+}
+.workspace .card {
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  margin-block: var(--space-5);
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+.workspace .card h2 {
+  margin-top: 0;
+}
+.workspace .card p:last-child {
+  margin-bottom: 0;
+}
+.workspace .panel-heading {
+  margin-bottom: 14px;
+}
+.workspace .panel-heading h2 {
+  font-size: 20px;
+}
+.workspace .help {
+  font-size: 12px;
+}
+.workspace button {
+  border-radius: var(--radius-pill);
+  min-height: 44px;
+  font-size: 13px;
+  padding: 10px 17px;
+  line-height: 1.4;
+  margin: 4px 6px 4px 0;
+}
+.workspace button.secondary,
+.workspace .task-open {
+  border-color: var(--border);
+  color: var(--accent);
+  background: var(--surface);
+}
+.workspace button:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.workspace :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.workspace button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.workspace .pill {
+  background: var(--soft);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  padding: 5px 10px;
+}
+.workspace label {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.workspace
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field);
+  padding: 11px 13px;
+  min-height: 44px;
+  max-width: 100%;
+}
+.workspace textarea {
+  line-height: 1.6;
+  resize: vertical;
+}
+.workspace input:is([type="checkbox"], [type="radio"]) {
+  accent-color: var(--accent);
+}
+.workspace .auth-card label,
+.termihub-settings label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+}
+.workspace .auth-card input,
+.termihub-settings :is(input, select) {
+  width: 100%;
+}
+.workspace .check,
+.workspace .check-label {
+  display: flex;
+}
+.workspace .context-editor {
+  padding-block: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  margin-top: 16px;
+  background: var(--surface);
+}
+.workspace .context-editor form {
+  gap: 16px;
+}
+.workspace .context-editor h3 {
+  margin-top: 0;
+}
+.settings-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+.settings-jumps a {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 13px;
+  text-decoration: none;
+  min-height: 40px;
+}
+.workspace [id] {
+  scroll-margin-top: 24px;
+}
+.settings-group {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  margin: 24px 0 16px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+.settings-group legend {
+  font-size: 16px;
+  padding-inline: 8px;
+  margin: 0;
+  color: var(--text);
+}
+.settings-group h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.settings-group label {
+  max-width: 760px;
+}
+.settings-group button {
+  justify-self: start;
+}
+.settings-group .button-row {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.settings-group .button-row label {
+  flex-basis: 100%;
+  max-width: 310px;
+}
+.workspace .form-error,
+.workspace p[role="alert"] {
+  color: var(--error);
+  background: var(--error-soft);
+  border: 1px solid #e5bda9;
+  border-radius: var(--radius-field);
+  padding: 12px 16px;
+  overflow-wrap: anywhere;
+}
+.workspace .form-error:empty {
+  display: none;
+}
+.workspace .status-notice,
+.workspace .routine-gentle {
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-field);
+  background: var(--soft);
+  color: var(--text);
+  padding: 14px 18px;
+}
+.workspace output {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-block: 8px;
+}
+.workspace .task-filters {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.workspace .task-list {
+  gap: 16px;
+}
+.workspace .task-entry {
+  margin: 0;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.workspace .task-entry .task-card {
+  margin: 0 0 8px;
+  padding: 20px;
+  box-shadow: none;
+}
+.workspace .task-card h3 {
+  font-size: 17px;
+}
+.workspace .task-dates {
+  padding-block: 12px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.workspace .task-dates dt {
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+.workspace .task-dates dd {
+  font-size: 13px;
+}
+.workspace .task-card details {
+  padding-top: 12px;
+  font-size: 13px;
+}
+.workspace .task-dialog-backdrop {
+  background: #302a2170;
+  backdrop-filter: blur(4px);
+  padding: 24px;
+}
+.workspace .task-dialog {
+  max-height: calc(100dvh - 48px);
+  width: min(860px, 100%);
+  margin: 0;
+  padding: 28px;
+  overscroll-behavior: contain;
+  box-shadow: 0 24px 80px #24303d33;
+}
+.workspace .task-dialog > .panel-heading {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  align-items: start;
+}
+.workspace .task-dialog > .panel-heading h2 {
+  font-size: 24px;
+}
+.workspace .task-dialog > .panel-heading button {
+  background: var(--surface);
+  color: var(--muted);
+  border-color: var(--border);
+  font-size: 12px;
+}
+.workspace .ai-mode-switch {
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--soft);
+  gap: 6px;
+}
+.workspace .ai-mode-switch button {
+  margin: 0;
+  background: transparent;
+  color: var(--muted);
+  border-color: transparent;
+}
+.workspace .ai-mode-switch button[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent);
+  box-shadow: 0 2px 8px #24303d0a;
+}
+.confirmed-agenda {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+  margin-block: 20px;
+}
+.workspace .confirmed-agenda > .card {
+  margin: 0;
+}
+.focus-layout {
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 1fr);
+}
+.focus-layout > .focus-hero {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+.focus-layout > [aria-label="Hauptauswahl"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+.focus-layout > .reserve-stack {
+  grid-column: 2;
+  grid-row: 2;
+}
+.workspace .focus-hero,
+.workspace .planning .card.focus-hero {
+  padding: 32px;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.focus-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--soft), transparent);
+}
+.workspace .planning .focus-hero h2 {
+  font-size: clamp(25px, 2.55vw, 34px);
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+}
+.workspace .agenda-entry {
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  margin-block: 12px;
+}
+.workspace .agenda-entry h3 {
+  font-size: 15px;
+  margin-top: 0;
+}
+.workspace .agenda-actions {
+  gap: 6px;
+  margin-top: 10px;
+}
+.workspace .agenda-actions button {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.workspace .drag-handle {
+  min-width: 44px;
+  padding: 8px;
+}
+.workspace .reserve-stack {
+  background: linear-gradient(135deg, var(--surface), var(--soft));
+}
+.workspace .reserve-card {
+  background: var(--surface);
+  border-color: var(--accent);
+  padding: 16px;
+}
+.plan-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.focus-layout > :not(.card) {
+  grid-column: 1 / -1;
+}
+.routine-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.routine-content {
+  min-width: 0;
+}
+.routine-content > .card:first-child {
+  margin-top: 0;
+}
+.routine-nav {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+.routine-nav section {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  min-width: 0;
+}
+.workspace .routine-nav button {
+  text-align: left;
+  width: 100%;
+  margin: 0;
+  border-color: transparent;
+  color: var(--text);
+  background: transparent;
+  border-radius: 14px;
+  font-weight: 400;
+}
+.workspace .routine-nav [aria-current="step"] {
+  background: var(--soft);
+  color: var(--accent);
+  font-weight: 700;
+  outline: 1px solid var(--border);
+  outline-offset: 0;
+}
+.workspace .routine-controls {
+  gap: 10px;
+  align-items: start;
+}
+.workspace .routine-controls a {
+  flex-basis: 100%;
+  margin: 4px 0;
+}
+.workspace .epic-grid > .card {
+  margin: 0;
+}
+.workspace .task-document {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.workspace .task-document fieldset,
+.workspace .modal-section {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.workspace .capture-button {
+  bottom: 24px;
+  left: 24px;
+  min-height: 52px;
+  padding: 14px 24px;
+  box-shadow: 0 8px 24px #412a1826;
+}
+.workspace .work-shell footer {
+  padding-bottom: 88px;
+  gap: 16px;
+}
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 12px;
+  transform: translateY(-180%);
+  z-index: 100;
+  background: var(--surface);
+  padding: 12px 18px;
+  border-radius: 12px;
+}
+.skip-link:focus {
+  transform: none;
+}
+@media (max-width: 1150px) {
+  .focus-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .focus-layout > .focus-hero,
+  .focus-layout > [aria-label="Hauptauswahl"],
+  .focus-layout > .reserve-stack {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .work-nav a {
+    padding-inline: 12px;
+  }
+  .routine-layout {
+    grid-template-columns: 205px minmax(0, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .work-shell {
+    padding-inline: 20px;
+  }
+  .work-shell > header {
+    flex-wrap: wrap;
+  }
+  .context-picker {
+    max-width: 100%;
+    text-align: left;
+  }
+  .context-picker .context-pills {
+    justify-content: start;
+  }
+  .plan-layout,
+  .routine-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .routine-nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .routine-nav > button {
+    width: auto;
+  }
+  .routine-nav section {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .work-nav a:last-child {
+    margin-left: 0;
+  }
+  .workspace .focus-hero,
+  .workspace .planning .card.focus-hero {
+    padding: 24px;
+  }
+  .workspace .card {
+    padding: 20px;
+  }
+  .workspace .task-dialog {
+    padding: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace *,
+  .workspace *::before,
+  .workspace *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+.workspace .focus-hero > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  margin-top: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--surface);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+.workspace .epic-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.workspace .task-source {
+  border-color: var(--border);
+}
+@media (max-width: 800px) {
+  .workspace .epic-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.workspace .context-pill:focus-visible,
+.workspace .theme-choice:focus-visible,
+.workspace .routine-nav button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+.workspace .focus-description {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+}
+.routine-content > [data-theme] > .card:first-child {
+  margin-top: 0;
+}
+.workspace .agenda-help {
+  margin: 12px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.workspace .agenda-help summary {
+  cursor: pointer;
+  color: var(--accent);
+}

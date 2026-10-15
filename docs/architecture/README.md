@@ -37,7 +37,10 @@ E7: [Persistente Morgenroutine und bestätigte Reviewregel](morning-routine-revi
 
 E8: [Native Epics, SMART, Markdown und bestätigter F1-Abschlussentscheid](epics-smart-goals.md).
 
-
 ## E9
 
 [TermiHub-Kalenderorientierung und bestätigter Snapshot-/Verfügbarkeitsentscheid](termihub-calendar.md). Bestehende Web-/Worker-/PostgreSQL-Architektur, keine neue Schreibpipeline.
+
+## UI-Konsolidierung E9.1
+
+Die bestehende Next-/React-Komposition verwendet das [gemeinsame Designsystem](../design/design-system.md). Fachkomponenten und Backendverträge bleiben erhalten; Navigation/Marke/Icons sind wiederverwendbar, Agenda und Routine gliedern ihre vorhandenen Abschnitte über Layoutwrapper. Der [Audit](../design/e9.1-ui-audit.md) dokumentiert V2-Abgleich und bewusst erhaltene spätere Fachpräzisierungen.

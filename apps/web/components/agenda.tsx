@@ -142,238 +142,252 @@ export function ConfirmedAgenda({
       <button type="button" className="secondary" onClick={reload}>
         Aktuellen Plan laden
       </button>
-      {mode === "focus" && focus && (
-        <section className="card focus-hero">
-          <p className="eyebrow">DEIN NÄCHSTER SCHRITT</p>
-          <h2>{focus.source.content}</h2>
-          <p>Ein Schritt genügt.</p>
-          <EntryDetails entry={focus} />
-          <Link
-            href={
-              "/tasks?context=" +
-              context.id +
-              "&task=" +
-              encodeURIComponent(focus.taskId)
-            }
+      <div
+        className={
+          mode === "focus"
+            ? "confirmed-agenda focus-layout"
+            : "confirmed-agenda plan-layout"
+        }
+      >
+        {mode === "focus" && focus && (
+          <section className="card focus-hero">
+            <p className="eyebrow">DEIN NÄCHSTER SCHRITT</p>
+            <h2>{focus.source.content}</h2>
+            <p>Ein Schritt genügt.</p>
+            {focus.source.description && (
+              <p className="focus-description">{focus.source.description}</p>
+            )}
+            <EntryDetails entry={focus} />
+            <Link
+              href={
+                "/tasks?context=" +
+                context.id +
+                "&task=" +
+                encodeURIComponent(focus.taskId)
+              }
+            >
+              Aufgabe öffnen
+            </Link>
+          </section>
+        )}
+        {!focus && main.length > 0 && (
+          <p className="status-notice">
+            Die gespeicherte Fokusaufgabe ist aktuell nicht als ausführbar
+            nachgewiesen. Aufgabenstand prüfen oder bewusst einen verfügbaren
+            Fokus wählen. Die Reihenfolge bleibt erhalten.
+          </p>
+        )}
+        <section className="card" aria-label="Hauptauswahl">
+          <div className="panel-heading">
+            <h2>Heute im Blick</h2>
+            <span className="pill">Bewusst bestätigt</span>
+          </div>
+          <details className="agenda-help">
+            <summary>Reihenfolge und Tastaturbedienung</summary>
+            <p className="help">
+              Ziehgriff: mit Maus oder Touch ziehen; per Tastatur mit Leertaste
+              aufnehmen, Pfeilen verschieben und mit Leertaste ablegen.
+              Alternativ die Pfeilaktionen verwenden.
+            </p>
+            {main.length > 1 && (
+              <p className="help">
+                Um deine Fokusaufgabe in die Reserve zu verschieben, wähle
+                zuerst bewusst eine andere Hauptaufgabe als Fokus.
+              </p>
+            )}
+          </details>
+          {!main.length && (
+            <p>
+              Hier ist gerade Platz. Du kannst bewusst eine passende Aufgabe
+              ergänzen.
+            </p>
+          )}
+          <SortableArea
+            area="main"
+            entries={main}
+            disabled={busy}
+            reorder={reorder}
           >
-            Aufgabe öffnen
+            {(entry, index) => (
+              <>
+                <h3>{entry.source.content}</h3>
+                {!available(entry) && (
+                  <p className="status-notice">
+                    Aktuell nicht ausführbar · gespeicherter Planstand.
+                  </p>
+                )}
+                {mode === "plan" && <EntryDetails entry={entry} />}
+                <div className="agenda-actions">
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={
+                      busy ||
+                      !available(entry) ||
+                      plan.focusTaskId === entry.taskId
+                    }
+                    aria-pressed={
+                      plan.focusTaskId === entry.taskId && available(entry)
+                    }
+                    onClick={() =>
+                      void action("agenda-focus", {
+                        taskId: entry.taskId,
+                        entryKey: entryKey(entry),
+                      })
+                    }
+                  >
+                    {plan.focusTaskId === entry.taskId && available(entry)
+                      ? "Im Fokus"
+                      : "Als Fokus wählen"}
+                  </button>
+                  <ArrowButtons
+                    title={entry.source.content}
+                    index={index}
+                    length={main.length}
+                    disabled={busy}
+                    move={(to) => void reorder("main", index, to)}
+                  />
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={
+                      busy ||
+                      pendingIds.has(entryKey(entry)) ||
+                      (main.length > 1 && plan.focusTaskId === entry.taskId)
+                    }
+                    onClick={() =>
+                      void action("transfer", {
+                        entryKey: entryKey(entry),
+                        area: "reserve",
+                      })
+                    }
+                  >
+                    In die Reserve
+                  </button>
+                </div>
+              </>
+            )}
+          </SortableArea>
+          <Link className="button-link" href={link}>
+            Weitere Aufgabe bewusst aufnehmen
           </Link>
         </section>
-      )}
-      {!focus && main.length > 0 && (
-        <p className="status-notice">
-          Die gespeicherte Fokusaufgabe ist aktuell nicht als ausführbar
-          nachgewiesen. Aufgabenstand prüfen oder bewusst einen verfügbaren
-          Fokus wählen. Die Reihenfolge bleibt erhalten.
-        </p>
-      )}
-      <section className="card" aria-label="Hauptauswahl">
-        <div className="panel-heading">
-          <h2>Heute im Blick</h2>
-          <span className="pill">Bewusst bestätigt</span>
-        </div>
-        <p className="help">
-          Ziehgriff: mit Maus oder Touch ziehen; per Tastatur mit Leertaste
-          aufnehmen, Pfeilen verschieben und mit Leertaste ablegen. Alternativ
-          die Pfeilaktionen verwenden.
-        </p>
-        {main.length > 1 && (
-          <p className="help">
-            Um deine Fokusaufgabe in die Reserve zu verschieben, wähle zuerst
-            bewusst eine andere Hauptaufgabe als Fokus.
-          </p>
-        )}
-        {!main.length && (
-          <p>
-            Hier ist gerade Platz. Du kannst bewusst eine passende Aufgabe
-            ergänzen.
-          </p>
-        )}
-        <SortableArea
-          area="main"
-          entries={main}
-          disabled={busy}
-          reorder={reorder}
-        >
-          {(entry, index) => (
+        <section className="card reserve-stack" aria-label="Zyklische Reserve">
+          <p className="eyebrow">WENN DU MAGST</p>
+          <h2>Deine Reserve</h2>
+          {state.paused ? (
             <>
-              <h3>{entry.source.content}</h3>
-              {!available(entry) && (
-                <p className="status-notice">
-                  Aktuell nicht ausführbar · gespeicherter Planstand.
-                </p>
-              )}
-              {mode === "plan" && <EntryDetails entry={entry} />}
+              <p>
+                Die Reserve macht Pause. Du kannst sie bewusst wieder aufnehmen.
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void action("reserve-pause", { paused: false })}
+              >
+                Reserve wieder aufnehmen
+              </button>
+            </>
+          ) : current ? (
+            <article className="reserve-card">
+              <h3>{current.source.content}</h3>
+              <EntryDetails entry={current} />
+              <label>
+                Grund fürs Überspringen (optional)
+                <input
+                  value={reason}
+                  maxLength={1000}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </label>
               <div className="agenda-actions">
                 <button
                   type="button"
                   className="secondary"
-                  disabled={
-                    busy ||
-                    !available(entry) ||
-                    plan.focusTaskId === entry.taskId
-                  }
-                  aria-pressed={
-                    plan.focusTaskId === entry.taskId && available(entry)
-                  }
+                  disabled={busy || pendingIds.has(entryKey(current))}
                   onClick={() =>
-                    void action("agenda-focus", {
-                      taskId: entry.taskId,
-                      entryKey: entryKey(entry),
+                    void action("reserve-skip", {
+                      entryKey: entryKey(current),
+                      reason,
                     })
                   }
                 >
-                  {plan.focusTaskId === entry.taskId && available(entry)
-                    ? "Im Fokus"
-                    : "Als Fokus wählen"}
+                  Reservekarte überspringen
                 </button>
-                <ArrowButtons
-                  title={entry.source.content}
-                  index={index}
-                  length={main.length}
-                  disabled={busy}
-                  move={(to) => void reorder("main", index, to)}
-                />
+                <button
+                  type="button"
+                  disabled={busy || pendingIds.has(entryKey(current))}
+                  onClick={() => setClosing(current)}
+                >
+                  Reserveaufgabe abschliessen
+                </button>
                 <button
                   type="button"
                   className="secondary"
-                  disabled={
-                    busy ||
-                    pendingIds.has(entryKey(entry)) ||
-                    (main.length > 1 && plan.focusTaskId === entry.taskId)
-                  }
-                  onClick={() =>
-                    void action("transfer", {
-                      entryKey: entryKey(entry),
-                      area: "reserve",
-                    })
-                  }
+                  disabled={busy}
+                  onClick={() => void action("reserve-pause", { paused: true })}
                 >
-                  In die Reserve
+                  Reserve pausieren
                 </button>
               </div>
-            </>
-          )}
-        </SortableArea>
-        <Link className="button-link" href={link}>
-          Weitere Aufgabe bewusst aufnehmen
-        </Link>
-      </section>
-      <section className="card reserve-stack" aria-label="Zyklische Reserve">
-        <p className="eyebrow">WENN DU MAGST</p>
-        <h2>Deine Reserve</h2>
-        {state.paused ? (
-          <>
+            </article>
+          ) : reserve.length ? (
             <p>
-              Die Reserve macht Pause. Du kannst sie bewusst wieder aufnehmen.
+              Derzeit ist keine gespeicherte Reservekarte als ausführbar
+              nachgewiesen. Aufgabenstand prüfen; verschwundene Aufgaben gelten
+              nicht automatisch als erledigt.
             </p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void action("reserve-pause", { paused: false })}
-            >
-              Reserve wieder aufnehmen
-            </button>
-          </>
-        ) : current ? (
-          <article className="reserve-card">
-            <h3>{current.source.content}</h3>
-            <EntryDetails entry={current} />
-            <label>
-              Grund fürs Überspringen (optional)
-              <input
-                value={reason}
-                maxLength={1000}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </label>
-            <div className="agenda-actions">
-              <button
-                type="button"
-                className="secondary"
-                disabled={busy || pendingIds.has(entryKey(current))}
-                onClick={() =>
-                  void action("reserve-skip", {
-                    entryKey: entryKey(current),
-                    reason,
-                  })
-                }
-              >
-                Reservekarte überspringen
-              </button>
-              <button
-                type="button"
-                disabled={busy || pendingIds.has(entryKey(current))}
-                onClick={() => setClosing(current)}
-              >
-                Reserveaufgabe abschliessen
-              </button>
-              <button
-                type="button"
-                className="secondary"
+          ) : (
+            <p>Für jetzt ist deine Reserve leer. Es muss nichts dazukommen.</p>
+          )}
+          {mode === "plan" && reserve.length > 0 && (
+            <details className="reserve-manage">
+              <summary>Reserve bewusst ordnen und verwalten</summary>
+              <p className="help">
+                Diese Verwaltung ist vom reduzierten Fokusbereich getrennt.
+                Verschieben ändert keinen Todoist-Abschnitt.
+              </p>
+              <SortableArea
+                area="reserve"
+                entries={reserve}
                 disabled={busy}
-                onClick={() => void action("reserve-pause", { paused: true })}
+                reorder={reorder}
               >
-                Reserve pausieren
-              </button>
-            </div>
-          </article>
-        ) : reserve.length ? (
-          <p>
-            Derzeit ist keine gespeicherte Reservekarte als ausführbar
-            nachgewiesen. Aufgabenstand prüfen; verschwundene Aufgaben gelten
-            nicht automatisch als erledigt.
-          </p>
-        ) : (
-          <p>Für jetzt ist deine Reserve leer. Es muss nichts dazukommen.</p>
-        )}
-        {mode === "plan" && reserve.length > 0 && (
-          <details className="reserve-manage">
-            <summary>Reserve bewusst ordnen und verwalten</summary>
-            <p className="help">
-              Diese Verwaltung ist vom reduzierten Fokusbereich getrennt.
-              Verschieben ändert keinen Todoist-Abschnitt.
-            </p>
-            <SortableArea
-              area="reserve"
-              entries={reserve}
-              disabled={busy}
-              reorder={reorder}
-            >
-              {(entry, index) => (
-                <>
-                  <h3>{entry.source.content}</h3>
-                  {!available(entry) && (
-                    <p>Aktuell nicht ausführbar · Quelle prüfen.</p>
-                  )}
-                  <div className="agenda-actions">
-                    <ArrowButtons
-                      title={entry.source.content}
-                      index={index}
-                      length={reserve.length}
-                      disabled={busy}
-                      move={(to) => void reorder("reserve", index, to)}
-                    />
-                    <button
-                      type="button"
-                      className="secondary"
-                      disabled={busy || pendingIds.has(entryKey(entry))}
-                      onClick={() =>
-                        void action("transfer", {
-                          entryKey: entryKey(entry),
-                          area: "main",
-                        })
-                      }
-                    >
-                      In die Hauptauswahl
-                    </button>
-                  </div>
-                </>
-              )}
-            </SortableArea>
-          </details>
-        )}
-      </section>
+                {(entry, index) => (
+                  <>
+                    <h3>{entry.source.content}</h3>
+                    {!available(entry) && (
+                      <p>Aktuell nicht ausführbar · Quelle prüfen.</p>
+                    )}
+                    <div className="agenda-actions">
+                      <ArrowButtons
+                        title={entry.source.content}
+                        index={index}
+                        length={reserve.length}
+                        disabled={busy}
+                        move={(to) => void reorder("reserve", index, to)}
+                      />
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={busy || pendingIds.has(entryKey(entry))}
+                        onClick={() =>
+                          void action("transfer", {
+                            entryKey: entryKey(entry),
+                            area: "main",
+                          })
+                        }
+                      >
+                        In die Hauptauswahl
+                      </button>
+                    </div>
+                  </>
+                )}
+              </SortableArea>
+            </details>
+          )}
+        </section>
+      </div>
       {data.agendaOperations?.map((op) => (
         <section className="card" key={op.id}>
           <h3>Bewusste Planänderung</h3>
