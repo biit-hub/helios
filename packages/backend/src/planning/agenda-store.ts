@@ -18,6 +18,8 @@ export type PlanLink = {
   day: string;
   contextId: string;
   requestHash: string;
+  credentialVersion: string;
+  contextRevision: number;
 };
 export async function linkPlan(
   db: store.Db,
@@ -32,6 +34,7 @@ export async function linkPlan(
   if (
     p.status !== "confirmed" ||
     p.projectId !== link.entry.source.project_id ||
+    p.credentialVersion !== link.credentialVersion ||
     p.contextId !== link.contextId ||
     p.day !== link.day
   )
@@ -179,20 +182,18 @@ async function observeLinked(
   link: PlanLink,
   operationId: string,
 ) {
-  await db
-    .insert(observations)
-    .values({
-      id: crypto.randomUUID(),
-      planId: p.id,
-      contextId: p.contextId,
-      revision: p.revision,
-      event,
-      taskId: link.entry.taskId,
-      detail: {
-        sourceRevision: link.revision,
-        operationId,
-        instanceKey: entryKey(link.entry),
-        area: link.area,
-      },
-    });
+  await db.insert(observations).values({
+    id: crypto.randomUUID(),
+    planId: p.id,
+    contextId: p.contextId,
+    revision: p.revision,
+    event,
+    taskId: link.entry.taskId,
+    detail: {
+      sourceRevision: link.revision,
+      operationId,
+      instanceKey: entryKey(link.entry),
+      area: link.area,
+    },
+  });
 }

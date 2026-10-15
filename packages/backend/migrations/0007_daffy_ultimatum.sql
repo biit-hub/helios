@@ -10,7 +10,7 @@ BEGIN
  IF NEW.agenda IS NOT DISTINCT FROM OLD.agenda THEN RETURN NEW; END IF;
  IF OLD.status <> 'confirmed' OR NEW.status <> 'confirmed' OR NEW.revision <> OLD.revision+1 OR NEW.agenda IS NULL THEN RAISE EXCEPTION 'agenda requires a confirmed plan revision'; END IF;
  a := NEW.agenda;
- IF jsonb_typeof(a->'main') <> 'array' OR jsonb_typeof(a->'reserve') <> 'array' OR jsonb_typeof(a->'extra') <> 'array' OR jsonb_typeof(a->'retired') <> 'array' OR jsonb_typeof(a->'pending') <> 'array' OR jsonb_typeof(a->'paused') <> 'boolean' THEN RAISE EXCEPTION 'invalid agenda shape'; END IF;
+ IF coalesce(jsonb_typeof(a->'main'),'') <> 'array' OR coalesce(jsonb_typeof(a->'reserve'),'') <> 'array' OR coalesce(jsonb_typeof(a->'extra'),'') <> 'array' OR coalesce(jsonb_typeof(a->'retired'),'') <> 'array' OR coalesce(jsonb_typeof(a->'pending'),'') <> 'array' OR coalesce(jsonb_typeof(a->'paused'),'') <> 'boolean' THEN RAISE EXCEPTION 'invalid agenda shape'; END IF;
  IF OLD.agenda IS NOT NULL AND (NOT ((a->'extra') @> (OLD.agenda->'extra')) OR NOT ((a->'retired') @> (OLD.agenda->'retired'))) THEN RAISE EXCEPTION 'agenda sources and retirement are append only'; END IF;
  keys := (a->'main') || (a->'reserve'); catalog := NEW.entries || (a->'extra');
  IF jsonb_array_length(keys)>200 OR jsonb_array_length(catalog)>200 OR (SELECT count(*) <> count(DISTINCT value) FROM jsonb_array_elements_text(keys)) THEN RAISE EXCEPTION 'agenda order is not unique'; END IF;

@@ -842,6 +842,16 @@ const workErrorMessages: Record<string, string> = {
   WAITING_AMBIGUOUS:
     "Der Wartedetails-Abschnitt ist mehrdeutig oder enthält unbekannten Inhalt. Bitte zuerst direkt in Todoist prüfen.",
 
+  PLAN_TASK_UNAVAILABLE:
+    "Diese Aufgabe ist aktuell nicht für den Tagesplan geeignet. Aufgabenstand und Kontext prüfen.",
+  PLAN_INSTANCE_CHANGED:
+    "Die angezeigte Wiederholungsinstanz hat sich geändert. Aktuelle Aufgabe laden und bewusst erneut auswählen.",
+  PLAN_DUPLICATE:
+    "Diese Taskinstanz ist bereits im Tagesplan enthalten oder für heute abgeschlossen.",
+  FOCUS_TRANSFER_REQUIRED:
+    "Wähle zuerst bewusst eine andere Hauptaufgabe als Fokus, bevor du die Fokuskarte in die Reserve verschiebst.",
+  PLAN_LIMIT:
+    "Die technische Grenze dieses Tagesplans ist erreicht. Die bestehende Auswahl bleibt erhalten.",
   PLAN_CONFLICT:
     "Der Plan oder seine Todoist-Quelle wurde geändert. Bitte neu laden und den Konflikt prüfen.",
   PLAN_LOCKED:

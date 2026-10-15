@@ -319,6 +319,12 @@ export function createTaskService(
           return { operationId: old.id };
         }
         const id = randomUUID();
+        if (
+          planLink &&
+          (now.i.credentialVersion !== planLink.credentialVersion ||
+            now.c?.revision !== planLink.contextRevision)
+        )
+          throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
         if (planLink) await linkPlan(db, planLink, id);
         await db.insert(planOperations).values({
           id,

@@ -338,6 +338,12 @@ it("retains database source guards and enforces unique agenda membership", async
   ).rejects.toThrow();
   await expect(
     db.pool.query(
+      "update daily_plans set agenda='{}',revision=revision+1 where id=$1",
+      [v.plan!.id],
+    ),
+  ).rejects.toThrow();
+  await expect(
+    db.pool.query(
       "update plan_history set revision=revision+1 where plan_id=$1",
       [v.plan!.id],
     ),
@@ -627,3 +633,61 @@ it("does not silently switch focus when transferring its card", async () => {
   ).rejects.toMatchObject({ code: "FOCUS_TRANSFER_REQUIRED" });
   expect((await reload(v)).plan!.focusTaskId).toBe(entry.taskId);
 });
+
+it.each(["credential", "context"])(
+  "rejects a %s change between fresh eligibility and final journal linking",
+  async (kind) => {
+    const v = await prepare();
+    let taskReads = 0;
+    const fetcher: typeof fetch = async (input, init) => {
+      const response = await f.fetcher(input, init);
+      if (
+        new URL(String(input)).pathname.endsWith("/tasks") &&
+        (init?.method ?? "GET") === "GET" &&
+        ++taskReads === 2
+      ) {
+        if (kind === "context")
+          await db.pool.query(
+            "update contexts set revision=revision+1 where id=$1",
+            [v.plan!.contextId],
+          );
+        else {
+          const credential = crypto.randomUUID();
+          await db.pool.query(
+            "update integrations set credential_version=$1,revision=revision+1",
+            [credential],
+          );
+          await db.pool.query(
+            "update project_catalog set credential_version=$1",
+            [credential],
+          );
+        }
+      }
+      return response;
+    };
+    const body = {
+      contextId: v.plan!.contextId,
+      day: v.day,
+      revision: v.plan!.revision,
+      key: crypto.randomUUID(),
+      taskId: "agenda-5",
+      entryKey: entryKey({ taskId: "agenda-5", source: f.state.tasks[5]! }),
+      area: "main",
+    };
+    const service = createAgendaService(
+      db,
+      config,
+      "Europe/Zurich",
+      createTodoistReader(fetcher),
+    );
+    const writes = f.control.calls.length;
+    await expect(
+      service.handle("admit", headers(), body),
+    ).rejects.toMatchObject({ code: "TASK_SCOPE_CONFLICT" });
+    expect(f.control.calls).toHaveLength(writes);
+    const raw = await db.pool.query(
+      "select count(*) from plan_operations where kind='task'",
+    );
+    expect(Number(raw.rows[0].count)).toBe(0);
+  },
+);

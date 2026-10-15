@@ -280,6 +280,8 @@ export function createAgendaService(
       day: p.day,
       contextId: c.id,
       requestHash: hash,
+      credentialVersion: i.credentialVersion,
+      contextRevision: c.revision,
     };
     return tasks.enqueueLinked(
       h,
