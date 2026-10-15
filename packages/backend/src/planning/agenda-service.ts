@@ -118,7 +118,7 @@ export function createAgendaService(
             p.day,
             c.kind,
             Number.MAX_SAFE_INTEGER,
-          ).map(entryKey),
+          ).map((entry) => entryKey(entry)),
         );
         if (state.reserve.find((key) => executable.has(key)) !== data.entryKey)
           throw store.conflict();

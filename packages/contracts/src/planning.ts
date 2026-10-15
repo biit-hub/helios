@@ -87,7 +87,7 @@ export function agendaState(
 ): AgendaState {
   return (
     plan.agenda ?? {
-      main: plan.entries.map(entryKey),
+      main: plan.entries.map((entry) => entryKey(entry)),
       reserve: [],
       paused: false,
       extra: [],
