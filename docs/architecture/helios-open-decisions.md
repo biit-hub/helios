@@ -85,6 +85,8 @@ Externe Machbarkeitspruefungen und Bibliothekstests stehen im [Implementierungsp
 
 ## O-08 - Rueckblick nach mehreren ausgelassenen Kontexttagen
 
+**Entschieden am 15. Oktober 2026 durch den E7-Auftrag: Option A.** Automatisch nur den letzten relevanten bestätigten früheren Kontextplan vorschlagen; ältere offene Rückmeldungen historisch erhalten, nicht sammeln oder umdeuten. Gilt unabhängig für Privat und jeden Arbeitgeber. [Technischer Entscheid](morning-routine-review.md). Die folgende Abwägung ist historisch.
+
 | Punkt              | Entscheidung                                                                                                                                                                                                                            |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sachverhalt        | Letzter relevanter Arbeitstag und unabhaengige Reviews sind verbindlich. Anzeige noch ungepruefter Rueckmeldungen aus mehreren aelteren bestaetigten Plaenen ist nicht im Detail festgelegt.                                            |

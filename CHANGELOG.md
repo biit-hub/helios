@@ -1,5 +1,14 @@
 # Changelog
 
+## E7 – Persistente Morgenroutine und Review
+
+- Servergespeicherte lokale Routinetage, Kontextwahl, Revisionen, Wiederaufnahme und übersprungene offene Schritte.
+- Einzelkarten-Eingang ohne KI und Projektvorauswahl; bewusste native Zuordnung/Löschung über das bestehende E4-Journal.
+- Review des letzten relevanten bestätigten Kontextplans; ältere Lücken und historische Snapshots bleiben erhalten. Explizites Instanzfeedback, sichere Sammelentscheidungen und tatsächliche Einzelergebnisse.
+- Gemeinsamer E6-Fortschrittsdialog mit Instanzschutz, dynamische Klärung, bestehende E3–E5-Planung und optionale zentrale Problemprüfung.
+- Additive Migration 0009 mit vier Tabellen, unveränderlichen Beobachtungen und eingefrorenen Reviewquellen; geschützte Routine-API.
+- Synthetische Risiko-/Browserprüfungen und verschlüsselte isolierte E6-zu-E7-Restore-Probe. Details im E7-Prüfbericht. Manuelle E3–E7-Abnahmen bleiben offen.
+
 ## E6 – Lokale KI und gemeinsamer Fortschritt (technische Abnahme)
 
 - Bestehendes Ollama im privaten LAN, ein geprüftes lokales Modellprofil, strukturierte versionierte Ausgaben und bounded Workerjobs.
