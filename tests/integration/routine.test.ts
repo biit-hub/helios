@@ -866,3 +866,47 @@ it("leaves native checked feedback unknown when credentials change during proof 
   );
   expect(h.f.control.calls).toHaveLength(0);
 });
+
+it("counts committed conscious inbox deferrals, never retries or rejected decisions", async () => {
+  await prepare();
+  const template = h.f.state.tasks[0]!;
+  h.f.state.tasks.push(
+    ...[0, 1, 2].map((n) => ({
+      ...structuredClone(template),
+      id: "defer-" + n,
+      project_id: projects[4]!.id,
+      section_id: null,
+    })),
+  );
+  let d = await start();
+  for (let n = 0; n < 3; n++) {
+    const { card } = (await service().details(headers(), d.id, "inbox")) as {
+      card: InboxCard;
+    };
+    expect(card!.task.id).toBe("defer-" + n);
+    const body = {
+      key: key(),
+      id: d.id,
+      revision: d.revision,
+      taskId: card!.task.id,
+      basis: card!.basis,
+    };
+    await expect(
+      service().handle("inbox-defer", headers(), {
+        ...body,
+        key: key(),
+        revision: d.revision + 100,
+      }),
+    ).rejects.toMatchObject({ code: "ROUTINE_CONFLICT" });
+    expect((await reload()).inboxSuccesses).toBe(n);
+    await service().handle("inbox-defer", headers(), body);
+    await service().handle("inbox-defer", headers(), body);
+    d = await reload();
+    expect(d.inboxSuccesses).toBe(n + 1);
+  }
+  expect(h.f.control.calls).toHaveLength(0);
+  expect(await db.db.select().from(aiDrafts)).toHaveLength(0);
+  expect(
+    h.f.state.tasks.filter((t) => t.project_id === projects[4]!.id),
+  ).toHaveLength(3);
+});

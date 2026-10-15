@@ -64,18 +64,24 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
     await expect(
       card.getByRole("combobox", { name: "Zielprojekt", exact: true }),
     ).toHaveValue("");
-    await card
-      .getByRole("combobox", { name: "Zielprojekt", exact: true })
-      .selectOption(projects[3]!.id);
-    await card
-      .getByRole("checkbox", {
-        name: "Diese Projektzuordnung ausdrücklich bestätigen",
-        exact: true,
-      })
-      .check();
-    await card
-      .getByRole("button", { name: "Bewusst zuordnen", exact: true })
-      .click();
+    if (n === 2) {
+      await card
+        .getByRole("button", { name: "Für später liegen lassen", exact: true })
+        .click();
+    } else {
+      await card
+        .getByRole("combobox", { name: "Zielprojekt", exact: true })
+        .selectOption(projects[3]!.id);
+      await card
+        .getByRole("checkbox", {
+          name: "Diese Projektzuordnung ausdrücklich bestätigen",
+          exact: true,
+        })
+        .check();
+      await card
+        .getByRole("button", { name: "Bewusst zuordnen", exact: true })
+        .click();
+    }
     await expect(
       card.getByRole("heading", {
         name: "Synthetischer Eingang " + n,
@@ -86,6 +92,11 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
   await expect(
     page.getByText(/Du hast bereits einige Einträge bewusst bearbeitet/),
   ).toBeVisible({ timeout: 25000 });
+  const inboxState = (
+    await page.request.get("/api/routine").then((r) => r.json())
+  ).routine;
+  expect(inboxState.inboxSuccesses).toBe(3);
+  expect(inboxState.deferredIds).toContain("routine-inbox-2");
   const controls = page.locator(".routine-controls");
   await controls
     .getByRole("button", {

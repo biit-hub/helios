@@ -233,6 +233,16 @@ export async function view(db: Db, d: RoutineDay): Promise<RoutineView> {
           ),
         )
     : [];
+  const deferred = await db
+    .select({ id: routineEvents.id })
+    .from(routineEvents)
+    .where(
+      and(
+        eq(routineEvents.routineId, d.id),
+        eq(routineEvents.userId, d.userId),
+        eq(routineEvents.event, "inbox-defer"),
+      ),
+    );
   const successes = await db
     .select({ id: planOperations.id })
     .from(planOperations)
@@ -279,7 +289,7 @@ export async function view(db: Db, d: RoutineDay): Promise<RoutineView> {
     steps: d.steps,
     cursor: d.cursor,
     deferredIds: d.deferredIds,
-    inboxSuccesses: successes.length,
+    inboxSuccesses: successes.length + deferred.length,
     contexts: result,
     complete:
       Object.values(d.steps).every((s) => s === "done") &&

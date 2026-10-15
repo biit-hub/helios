@@ -16,7 +16,7 @@ Schritte: open, started, done oder skipped_open. Skip führt weiter und bleibt o
 
 ## Domänengrenzen
 
-Der globale Eingang liest genau eine Karte, ohne KI oder Projektvorauswahl. Benutzer wählt jedes zugängliche geeignete Projekt bewusst. Bestehendes E4-Journal prüft Quelle, echten Eingang, Sitzung und Berechtigung vor Mutation. Erst eine tatsächliche aktive verwaltete Zuordnung darf durch die unveränderten E6-Guards analysiert werden. Failed, partial und unknown zählen nicht als nachgewiesene erfolgreiche Eingangsmutation.
+Der globale Eingang liest genau eine Karte, ohne KI oder Projektvorauswahl. Benutzer wählt jedes zugängliche geeignete Projekt bewusst. Bestehendes E4-Journal prüft Quelle, echten Eingang, Sitzung und Berechtigung vor Mutation. Erst eine tatsächliche aktive verwaltete Zuordnung darf durch die unveränderten E6-Guards analysiert werden. Failed, partial und unknown zählen nicht als erfolgreiche externe Eingangsmutation. Der Auftraggeber bestätigt zusätzlich: Erfolgreich serverseitig gespeichertes «für später liegen lassen» zählt als bewusste lokale Entscheidung zum freiwilligen Drei-Aktionen-Hinweis; idempotente Wiederholungen zählen nur einmal.
 
 Sammelabschlüsse persistieren die gesamte Entscheidung vor dem Einreihen ihrer E4-Einzeloperationen. Bei Abbruch bleiben nicht eingereihte Entscheidungen wiederaufnehmbar. Teilergebnisse und unbekannte Effekte bleiben je Instanz sichtbar. E6-Fortschrittsdialog/-modelle/-validierung werden direkt wiederverwendet; ein zusätzlicher expectedInstanceKey schützt den Einstieg aus historischem Review vor einer neuen Wiederholungsinstanz.
 
