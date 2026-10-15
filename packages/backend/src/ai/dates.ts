@@ -2,7 +2,8 @@ import { z } from "zod";
 import { localDay } from "../planning/selection";
 export const aiTimezone = (env: NodeJS.ProcessEnv = process.env) => {
   const tz = env.PLAN_TIMEZONE ?? "Europe/Zurich";
-  new Intl.DateTimeFormat("en", { timeZone: tz });
+  const formatter = new Intl.DateTimeFormat("en", { timeZone: tz });
+  formatter.resolvedOptions();
   return tz;
 };
 export function referenceDay(at: Date, timezone: string) {

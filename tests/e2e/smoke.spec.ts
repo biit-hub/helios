@@ -12,9 +12,14 @@ test("unauthenticated desktop and mobile shells redirect to real login", async (
   expect(denied.status()).toBe(401);
   expect((await request.get("/api/work")).status()).toBe(401);
   expect((await request.get("/api/ai")).status()).toBe(401);
-  expect((await request.post("/api/ai/start", { data: {} })).status()).toBe(
-    401,
-  );
+  expect(
+    (
+      await request.post("/api/ai/start", {
+        headers: { Origin: process.env.AUTH_ORIGIN! },
+        data: {},
+      })
+    ).status(),
+  ).toBe(401);
   expect((await request.get("/api/work?contextId=invalid")).status()).toBe(401);
   expect(
     (
