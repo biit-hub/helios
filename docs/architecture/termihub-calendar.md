@@ -33,3 +33,5 @@ Manuelle Leseabsichten binden die tatsächlich geprüfte Sitzung; geplante Reads
 Pro Leseabsicht maximal drei Versuche mit Backoff und begrenztem Retry-After. Auth-, Rechte-, URL- und Vertragsfehler benötigen bewusste erneute Prüfung. Nach ausgeschöpften vorübergehenden Fehlern frühestens nach 15 Minuten eine neue Hintergrundabsicht. Queuepayloads enthalten nur Integrations- und Request-ID. RESTORE_MODE sperrt Leser und Bereinigung. Todoist-Operationsjournal und KI-Worker bleiben eigenständig bedienbar.
 
 [Verifizierter externer Vertrag und offene Live-Nachweise](../integrations/termihub.md), [Bedienung](../runbooks/termihub.md), [E9-Prüfbericht](../development/e9-verification.md).
+
+Ein vorgemerkter oder laufender Leseversuch ist kein Erfolgsnachweis. Insbesondere während Wiederholungen nach einem Fehler wird kein verlässliches Budget aus der alten Fassung freigegeben. Erst nachgewiesener erfolgreicher Abruf und passende Quellrevisionen erlauben wieder die frische Orientierung; manuelle Planung bleibt verfügbar.

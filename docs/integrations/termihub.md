@@ -36,3 +36,5 @@ URL ist konfigurierbar, Backend ohne fest codierte persönliche Instanz. Nur ext
 Alle fünf oben aufgeführten veröffentlichten Routen wurden ausschliesslich mit GET und ohne Token sowie einem synthetisch ungültigen Token geprüft: jeweils HTTP 401. Kein echter API-Token in der Helios-Konfiguration vorhanden. Erfolgreicher Live-Abruf, Scope-403 und tatsächliche Filter-/Datenverträge am installierten Server sind daher weiterhin offen; Quell-/Fixture-Nachweise ersetzen diese Abnahme nicht. Der Benutzer erstellt einen eingeschränkten Token selbst in TermiHub und hinterlegt ihn später in Helios. Keine Beschaffung über persönliche Zugangsdaten.
 
 Implementierungsfortschritt und Tests: [E9-Prüfbericht](../development/e9-verification.md).
+
+Ein vorgemerkter oder laufender Leseversuch ist kein Erfolgsnachweis. Insbesondere während Wiederholungen nach einem Fehler wird kein verlässliches Budget aus der alten Fassung freigegeben. Erst nachgewiesener erfolgreicher Abruf und passende Quellrevisionen erlauben wieder die frische Orientierung; manuelle Planung bleibt verfügbar.
