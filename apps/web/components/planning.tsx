@@ -158,6 +158,7 @@ export function PlanningPanel({
             </label>
           </div>
           <CalendarContextPanel
+            key={context.id + ":" + data.day}
             contextId={context.id}
             day={data.day}
             basis={data.plan?.calendarBasis}

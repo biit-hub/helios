@@ -178,3 +178,41 @@ it("reports a newer calendar basis without posting a plan mutation", async () =>
     { method: "GET", headers: {}, body: undefined, cache: "no-store" },
   ]);
 });
+
+import { calendarDisplay } from "../../apps/web/components/calendar-display";
+it("expires a displayed snapshot at its boundary even without a new server response", () => {
+  const time = Date.parse("2026-10-15T08:15:00Z");
+  const orientation = {
+    ...emptyOrientation("2026-10-15", "Europe/Zurich", "ready"),
+    snapshotId: "synthetic-snapshot",
+    retrievedAt: "2026-10-15T08:00:00Z",
+    freshUntil: "2026-10-15T08:15:00Z",
+    reliable: true,
+    budget: { minimumMinutes: 30, maximumMinutes: 60 },
+  };
+  expect(calendarDisplay(orientation, time - 1, false).reliable).toBe(true);
+  const expired = calendarDisplay(orientation, time, false);
+  expect(expired.state).toBe("stale");
+  expect(expired.reliable).toBe(false);
+  expect(expired.budget).toBeNull();
+  expect(expired.observedBudget).toEqual(orientation.budget);
+  expect(orientation.reliable).toBe(true);
+});
+it("withholds the displayed current budget when the browser read fails", () => {
+  const orientation = {
+    ...emptyOrientation("2026-10-15", "Europe/Zurich", "ready"),
+    snapshotId: "synthetic-snapshot",
+    retrievedAt: "2026-10-15T08:00:00Z",
+    freshUntil: "2026-10-15T08:15:00Z",
+    reliable: true,
+    budget: { minimumMinutes: 30, maximumMinutes: 60 },
+  };
+  expect(
+    calendarDisplay(orientation, Date.parse("2026-10-15T08:01:00Z"), true)
+      .budget,
+  ).toBeNull();
+  expect(
+    calendarDisplay(orientation, Date.parse("2026-10-15T08:01:00Z"), false)
+      .budget,
+  ).toEqual(orientation.budget);
+});

@@ -7,6 +7,7 @@ import type {
   CalendarBudget,
   CalendarPlanBasis,
 } from "@helios/contracts";
+import { calendarDisplay } from "./calendar-display";
 import { routineRequest as api } from "./routine-http";
 const labels: Record<string, string> = {
   ready: "Aktueller Kalenderstand",
@@ -121,8 +122,14 @@ export function CalendarContextPanel({
 }: Readonly<{ contextId?: string; day?: string; basis?: CalendarPlanBasis }>) {
   const [data, setData] = useState<CalendarOverview | null>(null),
     [error, setError] = useState(""),
+    [readFailed, setReadFailed] = useState(false),
     [busy, setBusy] = useState(false),
     [version, setVersion] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   useEffect(() => {
     let alive = true;
     const q = new URLSearchParams({
@@ -132,10 +139,17 @@ export function CalendarContextPanel({
     const load = () =>
       api("/api/calendar?" + q)
         .then((v) => {
-          if (alive) setData(v);
+          if (alive) {
+            setData(v);
+            setError("");
+            setReadFailed(false);
+          }
         })
         .catch((e) => {
-          if (alive) setError(e.message);
+          if (alive) {
+            setError(e.message);
+            setReadFailed(true);
+          }
         });
     void load();
     const timer = setInterval(() => void load(), 15000);
@@ -162,9 +176,12 @@ export function CalendarContextPanel({
         Kalenderorientierung nicht verfügbar. Manuell weiterplanen ist möglich.
       </output>
     ) : null;
-  const shown = data.contexts.filter(
-    (c) => c.orientation.state !== "not_connected",
-  );
+  const shown = data.contexts
+    .filter((c) => c.orientation.state !== "not_connected")
+    .map((c) => ({
+      ...c,
+      orientation: calendarDisplay(c.orientation, now, readFailed),
+    }));
   if (!shown.length)
     return (
       <p className="help">
