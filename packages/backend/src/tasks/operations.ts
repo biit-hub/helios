@@ -30,6 +30,8 @@ import {
 } from "./todoist";
 import type { TaskWriter } from "./todoist";
 import { patchWaiting } from "./waiting";
+import { finishPlanLink } from "../planning/agenda-store";
+import { validatePlanAddition } from "../planning/agenda-source";
 type Operation = typeof planOperations.$inferSelect;
 type Progress = {
   effects?: Record<string, unknown>[];
@@ -301,6 +303,8 @@ export function createTaskExecutor(
         (kind === "move" && command.action === "move")
       )
         await checkFun(token);
+      if (payload.planLink?.action === "add")
+        await validatePlanAddition(reader, token, payload.planLink);
       if (payload.source) await fresh(token);
       await save({
         pending: {
@@ -431,6 +435,10 @@ export function createTaskExecutor(
         } else {
           const t = await fresh(token);
           const path = "tasks/" + encodeURIComponent(t.id);
+          if (command.action === "plan-select") {
+            await validatePlanAddition(reader, token, payload.planLink!);
+            await save({ task: t, stage: "done" });
+          }
           if (command.action === "update")
             await mutate(token, "update", path, fieldPatch(command.fields!));
           if (command.action === "comment")
@@ -569,6 +577,8 @@ export function createTaskExecutor(
           : "failed";
     await database.db.transaction(async (db) => {
       await db.execute(sql`select pg_advisory_xact_lock(1748012)`);
+      if (!error && payload.planLink)
+        await finishPlanLink(db, payload.planLink, op.id);
       await db
         .update(planOperations)
         .set({
@@ -589,7 +599,9 @@ export function createTaskExecutor(
             ? progress.pending
               ? "unknown"
               : "failed"
-            : "verified",
+            : command.action === "plan-select"
+              ? "local"
+              : "verified",
           code,
           updatedAt: new Date(),
         })

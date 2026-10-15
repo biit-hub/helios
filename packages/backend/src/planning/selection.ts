@@ -54,6 +54,7 @@ export function candidates(
   projectId: string,
   day: string,
   kind: string,
+  limit = 5,
 ): PlanEntry[] {
   const known = new Map(rows.map((t) => [t.data.id, t]));
   const suitable = (row: TaskView) => {
@@ -109,7 +110,7 @@ export function candidates(
         x.id.localeCompare(y.id)
       );
     })
-    .slice(0, 5)
+    .slice(0, limit)
     .map((row, index) => {
       const t = row.data;
       const reasons: string[] = [];

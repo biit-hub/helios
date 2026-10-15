@@ -9,7 +9,7 @@ const origin = new URL(
   process.env.TODOIST_TEST_ORIGIN ?? "http://127.0.0.1:3102/api/v1/",
 );
 if (origin.hostname !== "127.0.0.1") throw new Error("Loopback required");
-const f = fixture();
+let f = fixture();
 const server = createServer(async (req, res) => {
   try {
     if (req.url === "/assertions") {
@@ -29,6 +29,7 @@ const server = createServer(async (req, res) => {
       let raw = "";
       for await (const chunk of req) raw += chunk;
       const data = JSON.parse(raw);
+      if (data.reset === true) f = fixture();
       if (
         !["ok", "auth_error", "network", "rate_limit", "unexpected"].includes(
           data.mode,
@@ -69,6 +70,21 @@ const server = createServer(async (req, res) => {
           content: "Synthetische Unteraufgabe",
           section_id: "section:open",
         });
+      }
+      if (data.scenario === "agenda") {
+        const template = structuredClone(f.state.tasks[1]!);
+        f.state.tasks = Array.from({ length: 6 }, (_, i) => ({
+          ...template,
+          id: "agenda-browser-" + i,
+          content: "Synthetische Tagesaufgabe " + i,
+          project_id: "project:private/alpha",
+          parent_id: null,
+          labels: [],
+          section_id: "project:private/alpha:section:0",
+          due: null,
+          deadline: null,
+          priority: Math.max(1, 4 - i),
+        }));
       }
       res.end("{}");
       return;

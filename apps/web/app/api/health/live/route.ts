@@ -2,7 +2,7 @@ import { healthSchema } from "@helios/contracts";
 export const dynamic = "force-dynamic";
 export function GET() {
   return Response.json(
-    healthSchema.parse({ status: "ok", service: "web", stage: "E4" }),
+    healthSchema.parse({ status: "ok", service: "web", stage: "E5" }),
     { headers: { "Cache-Control": "no-store" } },
   );
 }

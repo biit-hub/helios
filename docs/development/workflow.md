@@ -36,3 +36,7 @@ main enthält zunächst nur einen Bootstraphinweis; der Entwicklungsstand bleibt
 Unit- und PostgreSQL-Tests injizieren einen GET-only-Vertragsreader; Browserprüfungen starten zusätzlich den isolierten synthetischen Todoist-HTTP-Server auf 127.0.0.1:3102. Konfiguration verlangt HELIOS_ENV=test, eine \_test-Datenbank und die explizite Loopback-Testorigin. Echte Tokens werden nie an diesen Server gegeben. Die Desktop-Szenarien provisionieren jeweils ein eigenes synthetisches Konto im dedizierten Testbestand; die Mobileprojekte wiederholen nur die unabhängigen Schutzprüfungen, mobile Kontext-Pills werden in einem eigenen Kontext des Szenarios getestet.
 
 Die Migrationsprüfung erstellt in der isolierten PostgreSQL-Testinstanz eine neue, eindeutig benannte \_test-Datenbank, provisioniert dort ein E1.2-Konto und prüft den additiven E2-Upgrade. Sie löscht ausschliesslich diese von ihr neu erzeugte Datenbank. Kein vorhandener Entwicklungs-/Produktionsbestand wird überschrieben.
+
+## E5-Regressionsabnahme
+
+Lokale Ordnung, Fokus und Skip dürfen keine Todoist-Writes erzeugen. E5-Aufnahme/Reserveabschluss verwenden injizierte Reader/Writer desselben E4-Journals. Wiederholungsinstanzen, Quellenkonflikte, konkurrierende Revisionen, verlorene Close-Antwort und Wiederaufnahme prüfen. Browser prüfen echte Tastatur- und Pointer-Sensoren; keine DOM-Sensoren global deaktivieren. Zusätzliche Schattenmodelle, Historienupdates oder abgeschwächte Sicherheitsregeln sind ausgeschlossen.

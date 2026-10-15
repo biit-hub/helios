@@ -31,6 +31,7 @@ export const taskCommand = z.strictObject({
     "close",
     "delete",
     "sections",
+    "plan-select",
   ]),
   contextId: z.uuid().nullable(),
   taskId: externalId.optional(),

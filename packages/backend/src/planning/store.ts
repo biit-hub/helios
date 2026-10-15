@@ -17,6 +17,7 @@ export function view(p: Plan): PlanView {
     revision: p.revision,
     status: p.status,
     entries: p.entries,
+    ...(p.agenda ? { agenda: p.agenda } : {}),
     focusTaskId: p.focusTaskId,
     sourceAt: p.sourceAt.toISOString(),
     confirmedAt: p.confirmedAt?.toISOString() ?? null,

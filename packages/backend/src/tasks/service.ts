@@ -23,7 +23,9 @@ import {
 import { planOperations, planSteps } from "../planning/schema";
 import type { Database, Db } from "../planning/store";
 import { readWaiting } from "./waiting";
+import { linkPlan, type PlanLink } from "../planning/agenda-store";
 export type TaskPayload = {
+  planLink?: PlanLink;
   command: TaskCommand;
   projectId: string;
   contextRevision: number | null;
@@ -163,11 +165,13 @@ export function createTaskService(
       links: descriptionLinks(task.description),
     };
   }
-  async function enqueue(h: Headers, raw: unknown) {
+  async function enqueue(h: Headers, raw: unknown, planLink?: PlanLink) {
     const command = taskCommand.parse(raw);
     if (command.fields?.recurring && command.fields.due !== undefined)
       throw new WorkFault("INVALID_REQUEST");
-    const hash = fingerprint(command);
+    if (command.action === "plan-select" && !planLink)
+      throw new WorkFault("INVALID_REQUEST");
+    const hash = fingerprint(planLink ? { command, planLink } : command);
     const base = await identity.withActive(
       h,
       { mutation: true },
@@ -280,6 +284,7 @@ export function createTaskService(
     )
       throw new WorkFault("EPIC_CHILDREN_POLICY", 409);
     const payload: TaskPayload = {
+      ...(planLink ? { planLink } : {}),
       command,
       projectId,
       contextRevision: scope.c?.revision ?? null,
@@ -314,6 +319,13 @@ export function createTaskService(
           return { operationId: old.id };
         }
         const id = randomUUID();
+        if (
+          planLink &&
+          (now.i.credentialVersion !== planLink.credentialVersion ||
+            now.c?.revision !== planLink.contextRevision)
+        )
+          throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+        if (planLink) await linkPlan(db, planLink, id);
         await db.insert(planOperations).values({
           id,
           userId: user,
@@ -382,6 +394,10 @@ export function createTaskService(
     });
   }
   return {
+    async enqueueLinked(h: Headers, input: unknown, link: PlanLink) {
+      await identity.withActive(h, { mutation: true }, async () => {});
+      return enqueue(h, input, link);
+    },
     inspect,
     async options(h: Headers, projectId: string) {
       const scope = await identity.withActive(h, {}, async (db, user) => {

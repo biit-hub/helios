@@ -13,6 +13,13 @@ export async function bootstrapWorkSettings(
     ["node_modules/tsx/dist/cli.mjs", "tests/e2e/fixture-bootstrap.ts"],
     { stdio: "pipe" },
   );
+  const fixtureOrigin = process.env.TODOIST_TEST_ORIGIN;
+  if (!fixtureOrigin) throw new Error("Synthetic Todoist origin required");
+  const reset = await fetch(new URL("/control", fixtureOrigin), {
+    method: "POST",
+    body: JSON.stringify({ mode: "ok", reset: true }),
+  });
+  if (!reset.ok) throw new Error("Synthetic Todoist reset failed");
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const password = "Synthetic passphrase 72!";

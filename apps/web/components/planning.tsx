@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ConfirmedAgenda } from "./agenda";
+import { agendaEntries } from "@helios/contracts";
 import type { PlanningView, PlanEntry, ContextView } from "@helios/contracts";
 async function api(path: string, body?: unknown, signal?: AbortSignal) {
   const r = await fetch(path, {
@@ -82,7 +84,11 @@ export function PlanningPanel({
     return () => abort.abort();
   }, [context.id, day, refresh]);
   const pending =
-    data?.operation && ["queued", "running"].includes(data.operation.status);
+    (data?.operation &&
+      ["queued", "running"].includes(data.operation.status)) ||
+    data?.agendaOperations?.some((op) =>
+      ["queued", "running"].includes(op.status),
+    );
   useEffect(() => {
     if (!pending) return;
     const timer = setInterval(() => setRefresh((n) => n + 1), 1500);
@@ -117,12 +123,6 @@ export function PlanningPanel({
     await action("confirm", { key: intent.current.key, taskIds: chosen });
   }
   const plan = data?.plan;
-  const focus = plan?.entries.find(
-    (e) =>
-      e.taskId === plan.focusTaskId &&
-      (data?.availability === undefined ||
-        data.availability[e.taskId] === true),
-  );
   return (
     <div
       className={
@@ -185,130 +185,103 @@ export function PlanningPanel({
               </button>
             </section>
           )}
-          {plan?.status === "confirmed" && mode === "focus" && focus && (
-            <section className="card focus-hero">
-              <p className="eyebrow">DEIN NÄCHSTER SCHRITT</p>
-              <h2>{focus.source.content}</h2>
-              <p className="lead">
-                Ein Schritt genügt. Dein bestätigter Plan bleibt erhalten.
-              </p>
-              <Dates entry={focus} />
-              <Reasons entry={focus} />
-              <Link href={"/plan?context=" + context.id}>
-                Tagesplan ansehen
-              </Link>
-            </section>
-          )}
-          {plan?.status === "confirmed" && !focus && (
-            <p className="status-notice">
-              Die gespeicherte Fokusaufgabe ist aktuell nicht als ausführbar
-              nachgewiesen. Planreihenfolge und Historie bleiben erhalten.
-              Aufgabenstand prüfen oder bewusst einen verfügbaren Fokus wählen.
-            </p>
+          {plan?.status === "confirmed" && (
+            <ConfirmedAgenda
+              key={context.id + data.day}
+              data={data}
+              context={context}
+              mode={mode}
+              reload={() => setRefresh((n) => n + 1)}
+              updatePlan={(updated) =>
+                setData((current) =>
+                  current ? { ...current, plan: updated } : current,
+                )
+              }
+            />
           )}
           {plan && (
             <>
-              <section className="card">
-                <div className="panel-heading">
-                  <h2>
-                    {plan.status === "draft"
-                      ? "Deine Tagesvorschau"
-                      : "Heute im Blick"}
-                  </h2>
-                  {plan.status === "confirmed" && (
-                    <span className="pill">Bewusst bestätigt</span>
-                  )}
-                </div>
-                <p className="help">
-                  Quellenstand:{" "}
-                  {new Date(plan.sourceAt).toLocaleString("de-CH")} · Revision{" "}
-                  {plan.revision}. Die Ansicht enthält den gespeicherten Plan;
-                  aktuelle Todoist-Änderungen werden vor Schreiboperationen
-                  geprüft.
-                </p>
-                {plan.entries.length === 0 && (
-                  <p>
-                    Heute ist hier gerade Platz. Es gibt keine geeigneten
-                    Aufgaben im zuletzt geladenen Bestand.
+              {plan.status !== "confirmed" && (
+                <section className="card">
+                  <div className="panel-heading">
+                    <h2>
+                      {plan.status === "draft"
+                        ? "Deine Tagesvorschau"
+                        : "Heute im Blick"}
+                    </h2>
+                  </div>
+                  <p className="help">
+                    Quellenstand:{" "}
+                    {new Date(plan.sourceAt).toLocaleString("de-CH")} · Revision{" "}
+                    {plan.revision}. Die Ansicht enthält den gespeicherten Plan;
+                    aktuelle Todoist-Änderungen werden vor Schreiboperationen
+                    geprüft.
                   </p>
-                )}
-                <ol className="today-list">
-                  {plan.entries.map((entry) => (
-                    <li key={entry.taskId} className="today-entry">
-                      <div>
-                        {plan.status === "draft" && (
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={chosen.includes(entry.taskId)}
-                              onChange={(e) =>
-                                setChosen((ids) =>
-                                  e.target.checked
-                                    ? [...ids, entry.taskId]
-                                    : ids.filter((id) => id !== entry.taskId),
-                                )
-                              }
-                            />
-                            Einplanen
-                          </label>
-                        )}
-                        <h3>{entry.source.content}</h3>
-                        {(mode === "plan" || plan.status === "draft") && (
-                          <>
-                            <Dates entry={entry} />
-                            <Reasons entry={entry} />
-                          </>
-                        )}
-                      </div>
-                      {plan.status === "confirmed" && (
-                        <button
-                          type="button"
-                          className="secondary"
-                          aria-pressed={plan.focusTaskId === entry.taskId}
-                          disabled={
-                            busy ||
-                            plan.focusTaskId === entry.taskId ||
-                            (data?.availability !== undefined &&
-                              data.availability[entry.taskId] !== true)
-                          }
-                          onClick={() =>
-                            void action("focus", { taskId: entry.taskId })
-                          }
-                        >
-                          {plan.focusTaskId === entry.taskId
-                            ? "Im Fokus"
-                            : "Als Fokus wählen"}
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-                {plan.status === "draft" && (
-                  <>
+                  {plan.entries.length === 0 && (
                     <p>
-                      Erst mit deiner Bestätigung darf Helios geeignete
-                      eigenständige Aufgaben nach «In Arbeit» verschieben.
-                      Unteraufgaben und Oberaufgaben mit aktiven Kindern bleiben
-                      zum Schutz der Hierarchie in ihrem Todoist-Abschnitt.
+                      Heute ist hier gerade Platz. Es gibt keine geeigneten
+                      Aufgaben im zuletzt geladenen Bestand.
                     </p>
-                    <button
-                      type="button"
-                      disabled={busy || chosen.length === 0}
-                      onClick={() => void confirm()}
-                    >
-                      Auswahl bewusst bestätigen
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() => void action("propose")}
-                    >
-                      Vorschau neu prüfen
-                    </button>
-                  </>
-                )}
-              </section>
+                  )}
+                  <ol className="today-list">
+                    {plan.entries.map((entry) => (
+                      <li key={entry.taskId} className="today-entry">
+                        <div>
+                          {plan.status === "draft" && (
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={chosen.includes(entry.taskId)}
+                                onChange={(e) =>
+                                  setChosen((ids) =>
+                                    e.target.checked
+                                      ? [...ids, entry.taskId]
+                                      : ids.filter((id) => id !== entry.taskId),
+                                  )
+                                }
+                              />
+                              Einplanen
+                            </label>
+                          )}
+                          <h3>{entry.source.content}</h3>
+                          {(mode === "plan" || plan.status === "draft") && (
+                            <>
+                              <Dates entry={entry} />
+                              <Reasons entry={entry} />
+                            </>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                  {plan.status === "draft" && (
+                    <>
+                      <p>
+                        Erst mit deiner Bestätigung darf Helios geeignete
+                        eigenständige Aufgaben nach «In Arbeit» verschieben.
+                        Unteraufgaben und Oberaufgaben mit aktiven Kindern
+                        bleiben zum Schutz der Hierarchie in ihrem
+                        Todoist-Abschnitt.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={busy || chosen.length === 0}
+                        onClick={() => void confirm()}
+                      >
+                        Auswahl bewusst bestätigen
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() => void action("propose")}
+                      >
+                        Vorschau neu prüfen
+                      </button>
+                    </>
+                  )}
+                </section>
+              )}
               <Operation
                 data={data}
                 busy={busy}
@@ -329,8 +302,12 @@ export function PlanningPanel({
                       Revision {h.revision} · {states[h.status]}
                     </h3>
                     <p>
-                      {h.entries.map((e) => e.source.content).join(" · ") ||
-                        "Leere Vorschau"}
+                      {[
+                        ...agendaEntries(h, "main"),
+                        ...agendaEntries(h, "reserve"),
+                      ]
+                        .map((e) => e.source.content)
+                        .join(" · ") || "Leere Vorschau"}
                     </p>
                     <p className="help">
                       Fokus:{" "}

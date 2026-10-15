@@ -31,6 +31,7 @@ export type PlanView = {
   revision: number;
   status: PlanState;
   entries: PlanEntry[];
+  agenda?: AgendaState | null;
   focusTaskId: string | null;
   sourceAt: string;
   confirmedAt: string | null;
@@ -49,6 +50,9 @@ export type OperationView = {
   steps: StepView[];
 };
 export type PlanningView = {
+  editable?: boolean;
+  agendaOperations?: OperationView[];
+  instanceAvailability?: Record<string, boolean>;
   availability?: Record<string, boolean>;
   day: string;
   timezone: string;
@@ -56,3 +60,65 @@ export type PlanningView = {
   operation: OperationView | null;
   history: PlanView[];
 };
+
+export type AgendaArea = "main" | "reserve";
+export type AgendaPending = {
+  operationId: string;
+  action: "add" | "close";
+  entry: PlanEntry;
+  area: AgendaArea;
+};
+export type AgendaState = {
+  main: string[];
+  reserve: string[];
+  paused: boolean;
+  extra: PlanEntry[];
+  retired: string[];
+  pending: AgendaPending[];
+};
+export function entryKey(entry: Pick<PlanEntry, "taskId" | "source">): string {
+  return JSON.stringify([
+    entry.taskId,
+    entry.source.due?.is_recurring ? entry.source.due.date : null,
+  ]);
+}
+export function agendaState(
+  plan: Pick<PlanView, "entries" | "agenda">,
+): AgendaState {
+  return (
+    plan.agenda ?? {
+      main: plan.entries.map((entry) => entryKey(entry)),
+      reserve: [],
+      paused: false,
+      extra: [],
+      retired: [],
+      pending: [],
+    }
+  );
+}
+export function agendaEntries(
+  plan: Pick<PlanView, "entries" | "agenda">,
+  area: AgendaArea,
+): PlanEntry[] {
+  const state = agendaState(plan);
+  const entries = [...plan.entries, ...state.extra];
+  return state[area]
+    .map((key) => entries.find((entry) => entryKey(entry) === key))
+    .filter((entry): entry is PlanEntry => !!entry);
+}
+const agendaBase = planMutation.extend({ key: z.uuid() });
+export const agendaCommand = agendaBase.extend({
+  area: z.enum(["main", "reserve"]).optional(),
+  order: z.array(z.string().min(1).max(500)).max(200).optional(),
+  entryKey: z.string().min(1).max(500).optional(),
+  taskId: z.string().min(1).max(200).optional(),
+  reason: z.string().trim().max(1000).optional(),
+  paused: z.boolean().optional(),
+  basis: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+  acknowledgeHierarchy: z.boolean().default(false),
+  acknowledgeDestructive: z.boolean().default(false),
+});
+export type AgendaCommand = z.infer<typeof agendaCommand>;
