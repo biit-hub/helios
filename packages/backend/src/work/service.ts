@@ -826,6 +826,8 @@ export function createWorkService(
                 )
             : [];
         return {
+          contextRevision: c.revision,
+          projectId: c.projectId,
           ...(() => {
             const views = rows.map((t) => ({
               data: t.data,
@@ -1010,6 +1012,8 @@ const workErrorMessages: Record<string, string> = {
     "TermiHub liefert Arbeitseinsätze für diesen Kontext. Die Quelle prüfen; manuelles Planen bleibt möglich.",
   TERMIHUB_REQUEST_INVALID:
     "Der Aktualisierungsauftrag ist ungültig. Verbindungseinstellung prüfen.",
+  LABEL_NOT_AVAILABLE:
+    "Ein ausgewähltes Label ist in Todoist nicht mehr verfügbar. Vorhandene Labels neu laden; es werden keine neuen Labels erstellt.",
   KEY_UNAVAILABLE:
     "Der Integrationsschlüssel ist nicht verfügbar. Lokale Konfiguration prüfen.",
 };

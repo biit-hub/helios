@@ -155,3 +155,102 @@ it("never projects an unknown create as successful", async () => {
   ).toBe("unknown");
   expect((await h.work.tasks(h.headers(), c.id)).tasks).toHaveLength(1);
 });
+it("only creates the previewed missing Kanban sections and leaves every task unchanged", async () => {
+  const c = await prepare();
+  h.f.sections.splice(
+    h.f.sections.findIndex(
+      (s) => s.project_id === c.projectId && s.name === "Wartet",
+    ),
+    1,
+  );
+  const preview = await tasks().kanban(h.headers(), c.id);
+  expect(preview.missing).toEqual(["Wartet"]);
+  const originalTasks = structuredClone(h.f.state.tasks);
+  const body = {
+    key: crypto.randomUUID(),
+    action: "sections",
+    contextId: c.id,
+    sectionSetup: {
+      projectId: preview.projectId,
+      contextRevision: preview.contextRevision,
+      missing: preview.missing,
+    },
+  };
+  const op = (await tasks().handle("submit", h.headers(), body)) as {
+    operationId: string;
+  };
+  await executor().runNext();
+  expect(
+    (await tasks().operations(h.headers())).find((o) => o.id === op.operationId)
+      ?.status,
+  ).toBe("succeeded");
+  expect((await tasks().kanban(h.headers(), c.id)).missing).toEqual([]);
+  expect(h.f.state.tasks).toEqual(originalTasks);
+  expect(h.f.control.calls.map((x) => x.body?.name)).toEqual(["Wartet"]);
+  expect(await tasks().handle("submit", h.headers(), body)).toEqual(op);
+  expect(
+    h.f.sections.filter(
+      (s) => s.project_id === c.projectId && s.name === "Wartet",
+    ),
+  ).toHaveLength(1);
+});
+it("rejects a Kanban setup after its context mapping revision changed", async () => {
+  const c = await prepare();
+  const preview = await tasks().kanban(h.headers(), c.id);
+  await h.step();
+  await h.work.handle(
+    "context-save",
+    h.headers(),
+    h.input(c, { projectId: projects[1]!.id }),
+  );
+  await expect(
+    tasks().handle("submit", h.headers(), {
+      key: crypto.randomUUID(),
+      action: "sections",
+      contextId: c.id,
+      sectionSetup: {
+        projectId: preview.projectId,
+        contextRevision: preview.contextRevision,
+        missing: ["Wartet"],
+      },
+    }),
+  ).rejects.toMatchObject({ code: "TASK_SCOPE_CONFLICT" });
+  expect(h.f.control.calls).toEqual([]);
+});
+it("refuses invented labels and preserves original labels when the catalogue fails", async () => {
+  const c = await prepare();
+  const source = await tasks().inspect(h.headers(), c.id, "scope-root");
+  await expect(
+    tasks().handle("submit", h.headers(), {
+      key: crypto.randomUUID(),
+      action: "update",
+      contextId: c.id,
+      taskId: source.task.id,
+      basis: source.basis,
+      fields: { labels: ["invented-label"] },
+    }),
+  ).rejects.toMatchObject({ code: "LABEL_NOT_AVAILABLE" });
+  expect(h.f.control.calls).toEqual([]);
+  expect((await tasks().labels(h.headers())).labels).toContain("Shared sample");
+});
+it("rejects a selected label removed after enqueue before the first write", async () => {
+  const c = await prepare();
+  const op = (await tasks().handle("submit", h.headers(), {
+    key: crypto.randomUUID(),
+    action: "create",
+    contextId: c.id,
+    projectId: c.projectId,
+    fields: { content: "Synthetic labelled task", labels: ["Dokumentation"] },
+  })) as { operationId: string };
+  h.f.state.labels = h.f.state.labels.filter(
+    (name) => name !== "Dokumentation",
+  );
+  await executor().runNext();
+  const result = (await tasks().operations(h.headers())).find(
+    (o) => o.id === op.operationId,
+  )!;
+  expect(result.status).toBe("failed");
+  expect(result.code).toBe("LABEL_NOT_AVAILABLE");
+  expect(result.input.fields?.labels).toEqual(["Dokumentation"]);
+  expect(h.f.control.calls).toEqual([]);
+});

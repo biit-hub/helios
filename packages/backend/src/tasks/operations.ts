@@ -1,3 +1,4 @@
+import { validateUserLabels } from "./labels";
 import { verifyEpicDetach } from "../epics/close";
 import {
   authorizeRoutine,
@@ -14,6 +15,7 @@ import { finishDraftLink } from "../ai/store";
 import type { AiSource } from "../ai/schema";
 import { randomUUID } from "node:crypto";
 import { eq, and, sql } from "drizzle-orm";
+import { kanbanSections } from "@helios/contracts";
 import type { TodoistTask } from "@helios/contracts";
 import { createIdentityService } from "../identity/service";
 import { WorkFault } from "../work/service";
@@ -515,12 +517,18 @@ export function createTaskExecutor(
         throw new WorkFault("OUTCOME_UNKNOWN", 409);
       if (progress.stage !== "done") {
         if (command.action === "sections") {
-          for (const name of [
-            "Offen",
-            "In Arbeit",
-            "Wartet",
-            "Abgeschlossen",
-          ]) {
+          // Older accepted journals already bind these values server-side; their original intent covered all four names.
+          const setup = command.sectionSetup ?? {
+            projectId: payload.projectId,
+            contextRevision: payload.contextRevision,
+            missing: [...kanbanSections],
+          };
+          if (
+            setup.projectId !== payload.projectId ||
+            setup.contextRevision !== payload.contextRevision
+          )
+            throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+          for (const name of setup.missing) {
             const existing = (
               await reader.sections(token, payload.projectId)
             ).filter((s) => s.name === name);
@@ -532,8 +540,20 @@ export function createTaskExecutor(
                 name,
               });
           }
+          const verified = await reader.sections(token, payload.projectId);
+          for (const name of kanbanSections) {
+            const count = verified.filter(
+              (s) => s.project_id === payload.projectId && s.name === name,
+            ).length;
+            if (count !== 1)
+              throw new WorkFault(
+                count ? "SECTION_AMBIGUOUS" : "SECTION_MISSING",
+                409,
+              );
+          }
           await save({ stage: "done" });
         } else if (command.action === "create") {
+          await validateUserLabels(reader, token, command.fields?.labels);
           const body = {
             ...fieldPatch(command.fields!),
             ...(command.projectId ? { project_id: payload.projectId } : {}),
@@ -568,8 +588,16 @@ export function createTaskExecutor(
             await mutate(token, "update", path, {
               description: patchDocument(t.description, command.document!),
             });
-          if (command.action === "update")
+          if (command.action === "update") {
+            if (!payload.analysisLink)
+              await validateUserLabels(
+                reader,
+                token,
+                command.fields?.labels,
+                t.labels,
+              );
             await mutate(token, "update", path, fieldPatch(command.fields!));
+          }
           if (command.action === "comment")
             await mutate(token, "comment", "comments", {
               task_id: t.id,

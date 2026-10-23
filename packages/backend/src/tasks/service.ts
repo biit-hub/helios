@@ -1,3 +1,4 @@
+import { validateUserLabels } from "./labels";
 import { descendants } from "./hierarchy";
 import { prepareEpicClosure } from "../epics/close";
 import { linkRoutine, type RoutineLink } from "../routine/journal";
@@ -7,7 +8,7 @@ import { descriptionLinks } from "./document";
 import { randomUUID } from "node:crypto";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { and, eq, desc, inArray } from "drizzle-orm";
-import { taskCommand, taskFields } from "@helios/contracts";
+import { kanbanSections, taskCommand, taskFields } from "@helios/contracts";
 import type {
   TaskCommand,
   TaskInspection,
@@ -262,6 +263,12 @@ export function createTaskService(
       if (source.checked && command.action !== "delete")
         throw new WorkFault("TASK_ALREADY_CLOSED", 409);
     }
+    await validateUserLabels(
+      reader,
+      token,
+      command.fields?.labels,
+      source?.labels,
+    );
     if (
       source?.due?.is_recurring &&
       command.action === "update" &&
@@ -269,7 +276,14 @@ export function createTaskService(
       !command.acknowledgeRecurrenceChange
     )
       throw new WorkFault("RECURRENCE_CONFIRMATION_REQUIRED", 409);
-    if (command.action === "sections" && (!scope.c || project.inbox_project))
+    if (
+      command.action === "sections" &&
+      (!scope.c ||
+        project.inbox_project ||
+        !command.sectionSetup ||
+        command.sectionSetup.projectId !== projectId ||
+        command.sectionSetup.contextRevision !== scope.c.revision)
+    )
       throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
     if (command.action === "document" && !command.document)
       throw new WorkFault("INVALID_REQUEST");
@@ -430,6 +444,65 @@ export function createTaskService(
       return enqueue(h, input, link);
     },
     inspect,
+    async kanban(h: Headers, contextId: string) {
+      z.uuid().parse(contextId);
+      const scope = await identity.withActive(h, {}, async (db, user) => {
+        const value = await taskScope(db, user, contextId);
+        await allowedProject(db, value.i, value.c!.projectId!);
+        return value;
+      });
+      const token = await tokenFor(scope.i, config);
+      const project = await reader.project(token, scope.c!.projectId!);
+      if (
+        project.id !== scope.c!.projectId ||
+        project.inbox_project ||
+        project.is_deleted ||
+        project.is_archived
+      )
+        throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+      const sections = await reader.sections(token, project.id);
+      if (sections.some((s) => s.project_id !== project.id))
+        throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+      await identity.withActive(h, {}, async (db, user) => {
+        const now = await taskScope(db, user, contextId);
+        await allowedProject(db, now.i, project.id);
+        if (
+          now.i.credentialVersion !== scope.i.credentialVersion ||
+          now.i.revision !== scope.i.revision ||
+          now.c!.revision !== scope.c!.revision ||
+          now.c!.projectId !== project.id
+        )
+          throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+      });
+      return {
+        projectId: project.id,
+        contextRevision: scope.c!.revision,
+        present: kanbanSections.filter((name) =>
+          sections.some((s) => s.name === name),
+        ),
+        missing: kanbanSections.filter(
+          (name) => !sections.some((s) => s.name === name),
+        ),
+        ambiguous: kanbanSections.filter(
+          (name) => sections.filter((s) => s.name === name).length > 1,
+        ),
+      };
+    },
+    async labels(h: Headers) {
+      const scope = await identity.withActive(h, {}, (db, user) =>
+        taskScope(db, user, null),
+      );
+      const labels = await reader.labels(await tokenFor(scope.i, config));
+      await identity.withActive(h, {}, async (db, user) => {
+        const now = await taskScope(db, user, null);
+        if (
+          now.i.credentialVersion !== scope.i.credentialVersion ||
+          now.i.revision !== scope.i.revision
+        )
+          throw new WorkFault("TASK_SCOPE_CONFLICT", 409);
+      });
+      return { labels };
+    },
     async options(h: Headers, projectId: string) {
       const scope = await identity.withActive(h, {}, async (db, user) => {
         z.string().min(1).max(200).parse(projectId);

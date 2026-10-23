@@ -152,6 +152,8 @@ export type TaskView = {
   retrievedAt: string;
 };
 export type TaskList = {
+  contextRevision: number;
+  projectId: string | null;
   tasks: TaskView[];
   historicalTasks?: TaskView[];
   lastSyncAt: string | null;
