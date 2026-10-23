@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@helios/ui";
 import type { DocumentModel } from "./use-task-document";
 
 export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
@@ -79,7 +80,7 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
               disabled={i === 0}
               onClick={() => move(i, -1)}
             >
-              ↑
+              <Icon name="up" />
             </button>
             <button
               type="button"
@@ -87,7 +88,7 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
               disabled={i === items.length - 1}
               onClick={() => move(i, 1)}
             >
-              ↓
+              <Icon name="down" />
             </button>
             <button
               type="button"

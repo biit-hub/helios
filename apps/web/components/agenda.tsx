@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@helios/ui";
 import {
   createContext,
   useContext,
@@ -462,7 +463,7 @@ function ArrowButtons({
         disabled={disabled || index === 0}
         onClick={() => move(index - 1)}
       >
-        ↑
+        <Icon name="up" />
       </button>
       <button
         type="button"
@@ -471,7 +472,7 @@ function ArrowButtons({
         disabled={disabled || index === length - 1}
         onClick={() => move(index + 1)}
       >
-        ↓
+        <Icon name="down" />
       </button>
     </>
   );
