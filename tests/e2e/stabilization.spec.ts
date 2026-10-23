@@ -227,7 +227,7 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /^Privat\s+Privat$/ }),
+    page.getByRole("button", { name: "Privat", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");
   expect(errors).toEqual([]);
 });
