@@ -217,7 +217,7 @@ it("rejects a Kanban setup after its context mapping revision changed", async ()
   ).rejects.toMatchObject({ code: "TASK_SCOPE_CONFLICT" });
   expect(h.f.control.calls).toEqual([]);
 });
-it("refuses invented labels and preserves original labels when the catalogue fails", async () => {
+it("refuses invented labels and reads the shared label catalogue", async () => {
   const c = await prepare();
   const source = await tasks().inspect(h.headers(), c.id, "scope-root");
   await expect(

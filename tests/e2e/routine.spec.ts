@@ -1,3 +1,4 @@
+import { closeTaskDialog } from "../fixtures/task-dialog";
 import { test, expect, chromium } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
@@ -177,12 +178,7 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
       exact: true,
     }),
   ).toBeVisible({ timeout: 40000 });
-  await dialog
-    .getByRole("button", {
-      name: "Dialog schliessen / Entwurf verwerfen",
-      exact: true,
-    })
-    .click();
+  await closeTaskDialog(page, dialog);
   await first
     .getByRole("button", { name: "Teilweise erledigt bestätigen", exact: true })
     .click();

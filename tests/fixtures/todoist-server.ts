@@ -178,6 +178,49 @@ const server = createServer(async (req, res) => {
           priority: Math.max(1, 4 - i),
         }));
       }
+      if (data.scenario === "stabilization") {
+        const template = structuredClone(f.state.tasks[1]!);
+        f.state.tasks = [
+          {
+            ...template,
+            id: "scope-browser-private",
+            project_id: "project:private/alpha",
+            parent_id: null,
+            content: "Synthetische private Quelle",
+            section_id: "project:private/alpha:section:0",
+            description: "Synthetischer Ausgangstext",
+            due: null,
+            deadline: null,
+            labels: [],
+          },
+          {
+            ...template,
+            id: "scope-browser-old",
+            project_id: "project:work/beta",
+            parent_id: null,
+            content: "Synthetische frühere Projektaufgabe",
+            section_id: "project:work/beta:section:0",
+            description: "Historische Quelle erhalten",
+            due: null,
+            deadline: null,
+            labels: [],
+          },
+        ];
+      }
+      if (typeof data.removeTask === "string")
+        f.state.tasks = f.state.tasks.filter((t) => t.id !== data.removeTask);
+      if (
+        data.removeSection &&
+        typeof data.removeSection.projectId === "string" &&
+        typeof data.removeSection.name === "string"
+      ) {
+        const n = f.sections.findIndex(
+          (section) =>
+            section.project_id === data.removeSection.projectId &&
+            section.name === data.removeSection.name,
+        );
+        if (n >= 0) f.sections.splice(n, 1);
+      }
       res.end("{}");
       return;
     }
