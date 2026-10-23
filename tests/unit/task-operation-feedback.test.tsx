@@ -102,3 +102,39 @@ it.each(["succeeded", "unknown", "partial"])(
     window.removeEventListener(taskChangedEvent, changed);
   },
 );
+
+it("closes an untouched form without a discard prompt", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ labels: ["Dokumentation"] })),
+  );
+  const close = vi.fn(),
+    confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  render(<TaskEditor snapshot={snapshot} close={close} />);
+  await act(async () => {});
+  fireEvent.click(screen.getByRole("button", { name: "Abbrechen" }));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(close).toHaveBeenCalledOnce();
+  confirm.mockRestore();
+});
+it("protects label-only mouse changes when cancelling", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ labels: ["Dokumentation"] })),
+  );
+  const close = vi.fn(),
+    confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  render(<TaskEditor snapshot={snapshot} close={close} />);
+  fireEvent.focus(screen.getByRole("combobox", { name: "Labels suchen" }));
+  fireEvent.click(await screen.findByRole("option", { name: "Dokumentation" }));
+  fireEvent.click(screen.getByRole("button", { name: "Abbrechen" }));
+  expect(confirm).toHaveBeenCalledWith("Entwurf verwerfen?");
+  expect(close).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("button", { name: "Label entfernen: Dokumentation" }),
+  ).toBeVisible();
+  confirm.mockReturnValue(true);
+  fireEvent.click(screen.getByRole("button", { name: "Abbrechen" }));
+  expect(close).toHaveBeenCalledOnce();
+  confirm.mockRestore();
+});

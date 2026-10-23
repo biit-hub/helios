@@ -877,7 +877,13 @@ export function TaskEditor({
                   ))}
                 </select>
               </label>
-              <LabelPicker value={labels} onChange={setLabels} />
+              <LabelPicker
+                value={labels}
+                onChange={(next) => {
+                  touched.current = true;
+                  setLabels(next);
+                }}
+              />
               <label>
                 Geplantes Datum
                 <input
