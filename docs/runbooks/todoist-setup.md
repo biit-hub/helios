@@ -35,7 +35,7 @@ TermiHub-Instanzreferenz und Arbeitgeber-ID sind optionale, undurchsichtige loka
 
 ## Lesen und Ausfälle
 
-Aufgaben öffnen, Kontext über sichtbare Pills wählen und „Aufgaben aktualisieren“. Jeder Kontext lädt ausschliesslich sein Projekt. Planungsdatum und Deadline stehen getrennt; Parentverweise führen zur vorhandenen Oberaufgabe in derselben Lesesicht. Kommentare werden bewusst lesend geladen. Die Auswahl bleibt über den nicht geheimen Kontext-URL-Parameter beim Reload erhalten.
+Aufgaben öffnen, Kontext über sichtbare Pills wählen und „Aufgaben aktualisieren“. Jeder Kontext lädt ausschliesslich sein Projekt. Planungsdatum und Deadline stehen getrennt; Parentverweise führen zur vorhandenen Oberaufgabe in derselben Lesesicht. Kommentare werden bewusst lesend geladen. Die Auswahl bleibt über den nicht geheimen Kontext-URL-Parameter und dieselbe bewusste Browserpräferenz über Fokus, Aufgaben, Tagesplanung und Epics erhalten. Allgemeine Seiten und die mehrkontextfähige Morgenroutine ändern sie nicht stillschweigend. Eine entfernte oder deaktivierte Auswahl erfordert eine neue bewusste Wahl; kein Privat-Fallback.
 
 Abgerufenes Datum zeigt den letzten vollständigen Stand. Nach fünf Minuten oder Verbindungsfehler wird der Cache als veraltet gekennzeichnet. Fehlende Aufgaben bleiben unbekannt, bis eine verlässliche externe Aussage vorliegt. Nicht aus einem verschwundenen Eintrag auf Erledigung schliessen. Bei Offline-/Auth-/Rate-Limit-/Timeoutfehlern bleiben bestehende Daten erhalten. Es gibt keinen automatischen Retry-Sturm; nach angezeigter Pause bewusst erneut prüfen.
 
@@ -44,3 +44,5 @@ In „Verbindungen & Probleme“ bedeutet „Geprüft“ weiterhin offen. Nur ei
 „Verbindung deaktivieren“ hält Abrufe an und bewahrt den verschlüsselten Token. „Token entfernen“ entfernt das Credential und entwertet die aktuelle Katalog-/Cachegeneration; historische Projektionen bleiben lokal erhalten, werden aber nicht mit einem neuen Todoist-Konto vermischt. Alle drei Integrationsänderungen verlangen Step-up. Ein Tokenwechsel benötigt anschliessend einen neuen Verbindungstest und gegebenenfalls bewusste Projektkorrekturen.
 
 Lokale Speicherung: verschlüsselte Credentials, Kontextnamen/Farben/Referenzen, Projektkatalog, abgeleitete Task-Snapshots/Fingerprints/Aktualität und reduzierte Probleme. Todoist führt weiterhin Aufgabeninhalt, Priorität, Datum, Deadline, Hierarchie, Abschnitte und Kommentare. Kommentare werden in E2 nur auf Anforderung zum Browser geliefert; keine vollständige Kommentarhistorie in PostgreSQL.
+
+E9.2: Aktuelle Aufgaben und historische/extern ungeklärte Nachweise sind getrennt. Historische Daten bleiben erhalten, ohne daraus aktuelle Aufgaben oder Schreibbefugnis abzuleiten. Kanban-Abschnitte werden pro ausdrücklich zugeordnetem Projekt in diesen Einstellungen geprüft und nur fehlende Namen bewusst ergänzt.

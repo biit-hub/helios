@@ -44,3 +44,7 @@ E8: [Native Epics, SMART, Markdown und bestätigter F1-Abschlussentscheid](epics
 ## UI-Konsolidierung E9.1
 
 Die bestehende Next-/React-Komposition verwendet das [gemeinsame Designsystem](../design/design-system.md). Fachkomponenten und Backendverträge bleiben erhalten; Navigation/Marke/Icons sind wiederverwendbar, Agenda und Routine gliedern ihre vorhandenen Abschnitte über Layoutwrapper. Der [Audit](../design/e9.1-ui-audit.md) dokumentiert V2-Abgleich und bewusst erhaltene spätere Fachpräzisierungen.
+
+## E9.2 – Stabilisierung in Arbeit
+
+[Technische Präzisierungen](stabilization-ux.md), [Prüfbericht](../development/e9.2-verification.md), [KI-Laufzeitmessung](../development/e9.2-ai-performance.md). Zentrale Kontextwahl bestätigt; grundlegender KI-Dialog wartet auf eigene Entwurfsfreigabe. Keine neue manuelle Abnahme, kein E10.

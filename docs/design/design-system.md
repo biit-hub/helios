@@ -47,3 +47,11 @@ Ab 1151px: Fokus links, Heute-im-Blick/Reserve rechts. Bei kleineren Desktopfens
 Buttons und Felder haben in der Regel mindestens 44px Höhe; Kontext-Pills mindestens 40px, Erfassung 52px. Der feste Erfassungsbutton bleibt unten links. Zeilen und Aktionen dürfen umbrechen. Der Link «Zum Inhalt» ist beim Tastaturfokus sichtbar und führt zum fokussierbaren Hauptinhalt. Fokusmarkierung verwendet 3px Akzent plus Abstand; Auswahlmarkierung ersetzt sie nicht. Bei `prefers-reduced-motion` entfallen neue Übergänge/Animationen.
 
 E11 bleibt für die vollständige mobile PWA zuständig. E9.1 führt weder eine neue Navigation noch eine Zeitblockplanung ein. Sicherheit, Step-up, Termine, Hierarchie und alle Bestätigungsregeln bleiben Sache der bestehenden E1–E9-Funktionen.
+
+## E9.2 – gezielte Stabilisierung
+
+Gemeinsame Icons verwenden jetzt das etablierte [Lucide-React-System](https://lucide.dev/guide/packages/lucide-react), exakt gepinnt, benannte Importe, 18px und 1,8px Strichstärke. Rein dekorative Icons sind aria-hidden; Text beziehungsweise explizite Aktionslabels bleiben erhalten. Navigation, Erfassung, Öffnen, Sortierpfeile und Labelauswahl teilen dieses System.
+
+Bestehende Navigation ist sichtbar in aktiven Kontext und allgemeine Ansichten gruppiert, ohne neue Hauptziele. Kopfbereich zeigt die zentrale Kontextwahl; Routinecursor und allgemeine Einstellungen verändern sie nicht. Kürzere Standardtexte, maximal 34px Hauptüberschrift und gezielt 20px Einstellungskarten/16px Abschnittsabstände. Body-Schrift und Sicherheits-/Bestätigungshinweise bleiben lesbar.
+
+Abbrechen schützt ungespeicherte Eingaben. Labels verwenden eine Tastatur-/Maus-Mehrfachauswahl mit entfernbarem Chip; neue Labels werden nicht erzeugt. Kanban liegt bei der jeweiligen Projektzuordnung. Grössere KI-Dialogumgestaltung bleibt am [Freigabeentwurf](e9.2-ai-dialog-proposal.md) gesperrt; keine neue vollständige Neugestaltung.

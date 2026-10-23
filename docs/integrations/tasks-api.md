@@ -23,3 +23,11 @@ Bei bestehenden Wiederholungen verlangt ein geändertes oder geleertes Planungsd
 E8 erweitert denselben Vertrag um action document mit AST-basierten Ziel-/Checklisten-/Linkänderungen und epicClosePolicy detach. [E8-Vertrag](epics-api.md), [F1-Entscheid](../architecture/epics-smart-goals.md).
 
 Deadline-Erstellung, -Änderung und -Entfernung bleiben verbindlich. Definitive HTTP-403-Ablehnung wird als TODOIST_PERMISSION ohne gesicherte Tarifdiagnose und ohne Erfolgseffekt behandelt; Eingaben bleiben erhalten. Synthetische Erfolgs-/Ablehnungs-Fixtures, Free-Testkonto und weiterhin offene berechtigungspflichtige Live-Abnahme: [Todoist-Testhinweise](todoist.md#verbindliche-testhinweise). Keine produktiven Zugangsdaten oder Aufgaben in automatischen Tests.
+
+## E9.2 – Labels und Abschnittsvorschau
+
+GET /api/tasks?kind=labels liefert vollständige persönliche und geteilte Labelnamen mit derselben aktiven MFA-Sitzung, privater/no-store Antwort und Credential-Revisionsprüfung. Verwendet ausschliesslich GET labels und GET labels/shared mit vollständigem Cursorpaging ([offizieller Vertrag](https://developer.todoist.com/api/v1/)). Keine Labelerstellung. Neue Labelnamen werden an Annahme und Worker erneut geprüft; LABEL_NOT_AVAILABLE erhält Eingaben. Ursprüngliche unveränderte Labels bleiben erhalten.
+
+GET /api/tasks?kind=kanban&contextId=UUID prüft ausschliesslich das aktuelle zugeordnete Nicht-Eingangsprojekt und liefert projectId, contextRevision, present, missing und ambiguous. Neue sections-Kommandos benötigen sectionSetup mit projectId, contextRevision und bewusst bestätigten missing-Namen. Alte bereits angenommene Journale bleiben durch ihren serverseitigen Payload gebunden kompatibel. Kein neuer Auftrag bei Unknown.
+
+GET /api/work?contextId=UUID enthält projectId/contextRevision, aktuelle tasks und getrennte historicalTasks ohne Schreibaktionen. Externer Zustand bleibt unbekannt, solange kein nativer Nachweis vorliegt. Nach succeeded wird die Liste automatisch neu gelesen; ein angenommener Auftrag bleibt ausdrücklich unbestätigt.

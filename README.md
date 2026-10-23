@@ -22,7 +22,7 @@ E7 verbindet die vorhandenen Funktionen zu einer [persistenten Morgenroutine](do
 
 ## E9.2 – Stabilisierung in Arbeit
 
-Aktuelle und historische Aufgaben werden getrennt; extern nachgewiesene Aufgabenänderungen aktualisieren die Oberfläche automatisch. Kalenderhinweise nennen ungeklärte Quellen. [Befunde, Prüfstand und offene UX-Freigabe](docs/development/e9.2-verification.md). Noch keine erneute manuelle Abnahme und kein Release.
+Aktuelle und historische Aufgaben werden getrennt; extern nachgewiesene Aufgabenänderungen aktualisieren die Oberfläche automatisch. Kalenderhinweise nennen ungeklärte Quellen. Die bewusste Kontextwahl bleibt über alle Hauptansichten erhalten; Labelsuche, Abbrechen-Schutz und projektbezogene Kanban-Einrichtung vereinfachen die Bedienung. Einheitliche Lucide-Icons und gezielt kompaktere Abstände führen die Sites-V2-Gestaltung fort. [Reale LAN-KI-Messungen](docs/development/e9.2-ai-performance.md) begründen begrenzte Queue-/Pollingkorrekturen. Der grundlegende KI-Dialogumbau wartet auf ausdrückliche Freigabe. [Befunde, Prüfstand und offene UX-Freigabe](docs/development/e9.2-verification.md). Noch keine erneute manuelle Abnahme und kein Release.
 
 ## Schnellstart mit Docker Compose
 

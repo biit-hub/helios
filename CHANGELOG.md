@@ -5,6 +5,12 @@
 - Aktuelle Aufgaben von historischen/unknown-Projektionen getrennt; historische Nachweise erhalten und ohne Schreibaktionen anzeigen.
 - Verifizierte Neuerstellung projizieren; Journalerfolg schliesst den Dialog und aktualisiert die Aufgabenliste. Doppelklickschutz und unveränderte Unknown-/Partial-Regeln.
 - Ungeklärte TermiHub-Quellen und Neuverifikationsbedarf konkret benennen, mit direktem Einstellungsweg.
+- Zentrale bewusste Kontextwahl über Hauptansichten; keine stille Privat-Auswahl nach Deaktivierung. Schutz laufender Änderungen bei Navigation und Abbrechen.
+- Durchsuchbare vorhandene Labels mit Tastatur und Mehrfachauswahl, serverseitiger Bestandsprüfung und Erhalt ursprünglicher Werte bei Katalogfehlern.
+- Kanban-Vorschau und bestätigte fehlende Abschnitte in Projekteinstellungen; revisionsgebunden, ohne Aufgabenänderung oder neue Schreibpipeline.
+- Einheitliche Lucide-Icons, kompaktere Karten/Überschriften und kürzere Standardtexte bei erhaltenen Sicherheitshinweisen.
+- Reale LAN-KI-Laufzeiten getrennt gemessen; bestehende KI-Queue häufiger prüfen, inaktive Panels nicht periodisch neu laden. Modell und Sicherheitsvalidierungen unverändert.
+- Next und zugehörige ESLint-Konfiguration minimal auf 16.4.1 aktualisiert, um die beim Pflichtbuild gemeldeten Sicherheitslücken der Version 16.4.0 zu schliessen.
 - Noch offene Arbeiten, Freigabepunkt und Nachweise im E9.2-Prüfbericht; keine vollständige Abnahme.
 
 ## E9.1 – UI-Konsolidierung

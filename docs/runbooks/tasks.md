@@ -20,7 +20,7 @@ Abschluss und endgültige Löschung sind getrennt erkennbare Aktionen mit Bestä
 - Ignorierte Felder: HTTP 200 ist kein Feldnachweis. Den zurückgelesenen Deadline-Wert prüfen; ein geplantes Datum ersetzt keine Deadline. [Deadline-Testregeln und offener Live-Nachweis](../integrations/todoist.md#verbindliche-testhinweise).
 - Teilerfolg/unknown: Journal öffnen, erfolgreiche Schritte und Originaleingaben ansehen. Stand prüfen und bewusst fortsetzen liest zuerst nach. Fehlende Create-/Comment-ID bleibt ungeklärt; nicht blind ein zweites Mal anlegen.
 - Rate Limit: frühesten Retryzeitpunkt abwarten. Neue Anmeldung bei Sitzungswiderruf; alte Operationen erhalten keine neue Berechtigung von selbst.
-- Nach Erfolg Aufgaben aktualisieren. Native Kinder und bestätigte Tagesplanhistorie bleiben nachvollziehbar; betroffene noch ungeprüfte Projektionen sind unknown.
+- Nach nachgewiesenem Erfolg schliesst der Formulardialog und die Liste übernimmt den neuen Stand automatisch; kein F5 nötig. Native Kinder und bestätigte Tagesplanhistorie bleiben nachvollziehbar. Unknown/Partial behalten Eingaben und das bestehende Journal. Historische/unknown-Nachweise sind getrennt aufklappbar und bieten keine Schreibaktionen.
 - Restore: Worker anhalten, RESTORE_MODE=true. Eingaben/Journal sichern, alte unklare Effekte gegen Todoist abgleichen; keine automatische Wiederholung aus einem Backup. Lokale verschlüsselte Backups genügen weiterhin für die Entwicklungsphase.
 
 Für die spätere manuelle E4-Abnahme ausschliesslich eigene synthetische Aufgaben verwenden: Titel-only im Eingang, explizites Projekt und Felder, Bearbeiten/Feldlöschung, Elternnavigation/Kommentare, Wartedetails/Nachfassen/Filter, bewusster Move samt Hierarchiewarnung, normaler und wiederholender Abschluss, separate endgültige Löschung. Nach jeder Aktion wirklichen Todoist-Zustand und Journal prüfen. Kontextwechsel/Fokus dürfen bestätigte Pläne nicht umsortieren. Die manuelle E3-Abnahme ist weiterhin offen; E4 hebt sie nicht auf.
@@ -32,3 +32,9 @@ Bei bestehenden Wiederholungen verlangt ein geändertes oder geleertes Planungsd
 Private fun-Aufgaben oder mitbewegte fun-Kinder dürfen nicht in ein berufliches oder unzugeordnetes Projekt wechseln. Gewünschte Labeländerungen zuerst einzeln bewusst bestätigen; Helios entfernt keine Labels automatisch.
 
 Ziel-/Checklisten-/Linkbearbeitung und manueller Epic-Abschluss: [E8-Bedienung und gemeinsame manuelle E3–E8-Abnahme](epics-smart-goals.md).
+
+## E9.2 – Labels, Abbrechen und Einrichtung
+
+Labels suchen: tippen, mit Pfeilen/Enter oder Maus wählen, mehrere Chips entfernen. Nur reale vorhandene Labels sind auswählbar; keine Neuanlage. Bei Katalogausfall bleiben bereits geladene Aufgabenlabels erhalten. Abbrechen ohne Eingaben schliesst direkt; ungespeicherte Eingaben werden nur nach ausdrücklichem Verwerfen aufgegeben. Bei laufender Formularmutation bleibt der Dialog mit Status erhalten; Unknown/Partial werden nicht als Erfolg behandelt.
+
+Kanban-Einrichtung befindet sich in Einstellungen bei der jeweiligen Projektzuordnung. Abschnitte prüfen, nur die angezeigten fehlenden Namen bewusst anlegen und externen Nachweis abwarten. Bei mehrdeutiger Struktur direkt in Todoist klären. Keine vorhandenen Aufgaben oder Abschnitte werden umgebaut.
