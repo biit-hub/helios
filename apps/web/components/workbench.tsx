@@ -1,5 +1,12 @@
 "use client";
 import { taskChangedEvent, type VerifiedTaskChange } from "./task-events";
+import {
+  rememberContext,
+  resolveContext,
+  savedContext,
+} from "./active-context";
+import { useNavigationLocked } from "./navigation-lock";
+import { KanbanSetup } from "./kanban-setup";
 import { TermiHubConnection } from "./termihub-settings";
 import { Epics } from "./epics";
 import { MorningRoutine } from "./morning-routine";
@@ -48,6 +55,7 @@ export function Workbench({
   settings?: boolean;
   mobile?: boolean;
 }>) {
+  const navigationLocked = useNavigationLocked();
   const [snapshot, setSnapshot] = useState<WorkSnapshot | null>(null),
     [selected, setSelected] = useState(""),
     [loaded, setLoaded] = useState<{
@@ -60,6 +68,7 @@ export function Workbench({
     [newEmployer, setNewEmployer] = useState(false),
     [now, setNow] = useState(() => Date.now()),
     [refreshId, setRefreshId] = useState(0);
+  const current = snapshot?.contexts.find((c) => c.id === selected);
   useEffect(() => {
     const changed = (event: Event) => {
       const change = (event as CustomEvent<VerifiedTaskChange>).detail;
@@ -77,9 +86,7 @@ export function Workbench({
     const d: WorkSnapshot = await request("/api/work");
     setSnapshot(d);
     setSelected((prev) =>
-      d.contexts.some((c) => c.id === prev && c.active)
-        ? prev
-        : (d.contexts.find((c) => c.kind === "private")?.id ?? ""),
+      d.contexts.some((c) => c.id === prev && c.active) ? prev : "",
     );
     return d;
   }
@@ -92,11 +99,9 @@ export function Workbench({
           const requested = new URL(window.location.href).searchParams.get(
             "context",
           );
-          setSelected(
-            d.contexts.find((c) => c.active && c.id === requested)?.id ??
-              d.contexts.find((c) => c.kind === "private")?.id ??
-              "",
-          );
+          const id = resolveContext(d.contexts, requested, savedContext());
+          setSelected(id);
+          if (id) rememberContext(id);
         }
       })
       .catch((e) => {
@@ -109,18 +114,48 @@ export function Workbench({
   useEffect(() => {
     if (!selected || settings || mobile || planning || routine || epics) return;
     const abort = new AbortController();
-
+    let alive = true;
     request(
       "/api/work?contextId=" + encodeURIComponent(selected),
       undefined,
       abort.signal,
     )
-      .then((data) => setLoaded({ contextId: selected, data }))
+      .then(async (data: TaskList) => {
+        if (!alive) return;
+        if (
+          data.contextRevision !== current?.revision ||
+          data.projectId !== current?.projectId
+        ) {
+          const latest: WorkSnapshot = await request(
+            "/api/work",
+            undefined,
+            abort.signal,
+          );
+          if (!alive) return;
+          setSnapshot(latest);
+          if (!latest.contexts.some((c) => c.id === selected && c.active))
+            setSelected("");
+        }
+        if (alive) setLoaded({ contextId: selected, data });
+      })
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message);
       });
-    return () => abort.abort();
-  }, [selected, settings, mobile, planning, refreshId, routine, epics]);
+    return () => {
+      alive = false;
+      abort.abort();
+    };
+  }, [
+    selected,
+    settings,
+    mobile,
+    planning,
+    refreshId,
+    routine,
+    epics,
+    current?.revision,
+    current?.projectId,
+  ]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -133,7 +168,11 @@ export function Workbench({
       const result = await request("/api/work/" + name, body);
       await load();
       if (name === "tasks-refresh") setRefreshId((v) => v + 1);
-      setNotice("Gespeichert. Todoist-Inhalte bleiben unverändert.");
+      setNotice(
+        name === "tasks-refresh"
+          ? "Aufgabenstand vollständig aktualisiert."
+          : "Gespeichert. Todoist-Inhalte bleiben unverändert.",
+      );
       return result;
     } catch (e) {
       setError(
@@ -144,14 +183,30 @@ export function Workbench({
       setBusy(false);
     }
   }
-  const list = loaded?.contextId === selected ? loaded.data : null;
-  const current = snapshot?.contexts.find((c) => c.id === selected);
+  const list =
+    loaded?.contextId === selected &&
+    loaded.data.contextRevision === current?.revision &&
+    loaded.data.projectId === current?.projectId
+      ? loaded.data
+      : null;
   const pause =
     !!snapshot?.integration.nextAllowedAt &&
     Date.parse(snapshot.integration.nextAllowedAt) > now;
   return (
     <div
       className={"workspace" + (mobile ? " mobile-workspace" : "")}
+      onClickCapture={(event) => {
+        if (
+          navigationLocked &&
+          (event.target as HTMLElement).closest("a[href]")
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          setError(
+            "Eine bestätigte Änderung wird noch verarbeitet. Zuerst den Operationsstand prüfen.",
+          );
+        }
+      }}
       data-theme={current?.theme ?? "copper"}
     >
       <a className="skip-link" href="#main-content">
@@ -161,7 +216,9 @@ export function Workbench({
         <header>
           <Brand />
           <div className="context-picker">
-            <span className="help">Dein Kontext</span>
+            <span className="help">
+              Aktiver Kontext · Fokus, Tagesplan, Aufgaben & Epics
+            </span>
             <div
               className="context-pills"
               role="group"
@@ -176,12 +233,14 @@ export function Workbench({
                     className="context-pill"
                     data-theme={c.theme}
                     aria-pressed={selected === c.id}
+                    disabled={busy || navigationLocked}
                     onClick={() => {
                       setSelected(c.id);
+                      rememberContext(c.id);
                       const url = new URL(window.location.href);
                       url.searchParams.set("context", c.id);
                       window.history.replaceState(
-                        null,
+                        window.history.state,
                         "",
                         url.pathname + url.search,
                       );
@@ -196,7 +255,7 @@ export function Workbench({
         </header>
         {!mobile && (
           <WorkbenchNavigation
-            busy={busy}
+            busy={busy || navigationLocked}
             contextId={selected}
             view={
               routine
@@ -234,15 +293,30 @@ export function Workbench({
           </h1>
           <p className="lead">
             {routine
-              ? "Ein Schritt nach dem anderen. Du kannst jederzeit pausieren oder später fortsetzen."
+              ? "Du kannst jederzeit pausieren und später fortsetzen."
               : settings
-                ? "Arbeitgeber und Privat bewusst einrichten. Jeder Kontext bleibt eigenständig."
+                ? "Kontexte und Verbindungen verwalten."
                 : mobile
                   ? "Die gemeinsame Morgenroutine folgt in einer späteren Etappe."
                   : planning
-                    ? "Eine bewusste Auswahl und ein guter nächster Schritt. Jeder Kontext bleibt eigenständig."
-                    : "Ein ruhiger Überblick. Änderungen werden bewusst bestätigt und extern nachgewiesen."}
+                    ? "Bestätigte Pläne bleiben beim Aktualisieren erhalten."
+                    : "Aktuelle Aufgaben im gewählten Kontext."}
           </p>
+          {(routine || settings) && (
+            <p className="view-scope help">
+              Allgemeine Ansicht · die zentrale Kontextwahl bleibt erhalten.
+            </p>
+          )}
+          {!routine && !settings && !mobile && !current && snapshot && (
+            <section className="card">
+              <h2>Kontext bewusst auswählen</h2>
+              <p>
+                Wähle oben einen aktiven Kontext. Eine fehlende oder
+                deaktivierte Auswahl wird nicht automatisch durch Privat
+                ersetzt.
+              </p>
+            </section>
+          )}
           {error && (
             <p role="alert" className="form-error">
               {error}
@@ -259,7 +333,7 @@ export function Workbench({
               <StepUp onError={setError} />
               <Connection
                 data={snapshot}
-                busy={busy}
+                busy={busy || navigationLocked}
                 pause={pause}
                 action={action}
               />
@@ -267,7 +341,6 @@ export function Workbench({
                 <div className="panel-heading">
                   <div>
                     <h2>Arbeitgeber & Privat</h2>
-                    <p>Freie Namen, bewusste Zuordnung, eigene Farben.</p>
                   </div>
                   <button
                     type="button"
@@ -280,7 +353,7 @@ export function Workbench({
                   <ContextEditor
                     key="new"
                     snapshot={snapshot}
-                    busy={busy}
+                    busy={busy || navigationLocked}
                     save={async (data) => {
                       await action("context-save", data);
                       setNewEmployer(false);
@@ -292,7 +365,7 @@ export function Workbench({
                     key={c.id + ":" + c.revision}
                     context={c}
                     snapshot={snapshot}
-                    busy={busy}
+                    busy={busy || navigationLocked}
                     save={(data) => action("context-save", data)}
                   />
                 ))}
@@ -310,18 +383,15 @@ export function Workbench({
             <PlanningPanel key={current.id} context={current} mode={planning} />
           )}
           {routine && snapshot && (
-            <MorningRoutine
-              snapshot={snapshot}
-              refreshSnapshot={load}
-              onContextChange={setSelected}
-            />
+            <MorningRoutine snapshot={snapshot} refreshSnapshot={load} />
           )}
           {snapshot &&
             !settings &&
             !mobile &&
             !planning &&
             !routine &&
-            !epics && (
+            !epics &&
+            current && (
               <TaskOverview
                 snapshot={snapshot}
                 current={current}
@@ -439,9 +509,8 @@ function Connection({
     <section id="todoist-settings" className="card settings-panel auth-card">
       <h2>Todoist verbinden</h2>
       <p>
-        Helios liest mit dem API-Token deine Aufgaben. Erst nach bewusster
-        Tagesplanbestätigung sind die vorgesehenen Abschnittswechsel erlaubt. Er
-        wird verschlüsselt auf deinem Server gespeichert.
+        Der Token wird verschlüsselt gespeichert. Inhaltliche Änderungen
+        erfolgen nur nach deiner bewussten Aktion.
       </p>
       <p role="status">
         Verbindung:{" "}
@@ -696,6 +765,9 @@ function ContextEditor({
           Kontext speichern
         </button>
       </form>
+      {context?.active && context.configured && context.projectId && (
+        <KanbanSetup context={context} />
+      )}
     </article>
   );
 }
@@ -880,7 +952,8 @@ function TaskOverview({
           Nächster Abruf ab {at(snapshot.integration.nextAllowedAt)}.
         </p>
       )}
-      {!current?.configured ? (
+      {!current?.configured ||
+      (list && (!list.configured || !list.connected)) ? (
         <section className="card">
           <h2>Deinen Kontext verbinden.</h2>
           <p>
@@ -897,7 +970,7 @@ function TaskOverview({
             <p className="status-notice">
               {list.lastSyncAt
                 ? "Gespeicherter Stand · veraltet oder Verbindung gestört."
-                : "Noch keine Aufgaben abgerufen."}{" "}
+                : "Noch kein vollständiger Projektabruf."}{" "}
               Todoist bleibt die Quelle.
             </p>
           )}
@@ -910,7 +983,9 @@ function TaskOverview({
               </h2>
               <p>
                 {list.lastSyncAt
-                  ? "Der letzte vollständige Abruf enthielt keine Aufgaben."
+                  ? list.stale
+                    ? "Der gespeicherte Stand enthält keine bestätigten aktiven Aufgaben. Todoist bewusst aktualisieren."
+                    : "Keine aktuellen aktiven Aufgaben für dieses Projekt nachgewiesen."
                   : "Aufgaben über die Schaltfläche bewusst laden."}
               </p>
             </section>

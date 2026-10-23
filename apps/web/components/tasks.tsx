@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@helios/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ContextView,
@@ -10,7 +11,13 @@ import type {
 } from "@helios/contracts";
 import type { ReactNode } from "react";
 import { entryKey } from "@helios/contracts";
-import { announceTaskChange } from "./task-events";
+import { LabelPicker } from "./label-picker";
+import { useNavigationLock } from "./navigation-lock";
+import {
+  taskChangedEvent,
+  type VerifiedTaskChange,
+  announceTaskChange,
+} from "./task-events";
 import { TaskDocument } from "./task-document";
 import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
@@ -65,9 +72,21 @@ export function TaskManager({
       typeof window === "undefined"
         ? null
         : new URL(window.location.href).searchParams.get("task"),
-    ),
-    [error, setError] = useState(""),
-    [setup, setSetup] = useState(false);
+    );
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const change = (event as CustomEvent<VerifiedTaskChange>).detail;
+      if (
+        change.contextId === context.id &&
+        ["create", "update", "move", "wait"].includes(change.action)
+      ) {
+        setSearch("");
+        setStatus("all");
+      }
+    };
+    window.addEventListener(taskChangedEvent, changed);
+    return () => window.removeEventListener(taskChangedEvent, changed);
+  }, [context.id]);
   const visible = tasks.filter(
     (t) =>
       t.state === "active" &&
@@ -105,39 +124,7 @@ export function TaskManager({
             ))}
           </select>
         </label>
-        <button type="button" onClick={() => setSetup(!setup)}>
-          Kanban-Abschnitte einrichten
-        </button>
       </div>
-      {setup && (
-        <section className="card">
-          <p>
-            Nur im zugeordneten Projekt «
-            {snapshot.projects.find((p) => p.id === context.projectId)?.name}»
-            fehlende Abschnitte Offen, In Arbeit, Wartet und Abgeschlossen
-            anlegen. Bestehende Aufgaben bleiben unverändert.
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              void api("/api/tasks/submit", {
-                key: crypto.randomUUID(),
-                action: "sections",
-                contextId: context.id,
-              })
-                .then(() =>
-                  setError(
-                    "Einrichtung angenommen. Den Operationsstand unten prüfen.",
-                  ),
-                )
-                .catch((e) => setError(e.message))
-            }
-          >
-            Fehlende Abschnitte bewusst anlegen
-          </button>
-        </section>
-      )}
-      {error && <p role="status">{error}</p>}
       {!visible.length && tasks.length > 0 && (
         <p>Keine Aufgaben für diesen Filter.</p>
       )}
@@ -156,7 +143,7 @@ export function TaskManager({
               aria-label={"Aufgabe öffnen und bearbeiten: " + t.data.content}
               onClick={() => setEditing(t.data.id)}
             >
-              Öffnen & bearbeiten →
+              Öffnen & bearbeiten <Icon name="open" />
             </button>
           </div>
         ))}
@@ -183,7 +170,7 @@ export function TaskCapture({ snapshot }: { snapshot: WorkSnapshot }) {
         className="capture-button"
         onClick={() => setOpen(true)}
       >
-        ＋ Aufgabe erfassen
+        <Icon name="plus" /> Aufgabe erfassen
       </button>
       {open && <TaskEditor snapshot={snapshot} close={() => setOpen(false)} />}
     </>
@@ -308,7 +295,9 @@ export function TaskEditor({
   const submitLock = useRef(false);
   const completed = useRef<string | null>(null);
   const closeRef = useRef(close);
-  closeRef.current = close;
+  useEffect(() => {
+    closeRef.current = close;
+  }, [close]);
   const [aiMode, setAiMode] = useState<
     "form" | "progress" | "clarification" | "capture"
   >(initialMode);
@@ -319,7 +308,7 @@ export function TaskEditor({
   const [title, setTitle] = useState(""),
     [description, setDescription] = useState(""),
     [priority, setPriority] = useState(1),
-    [labels, setLabels] = useState(""),
+    [labels, setLabels] = useState<string[]>([]),
     [date, setDate] = useState(""),
     [time, setTime] = useState(""),
     [deadline, setDeadline] = useState(""),
@@ -396,9 +385,9 @@ export function TaskEditor({
         title: t.content,
         description: t.description,
         priority: t.priority,
-        labels: t.labels
-          .filter((x) => context?.kind !== "private" || x !== "fun")
-          .join(", "),
+        labels: t.labels.filter(
+          (x) => context?.kind !== "private" || x !== "fun",
+        ),
         date: instant
           ? instant.getFullYear() +
             "-" +
@@ -490,6 +479,28 @@ export function TaskEditor({
     busy ||
     (!!operation &&
       ["queued", "running", "unknown", "partial"].includes(operation.status));
+  useNavigationLock(pending);
+  const touched = useRef(false);
+  function requestClose() {
+    if (
+      busy ||
+      (operation && ["queued", "running"].includes(operation.status))
+    ) {
+      setError(
+        "Die Änderung wird noch verarbeitet. Eingaben bleiben erhalten; zuerst den externen Nachweis abwarten.",
+      );
+      return;
+    }
+    if (operation && ["unknown", "partial"].includes(operation.status)) {
+      if (
+        !window.confirm(
+          "Das Ergebnis bleibt ungeklärt im Operationsjournal erhalten. Dialog schliessen, ohne erneut zu schreiben?",
+        )
+      )
+        return;
+    } else if (touched.current && !window.confirm("Entwurf verwerfen?")) return;
+    close();
+  }
   async function submit(action: TaskCommand["action"]) {
     if (submitLock.current || pending) return;
     submitLock.current = true;
@@ -512,13 +523,9 @@ export function TaskEditor({
       if (action === "create" || action === "update") {
         const allLabels = [
           ...new Set(
-            labels
-              .split(",")
-              .map((x) => x.trim())
-              .filter(Boolean)
-              .concat(
-                fun && selectedContext?.kind === "private" ? ["fun"] : [],
-              ),
+            labels.concat(
+              fun && selectedContext?.kind === "private" ? ["fun"] : [],
+            ),
           ),
         ];
         const fields: Record<string, unknown> = {};
@@ -535,7 +542,8 @@ export function TaskEditor({
         add(
           "labels",
           allLabels,
-          labels !== base.current.labels || fun !== base.current.fun,
+          JSON.stringify(labels) !== JSON.stringify(base.current.labels) ||
+            fun !== base.current.fun,
         );
         add(
           "due",
@@ -619,9 +627,13 @@ export function TaskEditor({
         className="task-dialog card"
         ref={dialogRoot}
         tabIndex={-1}
+        onChangeCapture={() => {
+          touched.current = true;
+        }}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
-            close();
+            e.preventDefault();
+            requestClose();
             return;
           }
           if (e.key !== "Tab") return;
@@ -653,8 +665,8 @@ export function TaskEditor({
       >
         <div className="panel-heading">
           <h2>{taskId ? "Aufgabe bearbeiten" : "Eine neue Aufgabe"}</h2>
-          <button type="button" onClick={close}>
-            Dialog schliessen / Entwurf verwerfen
+          <button type="button" onClick={requestClose}>
+            Abbrechen
           </button>
         </div>
         <div className="ai-mode-switch">
@@ -688,6 +700,7 @@ export function TaskEditor({
           <div hidden={aiMode !== "capture"}>
             <AiDraftPanel
               kind="capture"
+              active={aiMode === "capture"}
               snapshot={snapshot}
               manualFields={{
                 ...(title ? { content: title } : {}),
@@ -696,14 +709,7 @@ export function TaskEditor({
                 ...(date ? { due: date } : {}),
                 ...(deadline ? { deadline } : {}),
                 priority,
-                ...(labels
-                  ? {
-                      labels: labels
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    }
-                  : {}),
+                ...(labels.length ? { labels } : {}),
               }}
             />
           </div>
@@ -713,6 +719,7 @@ export function TaskEditor({
             <div hidden={aiMode !== "progress"}>
               <AiDraftPanel
                 kind="progress"
+                active={aiMode === "progress"}
                 expectedInstanceKey={expectedInstanceKey}
                 contextId={context.id}
                 taskId={taskId}
@@ -722,6 +729,7 @@ export function TaskEditor({
             <div hidden={aiMode !== "clarification"}>
               <AiDraftPanel
                 kind="clarification"
+                active={aiMode === "clarification"}
                 expectedInstanceKey={expectedInstanceKey}
                 contextId={context.id}
                 taskId={taskId}
@@ -741,7 +749,7 @@ export function TaskEditor({
         {operation && (
           <p role="status">
             {operation.status === "succeeded"
-              ? "Extern nachgewiesen. Zum aktuellen Stand Aufgaben aktualisieren."
+              ? "Extern nachgewiesen."
               : operation.status === "queued" || operation.status === "running"
                 ? "Änderung angenommen. Externer Nachweis steht aus."
                 : (taskError[operation.code ?? ""] ??
@@ -869,13 +877,7 @@ export function TaskEditor({
                   ))}
                 </select>
               </label>
-              <label>
-                Labels (durch Komma getrennt)
-                <input
-                  value={labels}
-                  onChange={(e) => setLabels(e.target.value)}
-                />
-              </label>
+              <LabelPicker value={labels} onChange={setLabels} />
               <label>
                 Geplantes Datum
                 <input

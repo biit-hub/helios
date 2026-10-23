@@ -16,11 +16,19 @@ export function WorkbenchNavigation({
 }: Readonly<{ view: View; contextId: string; busy: boolean }>) {
   const links = [
     { id: "focus", label: "Fokus", path: "/?context=" + contextId },
-    { id: "morning", label: "Morgenroutine", path: "/morning" },
+    {
+      id: "morning",
+      label: "Morgenroutine",
+      path: "/morning?context=" + contextId,
+    },
     { id: "plan", label: "Tagesplan", path: "/plan?context=" + contextId },
     { id: "tasks", label: "Aufgaben", path: "/tasks?context=" + contextId },
     { id: "epics", label: "Epics", path: "/epics?context=" + contextId },
-    { id: "settings", label: "Einstellungen", path: "/settings/contexts" },
+    {
+      id: "settings",
+      label: "Einstellungen",
+      path: "/settings/contexts?context=" + contextId,
+    },
     { id: "security", label: "Sicherheit", path: "/settings/security" },
   ] as const;
   return (
@@ -34,16 +42,35 @@ export function WorkbenchNavigation({
         }
       }}
     >
-      {links.map((link) => (
-        <Link
-          key={link.id}
-          aria-disabled={busy}
-          href={link.path}
-          aria-current={view === link.id ? "page" : undefined}
+      {(["context", "general"] as const).map((scope) => (
+        <div
+          key={scope}
+          className="nav-group"
+          role="group"
+          aria-label={scope === "context" ? "Aktiver Kontext" : "Allgemein"}
         >
-          <Icon name={link.id} />
-          {link.label}
-        </Link>
+          <span className="nav-group-label">
+            {scope === "context" ? "Aktiver Kontext" : "Allgemein"}
+          </span>
+          {links
+            .filter(
+              (link) =>
+                (["morning", "settings", "security"].includes(link.id)
+                  ? "general"
+                  : "context") === scope,
+            )
+            .map((link) => (
+              <Link
+                key={link.id}
+                aria-disabled={busy}
+                href={link.path}
+                aria-current={view === link.id ? "page" : undefined}
+              >
+                <Icon name={link.id} />
+                {link.label}
+              </Link>
+            ))}
+        </div>
       ))}
     </nav>
   );

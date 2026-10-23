@@ -33,11 +33,9 @@ const states = {
 export function MorningRoutine({
   snapshot,
   refreshSnapshot,
-  onContextChange,
 }: {
   snapshot: WorkSnapshot;
   refreshSnapshot: () => Promise<WorkSnapshot>;
-  onContextChange: (id: string) => void;
 }) {
   const [data, setData] = useState<RoutineSnapshot | null>(null),
     [error, setError] = useState(""),
@@ -67,9 +65,6 @@ export function MorningRoutine({
     (c) => c.contextId === d.cursor.contextId && c.selected,
   );
   const context = snapshot.contexts.find((c) => c.id === rc?.contextId);
-  useEffect(() => {
-    if (context) onContextChange(context.id);
-  }, [context, onContextChange]);
   const act: RoutineAction = async (action, body = {}) => {
     setBusy(true);
     setError("");

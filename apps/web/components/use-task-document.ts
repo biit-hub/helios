@@ -1,4 +1,5 @@
 "use client";
+import { useNavigationLock } from "./navigation-lock";
 import { useEffect, useState, useRef, useCallback } from "react";
 import type {
   EpicDetail,
@@ -116,6 +117,7 @@ export function useTaskDocument(context: ContextView, taskId: string) {
     busy ||
     (!!operation &&
       ["queued", "running", "unknown", "partial"].includes(operation.status));
+  useNavigationLock(pending);
   async function propose(change: DocumentChange) {
     const cleanChange =
       change.kind === "checklist"
