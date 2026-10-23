@@ -34,6 +34,8 @@ async function api(path: string, body?: unknown) {
   return data;
 }
 const taskError: Record<string, string> = {
+  LABEL_NOT_AVAILABLE:
+    "Ein ausgewähltes Label ist in Todoist nicht mehr verfügbar. Deine Eingaben bleiben erhalten; vorhandene Labels erneut laden.",
   DRAFT_SUPERSEDED:
     "Der definitiv fehlgeschlagene Schritt wurde zur Korrektur aufgehoben. Es wurde keine externe Änderung als Erfolg behauptet.",
   OUTCOME_UNKNOWN:
