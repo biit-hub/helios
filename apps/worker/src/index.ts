@@ -8,6 +8,7 @@ import {
   loadWorkConfig,
   createPlanExecutor,
   createAiWorker,
+  AI_DISPATCH_INTERVAL_MS,
   createTermiHubWorker,
   log,
 } from "@helios/backend";
@@ -100,7 +101,7 @@ try {
       .finally(() => {
         aiBusy = false;
       });
-  }, 2000);
+  }, AI_DISPATCH_INTERVAL_MS);
   scanTimer = setInterval(() => {
     if (scanBusy) return;
     scanBusy = true;

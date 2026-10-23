@@ -48,7 +48,13 @@ import {
 import { ownedDraft, changeDraft, saveSignal, signal } from "./store";
 import { validateOutput } from "./validation";
 export const AI_QUEUE = "helios.ai";
+export const AI_DISPATCH_INTERVAL_MS = 1000;
 const jobSchema = z.strictObject({ draftId: z.uuid() });
+export type AiTimingEvent = {
+  stage: "dispatched" | "claimed" | "generated" | "validated" | "finished";
+  draftId: string;
+  elapsedMs: number;
+};
 export function createAiWorker(
   database: Database,
   config: WorkConfig,
@@ -56,12 +62,37 @@ export function createAiWorker(
   profile: AiConfig = aiConfig(),
   reader: TodoistReader = createTodoistReader(fetch, config.TODOIST_ORIGIN),
   generate: AiGenerate = createOllama(profile),
+  observe?: (event: AiTimingEvent) => void,
 ) {
+  const report = (
+    stage: AiTimingEvent["stage"],
+    draftId: string,
+    started = performance.now(),
+  ) => {
+    if (!observe) return;
+    try {
+      observe({ stage, draftId, elapsedMs: performance.now() - started });
+    } catch {
+      /* Diagnostics never alter the operation. */
+    }
+  };
+  function timedValidation(
+    draftId: string,
+    ...args: Parameters<typeof validateOutput>
+  ) {
+    const started = performance.now();
+    try {
+      return validateOutput(...args);
+    } finally {
+      report("validated", draftId, started);
+    }
+  }
   const identity = createIdentityService(database, config);
   const controllers = new Set<AbortController>();
   let scanning = 0;
   const offsets = new Map<string, number>();
   async function cancellableGenerate(d: AiDraft, claim: string, data: unknown) {
+    const started = performance.now();
     const controller = new AbortController();
     controllers.add(controller);
     const timer = setInterval(() => {
@@ -84,6 +115,7 @@ export function createAiWorker(
     } finally {
       clearInterval(timer);
       controllers.delete(controller);
+      report("generated", d.id, started);
     }
   }
   async function guard(d: AiDraft) {
@@ -136,6 +168,7 @@ export function createAiWorker(
         .where(eq(integrationProblems.key, key));
   }
   async function run(id: string) {
+    const runStarted = performance.now();
     if (config.RESTORE_MODE || !config.WORKER_ENABLED) return false;
     const client = await database.pool.connect();
     let locked = false;
@@ -185,6 +218,7 @@ export function createAiWorker(
         .where(and(eq(aiDrafts.id, id), eq(aiDrafts.revision, d.revision)))
         .returning();
       if (!claimed) return true;
+      report("claimed", id, runStarted);
       let output: AiOutput | undefined;
       let last: unknown;
       for (let attempt = d.attempts; attempt < 2; attempt++) {
@@ -199,7 +233,8 @@ export function createAiWorker(
           .set({ attempts: attempt + 1 })
           .where(and(eq(aiDrafts.id, id), eq(aiDrafts.claim, claim)));
         try {
-          output = validateOutput(
+          output = timedValidation(
+            d.id,
             d.kind,
             d.input,
             source,
@@ -305,6 +340,7 @@ export function createAiWorker(
     } finally {
       if (locked) await client.query("select pg_advisory_unlock(1748014)");
       client.release();
+      if (active) report("finished", id, runStarted);
     }
   }
   async function dispatch() {
@@ -362,6 +398,7 @@ export function createAiWorker(
           jobId,
         ]);
         await client.query("COMMIT");
+        report("dispatched", d.id);
       } catch (e) {
         await client.query("ROLLBACK");
         throw e;
@@ -473,7 +510,7 @@ export function createAiWorker(
     });
     await boss.work<{ draftId: string }>(
       AI_QUEUE,
-      { localConcurrency: 1, batchSize: 1 },
+      { localConcurrency: 1, batchSize: 1, pollingIntervalSeconds: 1 },
       async (jobs) => {
         for (const job of jobs) {
           const input = jobSchema.parse(job.data);

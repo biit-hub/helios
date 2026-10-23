@@ -1,4 +1,5 @@
 "use client";
+import { useNavigationLock } from "./navigation-lock";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AiDraftView,
@@ -65,6 +66,7 @@ export function AiDraftPanel({
   snapshot,
   manualFields = {},
   expectedInstanceKey,
+  active = true,
 }: {
   kind:
     | "capture"
@@ -78,6 +80,7 @@ export function AiDraftPanel({
   snapshot: WorkSnapshot;
   manualFields?: Partial<TaskFields>;
   expectedInstanceKey?: string;
+  active?: boolean;
 }) {
   const [input, setInput] = useState(""),
     [draft, setDraft] = useState<AiDraftView | null>(null),
@@ -91,6 +94,7 @@ export function AiDraftPanel({
     [confirmProject, setConfirmProject] = useState(false),
     [available, setAvailable] = useState(true),
     [conflict, setConflict] = useState(false);
+  useNavigationLock(saving || draft?.status === "applying");
   const state = useRef({ draft, dirty, values, saving });
   useEffect(() => {
     state.current = { draft, dirty, values, saving };
@@ -247,7 +251,9 @@ export function AiDraftPanel({
       }
     }
   }, [contextId, taskId, kind, applyNext, expectedInstanceKey]);
+  const polling = active || saving;
   useEffect(() => {
+    if (!polling) return;
     let alive = true;
     const refresh = () => {
       if (alive)
@@ -261,7 +267,7 @@ export function AiDraftPanel({
       alive = false;
       clearInterval(timer);
     };
-  }, [read]);
+  }, [read, polling]);
   async function saveDecisions() {
     if (!draft) throw new Error("Kein Entwurf gewählt");
     const next: AiDraftView = await request("/api/ai/edit", {

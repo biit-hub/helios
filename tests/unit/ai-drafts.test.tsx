@@ -249,3 +249,17 @@ it.each([false, true])(
     expect(applies).toBe(1);
   },
 );
+it("does not poll an inactive AI panel and resumes reads when explicitly opened", async () => {
+  const fetcher = vi.fn(async () =>
+    Response.json({ available: true, drafts: [] }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const view = render(
+    <AiDraftPanel kind="capture" snapshot={snapshot} active={false} />,
+  );
+  await act(async () => {});
+  expect(fetcher).not.toHaveBeenCalled();
+  view.rerender(<AiDraftPanel kind="capture" snapshot={snapshot} active />);
+  await act(async () => {});
+  expect(fetcher).toHaveBeenCalledOnce();
+});
