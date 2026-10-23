@@ -15,6 +15,11 @@ export type CalendarDayState =
   | "stale"
   | "not_connected";
 export type CalendarOrientation = {
+  mappingIssues?: {
+    kind: "calendar" | "organization";
+    name: string;
+    reason: "unassigned" | "reverify" | "unavailable";
+  }[];
   snapshotId: string | null;
   revision: number;
   day: string;

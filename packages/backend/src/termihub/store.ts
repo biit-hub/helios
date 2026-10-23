@@ -122,7 +122,9 @@ export async function readCalendarDay(
         eq(calendarDayDecisions.day, day),
       ),
     );
+  let mappingIssues: NonNullable<CalendarOrientation["mappingIssues"]> = [];
   const empty = (state: CalendarOrientation["state"]) => ({
+    mappingIssues,
     ...emptyOrientation(day, timezone, state),
     noWorkConfirmed: decision?.noWorkConfirmed ?? false,
     decisionRevision: decision?.revision ?? 0,
@@ -131,7 +133,52 @@ export async function readCalendarDay(
   const i = await integrationFor(db, userId);
   if (!i?.enabled || !i.encryptedToken || !i.baseUrl)
     return empty("not_connected");
-  const mappings = await mappingsFor(db, i.id, i.credentialVersion);
+  const allMappings = await mappingsFor(db, i.id);
+  const mappings = allMappings.filter(
+    (m) => m.credentialVersion === i.credentialVersion,
+  );
+  const catalog = await db
+    .select()
+    .from(termihubCatalog)
+    .where(
+      and(
+        eq(termihubCatalog.integrationId, i.id),
+        eq(termihubCatalog.kind, "calendar"),
+        eq(termihubCatalog.credentialVersion, i.credentialVersion),
+      ),
+    );
+  mappingIssues = catalog
+    .filter(
+      (source) =>
+        source.available &&
+        source.enabled &&
+        !mappings.some((m) => m.calendarId === source.itemId),
+    )
+    .map((source) => ({
+      kind: "calendar" as const,
+      name: source.name,
+      reason: allMappings.some((m) => m.calendarId === source.itemId)
+        ? ("reverify" as const)
+        : ("unassigned" as const),
+    }));
+  for (const id of calendarIdsFor(mappings, c.id)) {
+    const source = catalog.find((s) => s.itemId === id);
+    if (!source?.available || !source.enabled)
+      mappingIssues.push({
+        kind: "calendar",
+        name: source?.name ?? "Nicht mehr verfügbare Kalenderquelle",
+        reason: "unavailable",
+      });
+  }
+  if (
+    c.kind === "employer" &&
+    (!c.termihubEmployerId || c.termihubInstanceRef !== instanceRef(i))
+  )
+    mappingIssues.push({
+      kind: "organization",
+      name: c.name,
+      reason: c.termihubEmployerId ? "reverify" : "unassigned",
+    });
   const basis = mappingBasis(i, c, mappings, timezone);
   const [snapshot] = await db
     .select()
@@ -157,6 +204,7 @@ export async function readCalendarDay(
     .limit(1);
   if (!snapshot) {
     const unmapped =
+      mappingIssues.length > 0 ||
       !calendarIdsFor(mappings, c.id).length ||
       (c.kind === "employer" &&
         (!c.termihubEmployerId || c.termihubInstanceRef !== instanceRef(i)));
@@ -171,6 +219,7 @@ export async function readCalendarDay(
     );
   }
   return {
+    mappingIssues,
     ...snapshotOrientation(
       snapshot,
       connectionReadReady(i),

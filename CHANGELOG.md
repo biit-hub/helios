@@ -1,5 +1,12 @@
 # Changelog
 
+## E9.2 – Stabilisierung (in Arbeit)
+
+- Aktuelle Aufgaben von historischen/unknown-Projektionen getrennt; historische Nachweise erhalten und ohne Schreibaktionen anzeigen.
+- Verifizierte Neuerstellung projizieren; Journalerfolg schliesst den Dialog und aktualisiert die Aufgabenliste. Doppelklickschutz und unveränderte Unknown-/Partial-Regeln.
+- Ungeklärte TermiHub-Quellen und Neuverifikationsbedarf konkret benennen, mit direktem Einstellungsweg.
+- Noch offene Arbeiten, Freigabepunkt und Nachweise im E9.2-Prüfbericht; keine vollständige Abnahme.
+
 ## E9.1 – UI-Konsolidierung
 
 - Vollständigen lokalen Sites-V2-Export geprüft; belegter Design-Audit, gemeinsame Design-Tokens und lokaler Vorher-/Referenz-/Nachher-Vergleich.

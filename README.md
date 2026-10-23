@@ -20,6 +20,10 @@ E3-Details: [Architektur](docs/architecture/planning-focus.md), [API](docs/integ
 
 E7 verbindet die vorhandenen Funktionen zu einer [persistenten Morgenroutine](docs/runbooks/morning-routine.md) unter /morning: Eingang ohne KI, freie Kontextwahl, letzter relevanter bestätigter Kontextplan im Review, gemeinsamer E6-Fortschrittsdialog, dynamische Klärung und bewusste Tagesplanung. Jeder Schritt ist überspringbar und bleibt dann offen. Der Stand wird auch nach Browserneustart vom Server geladen. [Architektur](docs/architecture/morning-routine-review.md), [API](docs/integrations/routine-api.md), [Prüfbericht](docs/development/e7-verification.md). Manuelle E3–E7-Abnahmen bleiben offen.
 
+## E9.2 – Stabilisierung in Arbeit
+
+Aktuelle und historische Aufgaben werden getrennt; extern nachgewiesene Aufgabenänderungen aktualisieren die Oberfläche automatisch. Kalenderhinweise nennen ungeklärte Quellen. [Befunde, Prüfstand und offene UX-Freigabe](docs/development/e9.2-verification.md). Noch keine erneute manuelle Abnahme und kein Release.
+
 ## Schnellstart mit Docker Compose
 
 Voraussetzungen: Git, Docker Engine/Desktop mit Compose v2, Node.js 22.23.2 oder 24.19.0 und pnpm 11.25.0. Linux ist das spätere Serverziel; Windows wird für Entwicklung unterstützt.
