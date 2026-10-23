@@ -1,3 +1,4 @@
+import { closeTaskDialog } from "../fixtures/task-dialog";
 import { test, expect } from "@playwright/test";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
 import { projects } from "../fixtures/todoist";
@@ -31,7 +32,7 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
   await expect(refresh).toBeEnabled({ timeout: 65000 });
   await refresh.click();
   await page
-    .getByRole("button", { name: "＋ Aufgabe erfassen", exact: true })
+    .getByRole("button", { name: "Aufgabe erfassen", exact: true })
     .click();
   const dialog = page.getByRole("dialog", {
     name: "Aufgabe erfassen",
@@ -48,11 +49,15 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
   await capture
     .getByLabel("Aufgabe in eigenen Worten")
     .fill("Synthetische Präsentation vorbereiten. 45 Minuten");
+  await page.screenshot({
+    path: "private/e92-ai-step1-synthetic.png",
+    fullPage: true,
+  });
   const before = await fetch(
     new URL("/assertions", process.env.TODOIST_TEST_ORIGIN!),
   ).then((r) => r.json());
   await capture
-    .getByRole("button", { name: "Lokale KI-Auswertung starten", exact: true })
+    .getByRole("button", { name: "Vorschlag erstellen", exact: true })
     .click();
   await expect(
     capture.getByText("Entwurf bereit zur bewussten Prüfung.", { exact: true }),
@@ -89,15 +94,10 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
       exact: true,
     })
     .click();
-  await dialog
-    .getByRole("button", {
-      name: "Dialog schliessen / Entwurf verwerfen",
-      exact: true,
-    })
-    .click();
+  await closeTaskDialog(page, dialog);
   await page.reload();
   await page
-    .getByRole("button", { name: "＋ Aufgabe erfassen", exact: true })
+    .getByRole("button", { name: "Aufgabe erfassen", exact: true })
     .click();
   await dialog.getByRole("button", { name: "KI-Modus", exact: true }).click();
   await capture
@@ -109,6 +109,22 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
   await expect(
     capture.getByLabel("Titel bearbeiten", { exact: true }),
   ).toHaveValue("Bewusst korrigierter Titel");
+  await expect(
+    capture.getByRole("button", {
+      name: "Ausgewählte Änderungen bewusst speichern",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await capture
+    .getByRole("button", { name: "Auswahl prüfen", exact: true })
+    .click();
+  await expect(
+    capture.getByRole("region", { name: "Auswahl zur Bestätigung" }),
+  ).toContainText("Bewusst korrigierter Titel");
+  await page.screenshot({
+    path: "private/e92-ai-step3-synthetic.png",
+    fullPage: true,
+  });
   await capture
     .getByRole("button", {
       name: "Ausgewählte Änderungen bewusst speichern",
@@ -120,12 +136,7 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
       exact: true,
     }),
   ).toBeVisible({ timeout: 20000 });
-  await dialog
-    .getByRole("button", {
-      name: "Dialog schliessen / Entwurf verwerfen",
-      exact: true,
-    })
-    .click();
+  await closeTaskDialog(page, dialog);
   await page
     .getByRole("button", {
       name: "Aufgabe öffnen und bearbeiten: Synthetische Präsentation vorbereiten",
@@ -147,7 +158,7 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
     .getByLabel("Was hast du erledigt?")
     .fill("Quellen gesammelt. Noch 30 Minuten");
   await progress
-    .getByRole("button", { name: "Lokale KI-Auswertung starten", exact: true })
+    .getByRole("button", { name: "Vorschlag erstellen", exact: true })
     .click();
   await expect(
     progress.getByText("Entwurf bereit zur bewussten Prüfung.", {
@@ -166,6 +177,9 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
   });
   for (let i = 0; i < (await choices.count()); i++)
     await choices.nth(i).check();
+  await progress
+    .getByRole("button", { name: "Auswahl prüfen", exact: true })
+    .click();
   await progress
     .getByRole("button", {
       name: "Ausgewählte Änderungen bewusst speichern",
@@ -193,14 +207,9 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
   await expect(
     editor.getByLabel("Dauer in Minuten", { exact: true }),
   ).toHaveValue("30");
-  await editor
-    .getByRole("button", {
-      name: "Dialog schliessen / Entwurf verwerfen",
-      exact: true,
-    })
-    .click();
+  await closeTaskDialog(page, editor);
   await page
-    .getByRole("button", { name: "＋ Aufgabe erfassen", exact: true })
+    .getByRole("button", { name: "Aufgabe erfassen", exact: true })
     .click();
   await dialog.getByRole("button", { name: "KI-Modus", exact: true }).click();
   await fetch(new URL("/control", process.env.TODOIST_TEST_ORIGIN!), {
@@ -211,7 +220,7 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
     .getByLabel("Aufgabe in eigenen Worten")
     .fill("Synthetischer Text bleibt beim Timeout erhalten");
   await capture
-    .getByRole("button", { name: "Lokale KI-Auswertung starten", exact: true })
+    .getByRole("button", { name: "Vorschlag erstellen", exact: true })
     .click();
   await expect(
     capture.getByText("KI-Auswertung fehlgeschlagen.", { exact: true }),

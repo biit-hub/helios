@@ -230,6 +230,7 @@ it.each([false, true])(
     expect(
       screen.getByRole("button", { name: "Entwurfsentscheidungen speichern" }),
     ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Auswahl prüfen" }));
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", {
@@ -249,3 +250,169 @@ it.each([false, true])(
     expect(applies).toBe(1);
   },
 );
+it("does not poll an inactive AI panel and resumes reads when explicitly opened", async () => {
+  const fetcher = vi.fn(async () =>
+    Response.json({ available: true, drafts: [] }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const view = render(
+    <AiDraftPanel kind="capture" snapshot={snapshot} active={false} />,
+  );
+  await act(async () => {});
+  expect(fetcher).not.toHaveBeenCalled();
+  view.rerender(<AiDraftPanel kind="capture" snapshot={snapshot} active />);
+  await act(async () => {});
+  expect(fetcher).toHaveBeenCalledOnce();
+});
+it("requires a separate review, keeps edits when going back and collapses originals and proof", async () => {
+  await setup();
+  fireEvent.change(screen.getByLabelText("Titel bearbeiten"), {
+    target: { value: "Bewusst geprüft" },
+  });
+  fireEvent.click(screen.getByLabelText("Diese Änderung auswählen"));
+  expect(
+    screen.queryByRole("button", {
+      name: "Ausgewählte Änderungen bewusst speichern",
+    }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Auswahl prüfen" }));
+  expect(
+    screen.getByRole("region", { name: "Auswahl zur Bestätigung" }),
+  ).toHaveTextContent("Bewusst geprüft");
+  expect(
+    screen.getByRole("button", {
+      name: "Ausgewählte Änderungen bewusst speichern",
+    }),
+  ).toBeEnabled();
+  expect(
+    screen.getByText("Originaleingabe und Herkunft").closest("details"),
+  ).not.toHaveAttribute("open");
+  expect(
+    screen.getByText("Technische Nachweise").closest("details"),
+  ).not.toHaveAttribute("open");
+  fireEvent.click(
+    screen.getByRole("button", { name: "Zurück zum Bearbeiten" }),
+  );
+  expect(screen.getByLabelText("Titel bearbeiten")).toHaveValue(
+    "Bewusst geprüft",
+  );
+  expect(screen.getByLabelText("Diese Änderung auswählen")).toBeChecked();
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.every(([, init]) => !init?.method || init.method === "GET"),
+  ).toBe(true);
+});
+
+it("invalidates a displayed confirmation after a newer source revision", async () => {
+  const pending = await setup();
+  fireEvent.click(screen.getByLabelText("Diese Änderung auswählen"));
+  fireEvent.click(screen.getByRole("button", { name: "Auswahl prüfen" }));
+  await act(async () => {
+    vi.advanceTimersByTime(2000);
+    pending[0]!(response(3, "Geändert"));
+  });
+  expect(
+    screen.queryByRole("button", {
+      name: "Ausgewählte Änderungen bewusst speichern",
+    }),
+  ).toBeNull();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "zwischenzeitlich geändert",
+  );
+});
+
+it("preserves unsaved answers when discarding is declined before a proposal exists", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ available: true, drafts: [] })),
+  );
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  render(<AiDraftPanel kind="clarification" snapshot={snapshot} />);
+  fireEvent.change(
+    screen.getByLabelText("Deine Antwort auf die Klärungsfragen"),
+    { target: { value: "Meine Antwort" } },
+  );
+  expect(
+    screen.getByRole("button", { name: "Vorschlag erstellen" }),
+  ).toBeEnabled();
+  expect(
+    screen.queryByRole("button", { name: /Vorschlag ablehnen/ }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Eingabe verwerfen" }));
+  expect(confirm).toHaveBeenCalledOnce();
+  expect(
+    screen.getByLabelText("Deine Antwort auf die Klärungsfragen"),
+  ).toHaveValue("Meine Antwort");
+  confirm.mockReturnValue(true);
+  fireEvent.click(screen.getByRole("button", { name: "Eingabe verwerfen" }));
+  expect(
+    screen.getByLabelText("Deine Antwort auf die Klärungsfragen"),
+  ).toHaveValue("");
+  confirm.mockRestore();
+});
+
+it("keeps an unknown partial operation inspectable and resumes only the existing journal", async () => {
+  const operationId = "66666666-6666-4666-8666-666666666666";
+  const partial = {
+    ...seed,
+    status: "partial",
+    operationId,
+    patches: [
+      { ...seed.patches[0]!, selected: true, status: "unknown", operationId },
+    ],
+  };
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === "/api/tasks/resume") {
+      expect(JSON.parse(init!.body as string)).toEqual({ operationId });
+      return Response.json({});
+    }
+    return Response.json({ available: true, drafts: [partial] });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<AiDraftPanel kind="capture" snapshot={snapshot} />);
+  fireEvent.click(
+    await screen.findByText("Gespeicherte Entwürfe wieder öffnen"),
+  );
+  fireEvent.click(await screen.findByRole("button", { name: /partial/ }));
+  expect(screen.getByLabelText("Titel bearbeiten")).toBeDisabled();
+  expect(screen.getByText("Ausführung: unknown")).toBeVisible();
+  expect(
+    screen.queryByRole("button", {
+      name: "Ausgewählte Änderungen bewusst speichern",
+    }),
+  ).toBeNull();
+  await act(async () => {
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Externe Wirkung prüfen und bewusst fortsetzen",
+      }),
+    );
+  });
+  expect(
+    fetcher.mock.calls.filter(([url]) => url === "/api/tasks/resume"),
+  ).toHaveLength(1);
+  expect(
+    fetcher.mock.calls.some(
+      ([url]) => url.includes("/apply") || url.includes("/start"),
+    ),
+  ).toBe(false);
+});
+it("asks before cancelling edited patches and retains them if cancellation is declined", async () => {
+  await setup();
+  fireEvent.change(screen.getByLabelText("Titel bearbeiten"), {
+    target: { value: "Nicht verlieren" },
+  });
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  fireEvent.click(screen.getByRole("button", { name: "KI-Entwurf abbrechen" }));
+  expect(confirm).toHaveBeenCalledOnce();
+  expect(screen.getByLabelText("Titel bearbeiten")).toHaveValue(
+    "Nicht verlieren",
+  );
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.every(([, init]) => !init?.method || init.method === "GET"),
+  ).toBe(true);
+  confirm.mockRestore();
+});

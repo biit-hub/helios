@@ -602,3 +602,72 @@ fieldset[hidden] {
 .task-document .checklist-row {margin:0;}
 .task-document .checklist-row input[type="checkbox"] {width:1.15rem;height:1.15rem;flex:none;}
 .task-document .ai-panel {margin-top:1rem;}
+
+/* E9.2: Freigegebener KI-Dialog, fachliche Aktionen bleiben einzeln bestätigt. */
+.ai-panel {
+  padding: 0.6rem 0;
+}
+.ai-steps {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0;
+}
+.ai-steps li {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 3px solid var(--line);
+  padding: 0.5rem 0.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ai-steps [aria-current="step"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 650;
+}
+.ai-draft {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+}
+.ai-patch {
+  padding: 0.75rem;
+  margin: 0.65rem 0;
+}
+.ai-patch textarea {
+  min-height: 4.5rem;
+}
+.ai-review-patch {
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 0.75rem;
+  margin: 0.65rem 0;
+  overflow-wrap: anywhere;
+}
+.ai-review-patch p {
+  white-space: pre-wrap;
+}
+.ai-review-patch span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ai-panel details {
+  margin: 0.6rem 0;
+}
+.ai-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+@media (max-width: 600px) {
+  .ai-steps {
+    gap: 0.2rem;
+  }
+  .ai-steps li {
+    font-size: 0.75rem;
+  }
+}
+
+.ai-panel button:not(.primary) { background: var(--surface); color: var(--accent); border: 1px solid var(--line); }
+.ai-panel button:not(.primary):hover:not(:disabled) { border-color: var(--accent); }

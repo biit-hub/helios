@@ -62,6 +62,7 @@ export async function bootstrapWorkSettings(
     .getByRole("button", { name: "Konto aktivieren", exact: true })
     .click();
   await expect(page).toHaveURL(baseURL + "/");
+  await page.getByRole("button", { name: "Privat", exact: true }).click();
   await page.getByRole("link", { name: "Einstellungen", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Arbeitgeber & Privat" }),

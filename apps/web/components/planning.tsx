@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useNavigationLock } from "./navigation-lock";
 import { CalendarContextPanel } from "./calendar-context";
 import { ConfirmedAgenda } from "./agenda";
 import { agendaEntries } from "@helios/contracts";
@@ -90,6 +91,7 @@ export function PlanningPanel({
     data?.agendaOperations?.some((op) =>
       ["queued", "running"].includes(op.status),
     );
+  useNavigationLock(busy || !!pending);
   useEffect(() => {
     if (!pending) return;
     const timer = setInterval(() => setRefresh((n) => n + 1), 1500);

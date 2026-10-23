@@ -416,3 +416,48 @@ it("does not revive a failed snapshot budget while a transient read is retrying"
     (await s.orientations(h.headers())).contexts[0]!.orientation.reliable,
   ).toBe(true);
 });
+it("names undecided active sources without guessing their context or releasing a budget", async () => {
+  const { s, f, run, day } = await setup();
+  const extra = {
+    ...(f.data.calendars as Record<string, unknown>[])[0]!,
+    id: randomUUID(),
+    name: "Synthetic unassigned calendar",
+  };
+  (f.data.calendars as Record<string, unknown>[]).push(extra);
+  await run();
+  const v = (await s.orientations(h.headers(), { day })).contexts[0]!
+    .orientation;
+  expect(v.state).toBe("unmapped");
+  expect(v.reliable).toBe(false);
+  expect(v.budget).toBeNull();
+  expect(v.mappingIssues).toContainEqual({
+    kind: "calendar",
+    name: extra.name,
+    reason: "unassigned",
+  });
+  const settings = await s.settings(h.headers());
+  expect(settings.mappings.some((m) => m.calendarId === extra.id)).toBe(false);
+  await s.handle("mapping", h.headers(), {
+    revision: settings.revision,
+    calendars: [
+      {
+        calendarId: f.calendarId,
+        mode: "context",
+        contextId: settings.contexts[0]!.id,
+      },
+      { calendarId: extra.id, mode: "excluded", contextId: null },
+    ],
+    contexts: [
+      {
+        contextId: settings.contexts[0]!.id,
+        contextRevision: settings.contexts[0]!.revision,
+        organizationId: settings.contexts[0]!.organizationId,
+      },
+    ],
+  });
+  await run();
+  const refreshed = (await s.orientations(h.headers(), { day })).contexts[0]!
+    .orientation;
+  expect(refreshed.mappingIssues).toEqual([]);
+  expect(refreshed.reliable).toBe(true);
+});

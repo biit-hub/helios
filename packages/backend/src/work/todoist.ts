@@ -102,6 +102,19 @@ export function createTodoistReader(
     throw new TodoistFault("unexpected");
   }
   return {
+    labels: async (t: string) => {
+      const [personal, shared] = await Promise.all([
+        pages(
+          "labels",
+          t,
+          z.object({ id: externalId, name: z.string().min(1).max(100) }),
+        ),
+        pages("labels/shared", t, z.string().min(1).max(100)),
+      ]);
+      return [
+        ...new Set([...personal.map((label) => label.name), ...shared]),
+      ].sort((a, b) => a.localeCompare(b));
+    },
     projects: (t: string) => pages("projects", t, project),
     project: async (t: string, id: string) => {
       const r = project.safeParse(

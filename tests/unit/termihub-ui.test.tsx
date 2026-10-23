@@ -216,3 +216,39 @@ it("withholds the displayed current budget when the browser read fails", () => {
       .budget,
   ).toEqual(orientation.budget);
 });
+it("explains the actual unmapped sources and offers a direct settings link", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Response.json({
+        isToday: true,
+        day: "2026-10-23",
+        timezone: "Europe/Zurich",
+        contexts: [
+          {
+            contextId: "synthetic",
+            name: "Synthetic workplace",
+            orientation: {
+              ...emptyOrientation("2026-10-23", "Europe/Zurich", "unmapped"),
+              mappingIssues: [
+                {
+                  kind: "calendar",
+                  name: "Synthetic open source",
+                  reason: "unassigned",
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    ),
+  );
+  render(<CalendarContextPanel contextId="synthetic" />);
+  expect(await screen.findByText(/Synthetic open source/)).toBeVisible();
+  expect(
+    screen.getByRole("link", { name: "Kalenderzuordnungen öffnen" }),
+  ).toHaveAttribute("href", "/settings/contexts#termihub-settings");
+  expect(
+    screen.getByText(/Kein verlässlich berechnetes freies Zeitbudget/),
+  ).toBeVisible();
+});

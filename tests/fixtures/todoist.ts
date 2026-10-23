@@ -83,6 +83,15 @@ export function fixture() {
     mode: "ok",
     projects: structuredClone(projects),
     tasks: structuredClone(tasks),
+    labels: [
+      "epic",
+      "fun",
+      "need_context",
+      "other",
+      "Dokumentation",
+      "Besorgen",
+    ],
+    sharedLabels: ["Shared sample"],
   };
   const fetcher: typeof fetch = async (input, init) => {
     const url = new URL(String(input));
@@ -109,6 +118,13 @@ export function fixture() {
     if (state.mode === "unexpected") return Response.json({ bad: token });
     if (state.mode === "missing")
       return Response.json({ error: token }, { status: 404 });
+    if (path === "labels")
+      return Response.json({
+        results: state.labels.map((name, n) => ({ id: "label:" + n, name })),
+        next_cursor: null,
+      });
+    if (path === "labels/shared")
+      return Response.json({ results: state.sharedLabels, next_cursor: null });
     if (path === "projects")
       return Response.json({
         results: url.searchParams.has("cursor")

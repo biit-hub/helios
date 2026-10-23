@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@helios/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ContextView,
@@ -10,6 +11,13 @@ import type {
 } from "@helios/contracts";
 import type { ReactNode } from "react";
 import { entryKey } from "@helios/contracts";
+import { LabelPicker } from "./label-picker";
+import { useNavigationLock } from "./navigation-lock";
+import {
+  taskChangedEvent,
+  type VerifiedTaskChange,
+  announceTaskChange,
+} from "./task-events";
 import { TaskDocument } from "./task-document";
 import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
@@ -26,6 +34,8 @@ async function api(path: string, body?: unknown) {
   return data;
 }
 const taskError: Record<string, string> = {
+  LABEL_NOT_AVAILABLE:
+    "Ein ausgewähltes Label ist in Todoist nicht mehr verfügbar. Deine Eingaben bleiben erhalten; vorhandene Labels erneut laden.",
   DRAFT_SUPERSEDED:
     "Der definitiv fehlgeschlagene Schritt wurde zur Korrektur aufgehoben. Es wurde keine externe Änderung als Erfolg behauptet.",
   OUTCOME_UNKNOWN:
@@ -64,11 +74,27 @@ export function TaskManager({
       typeof window === "undefined"
         ? null
         : new URL(window.location.href).searchParams.get("task"),
-    ),
-    [error, setError] = useState(""),
-    [setup, setSetup] = useState(false);
+    );
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const change = (event as CustomEvent<VerifiedTaskChange>).detail;
+      if (
+        change.contextId === context.id &&
+        ["create", "update", "move", "wait"].includes(change.action)
+      ) {
+        setSearch("");
+        setStatus("all");
+      }
+    };
+    window.addEventListener(taskChangedEvent, changed);
+    return () => window.removeEventListener(taskChangedEvent, changed);
+  }, [context.id]);
   const visible = tasks.filter(
     (t) =>
+      t.state === "active" &&
+      t.data.project_id === context.projectId &&
+      !t.data.checked &&
+      !t.data.is_deleted &&
       (
         t.data.content +
         " " +
@@ -78,12 +104,7 @@ export function TaskManager({
       )
         .toLocaleLowerCase()
         .includes(search.toLocaleLowerCase()) &&
-      (status === "all" ||
-        (status === "unknown"
-          ? t.state === "unknown"
-          : status === "completed"
-            ? t.state === "completed" || t.data.checked
-            : t.sectionName === status)),
+      (status === "all" || t.sectionName === status),
   );
   return (
     <TaskPlanProvider context={context}>
@@ -103,43 +124,9 @@ export function TaskManager({
             {["Offen", "In Arbeit", "Wartet", "Abgeschlossen"].map((s) => (
               <option key={s}>{s}</option>
             ))}
-            <option value="completed">Nativ abgeschlossen</option>
-            <option value="unknown">Unbekannt</option>
           </select>
         </label>
-        <button type="button" onClick={() => setSetup(!setup)}>
-          Kanban-Abschnitte einrichten
-        </button>
       </div>
-      {setup && (
-        <section className="card">
-          <p>
-            Nur im zugeordneten Projekt «
-            {snapshot.projects.find((p) => p.id === context.projectId)?.name}»
-            fehlende Abschnitte Offen, In Arbeit, Wartet und Abgeschlossen
-            anlegen. Bestehende Aufgaben bleiben unverändert.
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              void api("/api/tasks/submit", {
-                key: crypto.randomUUID(),
-                action: "sections",
-                contextId: context.id,
-              })
-                .then(() =>
-                  setError(
-                    "Einrichtung angenommen. Den Operationsstand unten prüfen.",
-                  ),
-                )
-                .catch((e) => setError(e.message))
-            }
-          >
-            Fehlende Abschnitte bewusst anlegen
-          </button>
-        </section>
-      )}
-      {error && <p role="status">{error}</p>}
       {!visible.length && tasks.length > 0 && (
         <p>Keine Aufgaben für diesen Filter.</p>
       )}
@@ -158,7 +145,7 @@ export function TaskManager({
               aria-label={"Aufgabe öffnen und bearbeiten: " + t.data.content}
               onClick={() => setEditing(t.data.id)}
             >
-              Öffnen & bearbeiten →
+              Öffnen & bearbeiten <Icon name="open" />
             </button>
           </div>
         ))}
@@ -185,7 +172,7 @@ export function TaskCapture({ snapshot }: { snapshot: WorkSnapshot }) {
         className="capture-button"
         onClick={() => setOpen(true)}
       >
-        ＋ Aufgabe erfassen
+        <Icon name="plus" /> Aufgabe erfassen
       </button>
       {open && <TaskEditor snapshot={snapshot} close={() => setOpen(false)} />}
     </>
@@ -303,6 +290,16 @@ export function TaskEditor({
   initialMode?: "form" | "progress" | "clarification";
   expectedInstanceKey?: string;
 }) {
+  const submitted = useRef<{
+    action: TaskCommand["action"];
+    contextId: string | null;
+  } | null>(null);
+  const submitLock = useRef(false);
+  const completed = useRef<string | null>(null);
+  const closeRef = useRef(close);
+  useEffect(() => {
+    closeRef.current = close;
+  }, [close]);
   const [aiMode, setAiMode] = useState<
     "form" | "progress" | "clarification" | "capture"
   >(initialMode);
@@ -313,7 +310,7 @@ export function TaskEditor({
   const [title, setTitle] = useState(""),
     [description, setDescription] = useState(""),
     [priority, setPriority] = useState(1),
-    [labels, setLabels] = useState(""),
+    [labels, setLabels] = useState<string[]>([]),
     [date, setDate] = useState(""),
     [time, setTime] = useState(""),
     [deadline, setDeadline] = useState(""),
@@ -372,7 +369,6 @@ export function TaskEditor({
           "&taskId=" +
           encodeURIComponent(taskId),
       );
-      setInspection(data);
       setEpicDetach(false);
       const t = data.task;
       if (
@@ -382,6 +378,7 @@ export function TaskEditor({
         throw new Error(
           "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
         );
+      setInspection(data);
       const d = t.due?.datetime ?? t.due?.date ?? "";
       const absolute = /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(d);
       const instant = absolute ? new Date(d) : null;
@@ -390,9 +387,9 @@ export function TaskEditor({
         title: t.content,
         description: t.description,
         priority: t.priority,
-        labels: t.labels
-          .filter((x) => context?.kind !== "private" || x !== "fun")
-          .join(", "),
+        labels: t.labels.filter(
+          (x) => context?.kind !== "private" || x !== "fun",
+        ),
         date: instant
           ? instant.getFullYear() +
             "-" +
@@ -439,7 +436,10 @@ export function TaskEditor({
     return () => clearTimeout(timer);
   }, [loadSource]);
   useEffect(() => {
-    if (!operation?.id || !["queued", "running"].includes(operation.status))
+    if (
+      !operation?.id ||
+      !["queued", "running", "partial", "unknown"].includes(operation.status)
+    )
       return;
     let alive = true;
     const timer = setInterval(
@@ -449,6 +449,19 @@ export function TaskEditor({
             const row = rows.find((r) => r.id === operation.id);
             if (alive && row) {
               setOperation(row);
+              if (
+                row.status === "succeeded" &&
+                completed.current !== row.id &&
+                submitted.current
+              ) {
+                completed.current = row.id;
+                const task = row.result?.task as { id?: string } | undefined;
+                announceTaskChange({
+                  ...submitted.current,
+                  taskId: task?.id ?? taskId,
+                });
+                closeRef.current();
+              }
               if (!["queued", "running", "succeeded"].includes(row.status))
                 setError(
                   taskError[row.code ?? ""] ??
@@ -463,12 +476,36 @@ export function TaskEditor({
       alive = false;
       clearInterval(timer);
     };
-  }, [operation?.id, operation?.status]);
+  }, [operation?.id, operation?.status, taskId]);
   const pending =
     busy ||
     (!!operation &&
-      ["queued", "running", "unknown"].includes(operation.status));
+      ["queued", "running", "unknown", "partial"].includes(operation.status));
+  useNavigationLock(pending);
+  const touched = useRef(false);
+  function requestClose() {
+    if (
+      busy ||
+      (operation && ["queued", "running"].includes(operation.status))
+    ) {
+      setError(
+        "Die Änderung wird noch verarbeitet. Eingaben bleiben erhalten; zuerst den externen Nachweis abwarten.",
+      );
+      return;
+    }
+    if (operation && ["unknown", "partial"].includes(operation.status)) {
+      if (
+        !window.confirm(
+          "Das Ergebnis bleibt ungeklärt im Operationsjournal erhalten. Dialog schliessen, ohne erneut zu schreiben?",
+        )
+      )
+        return;
+    } else if (touched.current && !window.confirm("Entwurf verwerfen?")) return;
+    close();
+  }
   async function submit(action: TaskCommand["action"]) {
+    if (submitLock.current || pending) return;
+    submitLock.current = true;
     setError("");
     setBusy(true);
     try {
@@ -488,13 +525,9 @@ export function TaskEditor({
       if (action === "create" || action === "update") {
         const allLabels = [
           ...new Set(
-            labels
-              .split(",")
-              .map((x) => x.trim())
-              .filter(Boolean)
-              .concat(
-                fun && selectedContext?.kind === "private" ? ["fun"] : [],
-              ),
+            labels.concat(
+              fun && selectedContext?.kind === "private" ? ["fun"] : [],
+            ),
           ),
         ];
         const fields: Record<string, unknown> = {};
@@ -511,7 +544,8 @@ export function TaskEditor({
         add(
           "labels",
           allLabels,
-          labels !== base.current.labels || fun !== base.current.fun,
+          JSON.stringify(labels) !== JSON.stringify(base.current.labels) ||
+            fun !== base.current.fun,
         );
         add(
           "due",
@@ -567,6 +601,10 @@ export function TaskEditor({
       const hash = JSON.stringify(body);
       if (attempt.current?.hash !== hash)
         attempt.current = { hash, key: crypto.randomUUID() };
+      submitted.current = {
+        action,
+        contextId: taskId ? context!.id : (selectedContext?.id ?? null),
+      };
       const result = await api("/api/tasks/submit", {
         ...body,
         key: attempt.current!.key,
@@ -582,6 +620,7 @@ export function TaskEditor({
       setError(e instanceof Error ? e.message : "Änderung fehlgeschlagen.");
     } finally {
       setBusy(false);
+      submitLock.current = false;
     }
   }
   return (
@@ -590,9 +629,13 @@ export function TaskEditor({
         className="task-dialog card"
         ref={dialogRoot}
         tabIndex={-1}
+        onChangeCapture={() => {
+          touched.current = true;
+        }}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
-            close();
+            e.preventDefault();
+            requestClose();
             return;
           }
           if (e.key !== "Tab") return;
@@ -624,8 +667,8 @@ export function TaskEditor({
       >
         <div className="panel-heading">
           <h2>{taskId ? "Aufgabe bearbeiten" : "Eine neue Aufgabe"}</h2>
-          <button type="button" onClick={close}>
-            Dialog schliessen / Entwurf verwerfen
+          <button type="button" onClick={requestClose}>
+            Abbrechen
           </button>
         </div>
         <div className="ai-mode-switch">
@@ -659,6 +702,7 @@ export function TaskEditor({
           <div hidden={aiMode !== "capture"}>
             <AiDraftPanel
               kind="capture"
+              active={aiMode === "capture"}
               snapshot={snapshot}
               manualFields={{
                 ...(title ? { content: title } : {}),
@@ -667,14 +711,7 @@ export function TaskEditor({
                 ...(date ? { due: date } : {}),
                 ...(deadline ? { deadline } : {}),
                 priority,
-                ...(labels
-                  ? {
-                      labels: labels
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    }
-                  : {}),
+                ...(labels.length ? { labels } : {}),
               }}
             />
           </div>
@@ -684,6 +721,7 @@ export function TaskEditor({
             <div hidden={aiMode !== "progress"}>
               <AiDraftPanel
                 kind="progress"
+                active={aiMode === "progress"}
                 expectedInstanceKey={expectedInstanceKey}
                 contextId={context.id}
                 taskId={taskId}
@@ -693,6 +731,7 @@ export function TaskEditor({
             <div hidden={aiMode !== "clarification"}>
               <AiDraftPanel
                 kind="clarification"
+                active={aiMode === "clarification"}
                 expectedInstanceKey={expectedInstanceKey}
                 contextId={context.id}
                 taskId={taskId}
@@ -712,7 +751,7 @@ export function TaskEditor({
         {operation && (
           <p role="status">
             {operation.status === "succeeded"
-              ? "Extern nachgewiesen. Zum aktuellen Stand Aufgaben aktualisieren."
+              ? "Extern nachgewiesen."
               : operation.status === "queued" || operation.status === "running"
                 ? "Änderung angenommen. Externer Nachweis steht aus."
                 : (taskError[operation.code ?? ""] ??
@@ -840,13 +879,13 @@ export function TaskEditor({
                   ))}
                 </select>
               </label>
-              <label>
-                Labels (durch Komma getrennt)
-                <input
-                  value={labels}
-                  onChange={(e) => setLabels(e.target.value)}
-                />
-              </label>
+              <LabelPicker
+                value={labels}
+                onChange={(next) => {
+                  touched.current = true;
+                  setLabels(next);
+                }}
+              />
               <label>
                 Geplantes Datum
                 <input

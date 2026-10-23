@@ -1,4 +1,5 @@
 "use client";
+import { useNavigationLock } from "./navigation-lock";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AiDraftView,
@@ -65,6 +66,7 @@ export function AiDraftPanel({
   snapshot,
   manualFields = {},
   expectedInstanceKey,
+  active = true,
 }: {
   kind:
     | "capture"
@@ -78,6 +80,7 @@ export function AiDraftPanel({
   snapshot: WorkSnapshot;
   manualFields?: Partial<TaskFields>;
   expectedInstanceKey?: string;
+  active?: boolean;
 }) {
   const [input, setInput] = useState(""),
     [draft, setDraft] = useState<AiDraftView | null>(null),
@@ -90,7 +93,20 @@ export function AiDraftPanel({
     [project, setProject] = useState(""),
     [confirmProject, setConfirmProject] = useState(false),
     [available, setAvailable] = useState(true),
-    [conflict, setConflict] = useState(false);
+    [conflict, setConflict] = useState(false),
+    [step, setStep] = useState<1 | 2 | 3>(1),
+    [review, setReview] = useState("");
+  useNavigationLock(saving || draft?.status === "applying");
+  const unsaved = dirty || input !== (draft?.input ?? "") || !!project;
+  useEffect(() => {
+    if (!active || !unsaved) return;
+    const protect = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", protect);
+    return () => window.removeEventListener("beforeunload", protect);
+  }, [active, unsaved]);
   const state = useRef({ draft, dirty, values, saving });
   useEffect(() => {
     state.current = { draft, dirty, values, saving };
@@ -153,6 +169,13 @@ export function AiDraftPanel({
     setDirty(false);
     setConflict(false);
     setError("");
+    setReview("");
+    setStep(
+      d.patches.length &&
+        !["queued", "running", "failed", "cancelled"].includes(d.status)
+        ? 2
+        : 1,
+    );
   }, []);
   const read = useCallback(async () => {
     const q = new URLSearchParams();
@@ -195,6 +218,12 @@ export function AiDraftPanel({
         } else {
           setDraft(next);
           setValues(next.patches);
+          if (
+            ["queued", "running"].includes(current.status) &&
+            next.status === "ready" &&
+            next.patches.length
+          )
+            setStep(2);
         }
       }
       if (next && next.status === "applied") setError("");
@@ -247,7 +276,9 @@ export function AiDraftPanel({
       }
     }
   }, [contextId, taskId, kind, applyNext, expectedInstanceKey]);
+  const polling = active || saving;
   useEffect(() => {
+    if (!polling) return;
     let alive = true;
     const refresh = () => {
       if (alive)
@@ -261,7 +292,7 @@ export function AiDraftPanel({
       alive = false;
       clearInterval(timer);
     };
-  }, [read]);
+  }, [read, polling]);
   async function saveDecisions() {
     if (!draft) throw new Error("Kein Entwurf gewählt");
     const next: AiDraftView = await request("/api/ai/edit", {
@@ -284,8 +315,16 @@ export function AiDraftPanel({
     setValues((v) => v.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     setDirty(true);
   }
+  function mayDiscard() {
+    return (
+      !(dirty || input !== (draft?.input ?? "") || project) ||
+      window.confirm(
+        "Ungespeicherte Eingaben verwerfen? Der gespeicherte Entwurf und bereits nachgewiesene Änderungen bleiben erhalten.",
+      )
+    );
+  }
   async function action(name: string) {
-    if (!draft) return;
+    if (!draft || (name === "cancel" && !mayDiscard())) return;
     setBusy(true);
     setError("");
     try {
@@ -308,6 +347,16 @@ export function AiDraftPanel({
     ["ready", "partial"].includes(draft.status) &&
     !draft.operationId &&
     !conflict;
+  const reviewKey = JSON.stringify([
+    draft?.id,
+    draft?.revision,
+    values,
+    project,
+    confirmProject,
+  ]);
+  const selected = values.filter(
+    (p) => p.selected && !p.rejected && p.status === "pending",
+  );
   return (
     <section className="ai-panel" aria-label={kindText[kind].label}>
       <h3>{kindText[kind].title}</h3>
@@ -321,45 +370,71 @@ export function AiDraftPanel({
           nutzbar.
         </p>
       )}
-      <label>
-        <span>{kindText[kind].input}</span>
-        <textarea
-          maxLength={8000}
-          disabled={busy || waiting}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-      </label>
-      <button
-        type="button"
-        disabled={
-          busy ||
-          waiting ||
-          (["capture", "progress", "clarification"].includes(kind) &&
-            !input.trim())
-        }
-        onClick={() => {
-          setBusy(true);
-          setError("");
-          const text = JSON.stringify({ input, manualFields });
-          if (startKey.current?.input !== text)
-            startKey.current = { input: text, key: crypto.randomUUID() };
-          void request("/api/ai/start", {
-            key: startKey.current!.key,
-            kind,
-            contextId,
-            ...(taskId ? { taskId } : {}),
-            input,
-            ...(kind === "capture" ? { manualFields } : {}),
-            ...(expectedInstanceKey ? { expectedInstanceKey } : {}),
-          })
-            .then(select)
-            .catch((e) => setError(e.message))
-            .finally(() => setBusy(false));
-        }}
-      >
-        Lokale KI-Auswertung starten
-      </button>
+      <ol className="ai-steps" aria-label="KI-Arbeitsschritte">
+        {["Klären", "Vorschlag bearbeiten", "Änderungen bestätigen"].map(
+          (label, i) => (
+            <li key={label} aria-current={step === i + 1 ? "step" : undefined}>
+              {i + 1} · {label}
+            </li>
+          ),
+        )}
+      </ol>
+      {step === 1 && (
+        <>
+          <label>
+            <span>{kindText[kind].input}</span>
+            <textarea
+              maxLength={8000}
+              disabled={busy || waiting}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="primary"
+            disabled={
+              busy ||
+              waiting ||
+              (["capture", "progress", "clarification"].includes(kind) &&
+                !input.trim())
+            }
+            onClick={() => {
+              if (dirty && !mayDiscard()) return;
+              setBusy(true);
+              setError("");
+              const text = JSON.stringify({ input, manualFields });
+              if (startKey.current?.input !== text)
+                startKey.current = { input: text, key: crypto.randomUUID() };
+              void request("/api/ai/start", {
+                key: startKey.current!.key,
+                kind,
+                contextId,
+                ...(taskId ? { taskId } : {}),
+                input,
+                ...(kind === "capture" ? { manualFields } : {}),
+                ...(expectedInstanceKey ? { expectedInstanceKey } : {}),
+              })
+                .then(select)
+                .catch((e) => setError(e.message))
+                .finally(() => setBusy(false));
+            }}
+          >
+            Vorschlag erstellen
+          </button>
+          {!draft && input && (
+            <button
+              type="button"
+              disabled={busy || waiting}
+              onClick={() => {
+                if (mayDiscard()) setInput("");
+              }}
+            >
+              Eingabe verwerfen
+            </button>
+          )}
+        </>
+      )}
       {error && <p role="alert">{error}</p>}
       {rows.length > 0 && (
         <details>
@@ -368,8 +443,15 @@ export function AiDraftPanel({
             <button
               type="button"
               key={d.id}
-              disabled={saving}
-              onClick={() => select(d)}
+              disabled={saving || busy}
+              onClick={(event) => {
+                if (mayDiscard()) {
+                  select(d);
+                  event.currentTarget
+                    .closest("details")
+                    ?.removeAttribute("open");
+                }
+              }}
             >
               {new Date(d.createdAt).toLocaleString("de-CH")} · {d.status} ·{" "}
               {d.input.slice(0, 60) || "Aufgabenanalyse"}
@@ -406,20 +488,9 @@ export function AiDraftPanel({
                 "Die Änderung ist fehlgeschlagen oder ungeklärt. Den Operationsstand prüfen."}
             </p>
           )}
-          <details>
-            <summary>Originaleingabe und Herkunft</summary>
-            <pre>{draft.input}</pre>
-            <p>
-              Modell {draft.model}{" "}
-              {draft.output?.modelDigest
-                ? "· Gewichte " + draft.output.modelDigest.slice(0, 12)
-                : ""}{" "}
-              · Zeitzone {draft.timezone} · Prompt {draft.promptVersion} ·
-              Schema {draft.schemaVersion}
-            </p>
-          </details>
           {draft.output && (
-            <>
+            <details open={step === 1}>
+              <summary>Klärung und Einschätzung</summary>
               <p>
                 Klarheit:{" "}
                 {draft.confirmedClear
@@ -488,94 +559,142 @@ export function AiDraftPanel({
                 </p>
               )}
               <p>Unsicherheit: {draft.output.uncertainty}</p>
-            </>
+            </details>
           )}
-          {kind !== "capture" && draft.taskId && !draft.confirmedClear && (
-            <button
-              type="button"
-              disabled={busy || waiting}
-              onClick={() => void action("clear")}
-            >
-              Ist klar
-            </button>
-          )}
-          {values.map((p) => (
-            <fieldset
-              key={p.id}
-              className="ai-patch"
-              disabled={!editable || p.status !== "pending" || saving || busy}
-            >
-              <legend>{labels[p.kind]}</legend>
-              <p>{p.reason}</p>
-              <blockquote>{p.evidence}</blockquote>
-              {p.target && <p>Vorhandener Punkt: {p.target}</p>}
-              {p.kind === "check-complete" ? (
-                <label>
-                  Vorhandenen Punkt wählen
-                  <select
-                    aria-label="Checklistenpunkt zum Abhaken"
-                    value={p.target ?? ""}
-                    onChange={(e) =>
-                      update(p.id, {
-                        target: e.target.value,
-                        edited: e.target.value,
-                      })
-                    }
-                  >
-                    {draft.checklist
-                      .filter((x) => !x.checked)
-                      .map((x) => (
-                        <option value={x.text} key={x.text}>
-                          {x.text}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              ) : (
-                <label>
-                  Vorschlag bearbeiten
-                  <textarea
-                    aria-label={labels[p.kind] + " bearbeiten"}
-                    value={p.edited}
-                    onChange={(e) => update(p.id, { edited: e.target.value })}
-                  />
-                </label>
-              )}
-              <label className="check-label">
-                <input
-                  type="checkbox"
-                  checked={p.selected}
-                  onChange={(e) =>
-                    update(p.id, {
-                      selected: e.target.checked,
-                      rejected: false,
-                    })
-                  }
-                />
-                Diese Änderung auswählen
-              </label>
+          {step === 1 &&
+            kind !== "capture" &&
+            draft.taskId &&
+            !draft.confirmedClear && (
               <button
                 type="button"
-                onClick={() =>
-                  update(p.id, { selected: false, rejected: !p.rejected })
-                }
+                disabled={busy || waiting}
+                onClick={() => void action("clear")}
               >
-                {p.rejected
-                  ? "Ablehnung zurücknehmen"
-                  : "Diesen Vorschlag ablehnen"}
+                Ist klar
               </button>
+            )}
+          {step === 2 && (
+            <p>
+              Prüfe jede Änderung einzeln. Vorhandene Inhalte bleiben erhalten.
+            </p>
+          )}
+          {step === 2 &&
+            values.map((p) => (
+              <fieldset
+                key={p.id}
+                className="ai-patch"
+                disabled={!editable || p.status !== "pending" || saving || busy}
+              >
+                <legend>{labels[p.kind]}</legend>
+                <details>
+                  <summary>Begründung und Quellenbeleg</summary>
+                  <p>{p.reason}</p>
+                  <blockquote>{p.evidence}</blockquote>
+                </details>
+                {p.target && <p>Vorhandener Punkt: {p.target}</p>}
+                {p.kind === "check-complete" ? (
+                  <label>
+                    Vorhandenen Punkt wählen
+                    <select
+                      aria-label="Checklistenpunkt zum Abhaken"
+                      value={p.target ?? ""}
+                      onChange={(e) =>
+                        update(p.id, {
+                          target: e.target.value,
+                          edited: e.target.value,
+                        })
+                      }
+                    >
+                      {draft.checklist
+                        .filter((x) => !x.checked)
+                        .map((x) => (
+                          <option value={x.text} key={x.text}>
+                            {x.text}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                ) : (
+                  <label>
+                    Vorschlag bearbeiten
+                    <textarea
+                      aria-label={labels[p.kind] + " bearbeiten"}
+                      value={p.edited}
+                      onChange={(e) => update(p.id, { edited: e.target.value })}
+                    />
+                  </label>
+                )}
+                <label className="check-label">
+                  <input
+                    type="checkbox"
+                    checked={p.selected}
+                    onChange={(e) =>
+                      update(p.id, {
+                        selected: e.target.checked,
+                        rejected: false,
+                      })
+                    }
+                  />
+                  Diese Änderung auswählen
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    update(p.id, { selected: false, rejected: !p.rejected })
+                  }
+                >
+                  {p.rejected
+                    ? "Ablehnung zurücknehmen"
+                    : "Diesen Vorschlag ablehnen"}
+                </button>
+                <p>
+                  {p.status === "verified"
+                    ? "Extern nachgewiesen"
+                    : p.rejected
+                      ? "Abgelehnt"
+                      : p.status !== "pending"
+                        ? "Ausführung: " + p.status
+                        : "Noch nicht gespeichert"}
+                </p>
+              </fieldset>
+            ))}
+          {step === 3 && (
+            <section className="ai-review" aria-label="Auswahl zur Bestätigung">
+              <h4>Diese Änderungen übernehmen?</h4>
+              {kind === "capture" && (
+                <p>
+                  Ziel:{" "}
+                  {project && confirmProject
+                    ? (snapshot.projects.find((p) => p.id === project)?.name ??
+                      "Gewähltes Projekt")
+                    : "Nativer Todoist-Eingang"}
+                </p>
+              )}
+              {values
+                .filter((p) => p.selected && !p.rejected)
+                .map((p) => (
+                  <div className="ai-review-patch" key={p.id}>
+                    <strong>{labels[p.kind]}</strong>
+                    <p>{p.edited}</p>
+                    <span>
+                      {p.status === "verified"
+                        ? "Extern nachgewiesen"
+                        : p.status === "pending"
+                          ? "Zur Bestätigung ausgewählt"
+                          : "Ausführung: " + p.status}
+                    </span>
+                  </div>
+                ))}
+              {!selected.length && editable && (
+                <p>Keine offenen Änderungen ausgewählt.</p>
+              )}
               <p>
-                {p.status === "verified"
-                  ? "Extern nachgewiesen"
-                  : p.rejected
-                    ? "Abgelehnt"
-                    : p.status !== "pending"
-                      ? "Ausführung: " + p.status
-                      : "Noch nicht gespeichert"}
+                Nur deine Auswahl wird gespeichert. Die Quelle wird vorher
+                erneut geprüft.
               </p>
-            </fieldset>
-          ))}
-          {kind === "capture" && editable && (
+            </section>
+          )}
+          {step === 2 && kind === "capture" && editable && (
             <>
               <label>
                 Projekt bewusst wählen
@@ -625,57 +744,109 @@ export function AiDraftPanel({
             )}
           {editable && (
             <>
-              <button
-                type="button"
-                disabled={busy || saving || !dirty}
-                onClick={() => {
-                  setBusy(true);
-                  setError("");
-                  void saveDecisions()
-                    .catch((e) => setError(e.message))
-                    .finally(() => setBusy(false));
-                }}
-              >
-                Entwurfsentscheidungen speichern
-              </button>
-              <button
-                type="button"
-                disabled={
-                  busy ||
-                  saving ||
-                  !values.some(
-                    (p) => p.selected && !p.rejected && p.status === "pending",
-                  )
-                }
-                onClick={() => {
-                  setBusy(true);
-                  setError("");
-                  void (dirty ? saveDecisions() : Promise.resolve(draft))
-                    .then((d) => {
-                      approved.current = new Map(
-                        d.patches
-                          .filter(
-                            (p) =>
-                              p.selected &&
-                              !p.rejected &&
-                              p.status === "pending",
-                          )
-                          .map((p) => [
-                            p.id,
-                            JSON.stringify([p.kind, p.edited, p.target]),
-                          ]),
-                      );
-                      inFlight.current = null;
-                      setSaving(true);
-                      return applyNext(d);
-                    })
-                    .catch((e) => setError(e.message))
-                    .finally(() => setBusy(false));
-                }}
-              >
-                Ausgewählte Änderungen bewusst speichern
-              </button>
+              {step === 2 && (
+                <button
+                  type="button"
+                  disabled={busy || saving || !dirty}
+                  onClick={() => {
+                    setBusy(true);
+                    setError("");
+                    void saveDecisions()
+                      .catch((e) => setError(e.message))
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  Entwurfsentscheidungen speichern
+                </button>
+              )}
+              {step === 2 && (
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={busy || saving || !selected.length}
+                  onClick={() => {
+                    setReview(reviewKey);
+                    setStep(3);
+                  }}
+                >
+                  Auswahl prüfen
+                </button>
+              )}
+              {step === 3 && review !== reviewKey && !error && (
+                <p role="alert">
+                  Die Auswahl oder Quelle wurde geändert. Zurück zum Bearbeiten
+                  und die Auswahl erneut prüfen.
+                </p>
+              )}
+              {step === 3 && (
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={
+                    busy ||
+                    saving ||
+                    review !== reviewKey ||
+                    !values.some(
+                      (p) =>
+                        p.selected && !p.rejected && p.status === "pending",
+                    )
+                  }
+                  onClick={() => {
+                    if (review !== reviewKey || conflict) return;
+                    setBusy(true);
+                    setError("");
+                    void (dirty ? saveDecisions() : Promise.resolve(draft))
+                      .then((d) => {
+                        approved.current = new Map(
+                          d.patches
+                            .filter(
+                              (p) =>
+                                p.selected &&
+                                !p.rejected &&
+                                p.status === "pending",
+                            )
+                            .map((p) => [
+                              p.id,
+                              JSON.stringify([p.kind, p.edited, p.target]),
+                            ]),
+                        );
+                        inFlight.current = null;
+                        setSaving(true);
+                        return applyNext(d);
+                      })
+                      .catch((e) => setError(e.message))
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  Ausgewählte Änderungen bewusst speichern
+                </button>
+              )}
             </>
+          )}
+          {!waiting && !saving && (
+            <div className="ai-step-actions">
+              {step !== 1 && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setReview("");
+                    setStep(step === 3 ? 2 : 1);
+                  }}
+                >
+                  {step === 3 ? "Zurück zum Bearbeiten" : "Zurück zur Klärung"}
+                </button>
+              )}
+              {step === 1 && values.length > 0 && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setStep(2)}
+                >
+                  Vorhandene Vorschläge bearbeiten
+                </button>
+              )}
+            </div>
           )}
           {draft.operationId &&
             draft.status === "partial" &&
@@ -726,15 +897,43 @@ export function AiDraftPanel({
                 disabled={busy}
                 onClick={() => void action("cancel")}
               >
-                KI-Entwurf abbrechen
+                {step === 1 ? "Klärung beenden" : "KI-Entwurf abbrechen"}
               </button>
             )}
+          <details>
+            <summary>Originaleingabe und Herkunft</summary>
+            <pre>{draft.input}</pre>
+            <p>
+              Modell {draft.model}{" "}
+              {draft.output?.modelDigest
+                ? "· Gewichte " + draft.output.modelDigest.slice(0, 12)
+                : ""}{" "}
+              · Zeitzone {draft.timezone} · Prompt {draft.promptVersion} ·
+              Schema {draft.schemaVersion}
+            </p>
+          </details>
+          <details>
+            <summary>Technische Nachweise</summary>
+            <p>
+              Entwurfsrevision {draft.revision} · Quellenfingerabdruck{" "}
+              {draft.sourceFingerprint}
+            </p>
+            {draft.operationId && (
+              <p>Gespeicherter Auftrag: {draft.operationId}</p>
+            )}
+            {values.map((p) => (
+              <p key={p.id}>
+                {labels[p.kind]}: {p.status}
+                {p.operationId ? " · Auftrag " + p.operationId : ""}
+              </p>
+            ))}
+          </details>
           {conflict && (
             <button
               type="button"
               onClick={() => {
                 const remote = rows.find((d) => d.id === draft.id);
-                if (remote) select(remote);
+                if (remote && mayDiscard()) select(remote);
               }}
             >
               Gespeicherten Entwurfsstand bewusst laden

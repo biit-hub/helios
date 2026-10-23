@@ -46,6 +46,19 @@ export const documentChange = z.discriminatedUnion("kind", [
   }),
 ]);
 export type DocumentChange = z.infer<typeof documentChange>;
+export const kanbanSections = [
+  "Offen",
+  "In Arbeit",
+  "Wartet",
+  "Abgeschlossen",
+] as const;
+export type KanbanInspection = {
+  projectId: string;
+  contextRevision: number;
+  present: string[];
+  missing: (typeof kanbanSections)[number][];
+  ambiguous: string[];
+};
 export const taskCommand = z.strictObject({
   key: z.uuid(),
   action: z.enum([
@@ -64,6 +77,13 @@ export const taskCommand = z.strictObject({
   taskId: externalId.optional(),
   basis: z.string().length(64).optional(),
   projectId: externalId.nullable().optional(),
+  sectionSetup: z
+    .strictObject({
+      projectId: externalId,
+      contextRevision: z.number().int().nonnegative(),
+      missing: z.array(z.enum(kanbanSections)).min(1).max(4),
+    })
+    .optional(),
   sectionId: externalId.nullable().optional(),
   parentId: externalId.nullable().optional(),
   fields: taskPatch.optional(),

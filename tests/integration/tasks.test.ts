@@ -363,6 +363,11 @@ it("rejects fun on employer tasks and only creates sections by deliberate comman
     key: crypto.randomUUID(),
     action: "sections",
     contextId: c.id,
+    sectionSetup: {
+      projectId: c.projectId!,
+      contextRevision: c.revision,
+      missing: ["Offen", "In Arbeit", "Wartet", "Abgeschlossen"],
+    },
   })) as { operationId: string };
   await executor().runNext();
   expect((await result(op.operationId)).status).toBe("succeeded");

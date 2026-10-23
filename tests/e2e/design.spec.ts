@@ -24,7 +24,7 @@ async function capture(page: Page, name: string) {
       await expect(page.locator(".agenda-entry").first()).toBeVisible();
     if (phase !== "before") {
       await expect(
-        page.getByRole("button", { name: "＋ Aufgabe erfassen", exact: true }),
+        page.getByRole("button", { name: "Aufgabe erfassen", exact: true }),
       ).toBeVisible();
       expect(
         await page.evaluate(
@@ -102,17 +102,13 @@ test("E9.1 synthetic desktop design evidence: settings, tasks, dialogs, plan, fo
     page.getByRole("dialog", { name: "Aufgabe bearbeiten" }),
   ).toBeVisible();
   await capture(page, "task-editor");
+  await page.getByRole("button", { name: "Abbrechen" }).click();
   await page
-    .getByRole("button", { name: "Dialog schliessen / Entwurf verwerfen" })
-    .click();
-  await page
-    .getByRole("button", { name: "＋ Aufgabe erfassen", exact: true })
+    .getByRole("button", { name: "Aufgabe erfassen", exact: true })
     .click();
   await page.getByRole("button", { name: "KI-Modus", exact: true }).click();
   await capture(page, "ai-capture");
-  await page
-    .getByRole("button", { name: "Dialog schliessen / Entwurf verwerfen" })
-    .click();
+  await page.getByRole("button", { name: "Abbrechen" }).click();
   await page.getByRole("link", { name: "Fokus", exact: true }).click();
   await page
     .getByRole("button", { name: "Tagesvorschau erstellen", exact: true })

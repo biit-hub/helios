@@ -1,3 +1,4 @@
+import { closeTaskDialog } from "../fixtures/task-dialog";
 import { test, expect, chromium } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
@@ -155,7 +156,7 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
     .getByLabel("Was hast du erledigt?", { exact: true })
     .fill("Quellen gesammelt. Noch 30 Minuten");
   await progress
-    .getByRole("button", { name: "Lokale KI-Auswertung starten", exact: true })
+    .getByRole("button", { name: "Vorschlag erstellen", exact: true })
     .click();
   await expect(
     progress.getByText("Entwurf bereit zur bewussten Prüfung.", {
@@ -167,6 +168,9 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
     .all())
     await choice.check();
   await progress
+    .getByRole("button", { name: "Auswahl prüfen", exact: true })
+    .click();
+  await progress
     .getByRole("button", {
       name: "Ausgewählte Änderungen bewusst speichern",
       exact: true,
@@ -177,12 +181,7 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
       exact: true,
     }),
   ).toBeVisible({ timeout: 40000 });
-  await dialog
-    .getByRole("button", {
-      name: "Dialog schliessen / Entwurf verwerfen",
-      exact: true,
-    })
-    .click();
+  await closeTaskDialog(page, dialog);
   await first
     .getByRole("button", { name: "Teilweise erledigt bestätigen", exact: true })
     .click();

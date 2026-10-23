@@ -59,6 +59,32 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
           jederzeit möglich.
         </p>
       )}
+      {!!v.mappingIssues?.length && (
+        <div className="mapping-explanation">
+          <p>
+            Für ein verlässliches Zeitbudget müssen diese Quellen geklärt sein:
+          </p>
+          <ul>
+            {v.mappingIssues.map((issue, n) => (
+              <li key={issue.kind + issue.name + n}>
+                {issue.kind === "organization"
+                  ? "Arbeitsorganisation für "
+                  : "Kalender "}
+                «{issue.name}»:{" "}
+                {issue.reason === "reverify"
+                  ? "nach Verbindungswechsel erneut bestätigen"
+                  : issue.reason === "unavailable"
+                    ? "nicht mehr aktiv verfügbar; Zuordnung prüfen"
+                    : "Zuordnung noch nicht entschieden"}
+                .
+              </li>
+            ))}
+          </ul>
+          <Link href="/settings/contexts#termihub-settings">
+            Kalenderzuordnungen öffnen
+          </Link>
+        </div>
+      )}
       {v.observedBudget && (
         <p className="help">
           Frühere Orientierung: {budget(v.observedBudget)} · veraltet, keine
@@ -240,7 +266,9 @@ export function CalendarContextPanel({
       >
         Kalenderstand aktualisieren
       </button>
-      <Link href="/settings/contexts">Zuordnungen prüfen</Link>
+      <Link href="/settings/contexts#termihub-settings">
+        Zuordnungen prüfen
+      </Link>
       <p className="help">
         Neue Kalenderdaten ändern deine Auswahl und bestätigte Tagespläne nicht
         automatisch.

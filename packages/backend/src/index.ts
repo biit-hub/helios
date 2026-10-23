@@ -21,12 +21,12 @@ export { createPlanExecutor } from "./planning/operations";
 export { createTaskService } from "./tasks/service";
 
 export { createAiService } from "./ai/service";
-export { createAiWorker } from "./ai/worker";
+export { createAiWorker, AI_DISPATCH_INTERVAL_MS } from "./ai/worker";
 
 export { createRoutineService } from "./routine/service";
 export * from "./routine/schema";
 
-export {createEpicService} from "./epics/service";
+export { createEpicService } from "./epics/service";
 
 export { createTermiHubService } from "./termihub/service";
 export { createTermiHubWorker } from "./termihub/worker";

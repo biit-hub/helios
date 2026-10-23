@@ -980,3 +980,24 @@ it("central journal rejects a command that differs from the selected reviewed pa
   expect(h.f.control.calls).toHaveLength(0);
   expect((await get(d.id)).status).toBe("ready");
 });
+it("keeps diagnostics optional and harmless even when an observer throws", async () => {
+  const c = await prepare(),
+    d = await start(c),
+    events: string[] = [];
+  const w = createAiWorker(
+    db,
+    config,
+    boss,
+    profile,
+    reader(),
+    async () => out(),
+    (event) => {
+      events.push(event.stage);
+      throw Error("synthetic diagnostics failure");
+    },
+  );
+  await w.run(d.id);
+  expect((await get(d.id)).status).toBe("ready");
+  expect(events).toEqual(["claimed", "generated", "validated", "finished"]);
+  expect(h.f.control.calls).toHaveLength(0);
+});

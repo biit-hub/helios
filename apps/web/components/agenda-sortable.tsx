@@ -1,5 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
+import { Icon } from "@helios/ui";
 import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable, isSortable } from "@dnd-kit/react/sortable";
 import { entryKey, type PlanEntry, type AgendaArea } from "@helios/contracts";
@@ -98,7 +99,7 @@ function SortableEntry({
         aria-label={entry.source.content + " verschieben"}
         disabled={disabled}
       >
-        ⠿
+        <Icon name="drag" />
       </button>
       <div className="agenda-entry-content">{children}</div>
     </li>

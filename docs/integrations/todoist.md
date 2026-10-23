@@ -55,3 +55,7 @@ Vorhandene Fixture-Nachweise und der historische Live-Befund: [E4-Prüfbericht](
 ## E8 – F1-Vertrag
 
 Der isolierte Live-Nachweis bestätigt native Parent-Kaskade und das Wiederöffnen des Parents beim Öffnen eines Kindes. Der Auftraggeber hat deshalb ausschliesslich Trennen oder Abbrechen bestätigt. IDs/Kommentare/mehrstufige Teilbäume bleiben beim Trennen im selben Projekt erhalten; erst vollständiger Nachweis erlaubt Epic-Close. [Architekturentscheid](../architecture/epics-smart-goals.md), [Prüfbericht](../development/e8-verification.md).
+
+## E9.2 – Labelauswahl
+
+Zusätzliche verifizierte GET-Ressourcen: labels (Objekte mit id/name) und labels/shared (Namen), jeweils results/next_cursor. Vollständiges Paging vor Rückgabe, kein Teilkatalog bei Fehler. Persönliche und geteilte Namen werden dedupliziert. Neue öffentliche Label-Schreibendpunkte gibt es nicht. [Aktueller offizieller API-Vertrag](https://developer.todoist.com/api/v1/).

@@ -137,10 +137,12 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   await dialog
     .getByRole("button", { name: "Aufgabe abschliessen", exact: true })
     .click();
-  await expect(dialog.getByRole("status")).toContainText(
-    "Extern nachgewiesen",
-    { timeout: 25000 },
-  );
+  await expect(dialog).toBeHidden({ timeout: 25000 });
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Änderung in Todoist gespeichert und nachgewiesen." }),
+  ).toBeVisible();
   const data = await page.request
     .get(
       "/api/epics?contextId=" +

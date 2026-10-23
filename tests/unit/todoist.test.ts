@@ -165,3 +165,28 @@ it("distinguishes scoped permission loss from invalid connection credentials", a
     code: "task_unavailable",
   });
 });
+it("returns complete personal and shared labels via GET only", async () => {
+  const f = fixture(),
+    reader = createTodoistReader(f.fetcher);
+  expect(await reader.labels(token)).toEqual(
+    expect.arrayContaining(["epic", "fun", "Shared sample"]),
+  );
+  expect(f.calls.every((call) => call.method === "GET")).toBe(true);
+});
+it("never exposes a partial label catalogue after a later page fails", async () => {
+  const f = fixture();
+  const broken: typeof fetch = async (input, init) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/labels"))
+      return url.searchParams.has("cursor")
+        ? Response.json({}, { status: 500 })
+        : Response.json({
+            results: [{ id: "label-one", name: "Only a partial label" }],
+            next_cursor: "next-label-page",
+          });
+    return f.fetcher(input, init);
+  };
+  await expect(createTodoistReader(broken).labels(token)).rejects.toMatchObject(
+    { code: "network" },
+  );
+});

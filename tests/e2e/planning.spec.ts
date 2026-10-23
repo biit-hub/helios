@@ -54,7 +54,7 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
     await expect(button).toBeEnabled({ timeout: 65000 });
     await button.click();
     await expect(
-      page.getByText("Gespeichert. Todoist-Inhalte bleiben unverändert.", {
+      page.getByText("Aufgabenstand vollständig aktualisiert.", {
         exact: true,
       }),
     ).toBeVisible();

@@ -333,7 +333,8 @@ it("keeps planned date, deadline, parents, comments and unknown external moves r
   await work.handle("tasks-refresh", headers(), { contextId: c.id });
   list = await work.tasks(headers(), c.id);
   expect(
-    list.tasks.find((t) => t.data.id === f.state.tasks[1]!.id)!.state,
+    list.historicalTasks!.find((t) => t.data.id === f.state.tasks[1]!.id)!
+      .state,
   ).toBe("unknown");
   expect(list.tasks.some((t) => t.state === "completed")).toBe(false);
   expect(f.calls.every((c) => c.method === "GET")).toBe(true);
@@ -373,7 +374,7 @@ it("will not expose comments after an external move outside the authorized conte
     f.calls.some((c) => new URL(c.url).pathname === "/api/v1/comments"),
   ).toBe(false);
   expect(
-    (await work.tasks(headers(), c.id)).tasks.find(
+    (await work.tasks(headers(), c.id)).historicalTasks!.find(
       (t) => t.data.id === f.state.tasks[0]!.id,
     )!.state,
   ).toBe("unknown");
@@ -596,8 +597,9 @@ it("treats a task 404 as unknown without invalidating its whole project", async 
   ).rejects.toMatchObject({ code: "task_unavailable" });
   expect((await work.snapshot(headers())).contexts[0]!.configured).toBe(true);
   expect(
-    (await work.tasks(headers(), c.id)).tasks.find((t) => t.data.id === id)!
-      .state,
+    (await work.tasks(headers(), c.id)).historicalTasks!.find(
+      (t) => t.data.id === id,
+    )!.state,
   ).toBe("unknown");
 });
 it("rejects an older read result after a newer claim has completed", async () => {

@@ -79,7 +79,7 @@ test("TermiHub settings, guarded mappings, refreshed budget and unchanged confir
   await expect(refresh).toBeEnabled({ timeout: 65000 });
   await refresh.click();
   await expect(
-    page.getByText("Gespeichert. Todoist-Inhalte bleiben unverändert."),
+    page.getByText("Aufgabenstand vollständig aktualisiert."),
   ).toBeVisible();
   await page.getByRole("link", { name: "Fokus", exact: true }).click();
   await expect(

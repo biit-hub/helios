@@ -34,4 +34,14 @@ Manuelle E3-/E4-/E5-Abnahmen bleiben ausdrücklich offen. Automatisierte Tests e
 
 Anschliessend ausschliesslich synthetisch: Freitext erfassen, manuelle Werte priorisieren, keine autonome Anlage nachweisen, Projektwahl separat bestätigen und einmal ohne Projekt im Eingang speichern. Verwaltete klare/unklare Aufgabe ansehen, Ist klar bestätigen, unverändert erneut laden. Eingang/fremdes Projekt darf keine automatische Analyse erhalten. Fortschritt mit Kommentar und bestehender Checkliste auswählen; fremde Markdown-Abschnitte vergleichen, Restaufwand prüfen und Vorschläge ablehnen. Reload/Neustart mit offenem Entwurf testen. Kontrollierten KI-Ausfall sowie externen Quellenkonflikt prüfen; Teilerfolge dürfen nicht als vollständig gespeichert erscheinen. Wiederholungen und native Hierarchie nach E4 erneut prüfen. Kein vollständiger Aufgabenabschluss allein durch KI-Freitext.
 
-E7/Morgenroutine ist nicht implementiert; ihr Review wird denselben E6-Dialog verwenden. NAS-Ziel wird erst zur Produktivinstallation festgelegt, lokale verschlüsselte Backups bleiben für diese Entwicklung freigegeben.
+E7/Morgenroutine verwendet für ihren Review denselben E6-Dialog. NAS-Ziel wird erst zur Produktivinstallation festgelegt, lokale verschlüsselte Backups bleiben für diese Entwicklung freigegeben.
+
+## E9.2 – Laufzeit und Dialogentwurf
+
+[Gemessene KI-Laufzeiten](../development/e9.2-ai-performance.md) trennen Queue, tatsächliche Ollama-Ausführung, Validierung und Anzeige. Ein wartender/laufender Entwurf ist kein Speichernachweis. Versteckte inaktive Panels pollen nicht; bestätigte laufende Speicherung bleibt beobachtet. Der ausdrücklich freigegebene [Schrittdialog](../design/e9.2-ai-dialog-proposal.md) gilt gemeinsam für Erfassung, Klärung, Fortschritt und E8-Anreicherung:
+
+1. **Klären:** Angaben und Rückfragen prüfen; «Vorschlag erstellen» startet ausschliesslich die lokale KI. «Klärung beenden» beendet einen vorhandenen Entwurf, ohne die Aufgabe zu verändern.
+2. **Vorschlag bearbeiten:** Jede Änderung einzeln bearbeiten, wählen oder ablehnen. Entwurfsentscheidungen können ohne Todoist-Schreibzugriff gespeichert und später wieder geöffnet werden. Die Projektwahl bei Erfassung bleibt separat ausdrücklich zu bestätigen.
+3. **Änderungen bestätigen:** «Auswahl prüfen» zeigt die konkreten gewählten Werte. Erst «Ausgewählte Änderungen bewusst speichern» startet die vorhandene Journalsteuerung. Zurückgehen erhält Eingaben und Auswahl. Ändert sich die Quelle oder Entwurfsfassung, erneut prüfen.
+
+Originaleingabe, Quellenbelege und technische Nachweise sind standardmässig eingeklappt. Abbrechen beziehungsweise Entwurfswechsel schützt ungespeicherte Eingaben mit einer Verwerfen-Bestätigung. Bei Timeout bleibt die Eingabe erhalten. Partial/Unknown bleibt als solcher sichtbar; nur den bestehenden Auftrag nachprüfen und bewusst fortsetzen, niemals aus der Schrittanzeige Erfolg ableiten. Ist-klar, Einzelpatch-, Quellen- und Unknown-Regeln bleiben verbindlich.
