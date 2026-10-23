@@ -763,9 +763,15 @@ body {
 .view-scope {
   margin: 0 0 16px;
 }
-@media (max-width: 1000px) {
+.work-nav .nav-group > a:last-child {
+  margin-left: 0;
+}
+@media (max-width: 1100px) {
   .work-nav .nav-group + .nav-group {
     margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+    flex-basis: 100%;
   }
 }
 .label-picker {
