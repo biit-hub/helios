@@ -665,31 +665,64 @@ export function createTaskExecutor(
       if (progress.task && op.contextId) {
         const task = progress.task;
         const sections = await reader.sections(token, task.project_id);
-        await database.db
-          .update(taskProjections)
-          .set({
-            data: task,
-            state: task.is_deleted
-              ? "deleted"
-              : task.checked
-                ? "completed"
-                : task.project_id === payload.projectId
-                  ? "active"
-                  : "unknown",
-            sectionName:
-              sections.find((s) => s.id === task.section_id)?.name ?? null,
-            retrievedAt: new Date(),
-            fingerprint: fingerprint(task),
-            revision: sql`${taskProjections.revision}+1`,
-          })
-          .where(
-            and(
-              eq(taskProjections.taskId, task.id),
-              eq(taskProjections.integrationId, scope.i.id),
-              eq(taskProjections.contextId, op.contextId),
-              eq(taskProjections.credentialVersion, payload.credentialVersion),
-            ),
-          );
+        const values = {
+          data: task,
+          state: task.is_deleted
+            ? "deleted"
+            : task.checked
+              ? "completed"
+              : task.project_id === payload.projectId
+                ? "active"
+                : "unknown",
+          sectionName:
+            sections.find((s) => s.id === task.section_id)?.name ?? null,
+          retrievedAt: new Date(),
+          fingerprint: fingerprint(task),
+        };
+        if (
+          command.action === "create" &&
+          task.project_id === payload.projectId
+        ) {
+          await database.db
+            .insert(taskProjections)
+            .values({
+              ...values,
+              state: task.is_deleted
+                ? "deleted"
+                : task.checked
+                  ? "completed"
+                  : "active",
+              integrationId: scope.i.id,
+              taskId: task.id,
+              contextId: op.contextId,
+              projectId: payload.projectId,
+              credentialVersion: payload.credentialVersion,
+              revision: 0,
+            })
+            .onConflictDoNothing();
+        } else
+          await database.db
+            .update(taskProjections)
+            .set({
+              ...values,
+              state: values.state as
+                | "active"
+                | "unknown"
+                | "completed"
+                | "deleted",
+              revision: sql`${taskProjections.revision}+1`,
+            })
+            .where(
+              and(
+                eq(taskProjections.taskId, task.id),
+                eq(taskProjections.integrationId, scope.i.id),
+                eq(taskProjections.contextId, op.contextId),
+                eq(
+                  taskProjections.credentialVersion,
+                  payload.credentialVersion,
+                ),
+              ),
+            );
       }
       if (command.action === "delete" && command.taskId)
         await database.db

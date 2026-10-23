@@ -826,19 +826,30 @@ export function createWorkService(
                 )
             : [];
         return {
-          tasks: rows.map((t) => ({
-            data: t.data,
-            waiting: (() => {
-              try {
-                return readWaiting(t.data.description);
-              } catch {
-                return null;
-              }
-            })(),
-            state: t.state,
-            sectionName: t.sectionName,
-            retrievedAt: t.retrievedAt.toISOString(),
-          })),
+          ...(() => {
+            const views = rows.map((t) => ({
+              data: t.data,
+              waiting: (() => {
+                try {
+                  return readWaiting(t.data.description);
+                } catch {
+                  return null;
+                }
+              })(),
+              state: t.state,
+              sectionName: t.sectionName,
+              retrievedAt: t.retrievedAt.toISOString(),
+            }));
+            const current = (t: (typeof views)[number]) =>
+              t.state === "active" &&
+              t.data.project_id === c.projectId &&
+              !t.data.checked &&
+              !t.data.is_deleted;
+            return {
+              tasks: views.filter(current),
+              historicalTasks: views.filter((t) => !current(t)),
+            };
+          })(),
           lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
           stale: stale(c.lastSyncAt) || i.state !== "ready",
           configured,
@@ -955,29 +966,50 @@ const workErrorMessages: Record<string, string> = {
   PROJECT_ALREADY_ASSIGNED:
     "Dieses Projekt ist bereits einem aktiven Kontext zugeordnet.",
   RETRY_LATER: "Bitte die Abrufpause abwarten.",
-  TERMIHUB_AUTH: "TermiHub hat den Token abgewiesen. Gültigkeit und Ablauf prüfen.",
-  TERMIHUB_PERMISSION: "TermiHub erlaubt benötigte Lesezugriffe nicht. API-Scopes und Zugriff prüfen.",
-  TERMIHUB_UNREACHABLE: "TermiHub ist nicht erreichbar. Die manuelle Planung bleibt verfügbar.",
+  TERMIHUB_AUTH:
+    "TermiHub hat den Token abgewiesen. Gültigkeit und Ablauf prüfen.",
+  TERMIHUB_PERMISSION:
+    "TermiHub erlaubt benötigte Lesezugriffe nicht. API-Scopes und Zugriff prüfen.",
+  TERMIHUB_UNREACHABLE:
+    "TermiHub ist nicht erreichbar. Die manuelle Planung bleibt verfügbar.",
   TERMIHUB_TIMEOUT: "TermiHub hat nicht rechtzeitig geantwortet.",
-  TERMIHUB_RATE_LIMIT: "TermiHub begrenzt die Abrufe. Den angegebenen Retryzeitpunkt abwarten.",
-  TERMIHUB_CONTRACT: "TermiHub liefert einen unerwarteten Datenvertrag. Es wird kein verlässliches Zeitbudget behauptet.",
-  TERMIHUB_RESPONSE: "TermiHub hat den Abruf abgewiesen oder einen Serverfehler geliefert.",
-  TERMIHUB_TOO_LARGE: "Die TermiHub-Antwort überschreitet die erlaubte Grösse. Der Snapshot bleibt unbestätigt.",
-  TERMIHUB_REDIRECT: "TermiHub leitet den Abruf weiter. Die Zugangsdaten werden nicht weitergereicht.",
-  TERMIHUB_SCOPE: "TermiHub lieferte Daten ausserhalb der angeforderten Kalender. Sie werden nicht übernommen.",
-  TERMIHUB_NOT_CONNECTED: "Zuerst die TermiHub-Verbindung sicher speichern und aktivieren.",
-  TERMIHUB_URL_INVALID: "Eine HTTPS-Basisadresse ohne Zugangsdaten, Pfad oder Query eingeben.",
-  TERMIHUB_URL_BLOCKED: "Diese TermiHub-Adresse ist nicht freigegeben. HTTPS und die serverseitige Freigabe privater Instanzen prüfen.",
-  TERMIHUB_MAPPING_REQUIRED: "TermiHub-Zuordnungen in der eigenen Verbindungseinstellung anhand bestätigter IDs bearbeiten.",
-  TERMIHUB_ORGANIZATION_UNVERIFIED: "Diese Organisations-ID ist mit der aktuellen Verbindung noch nicht nachgewiesen. Einen Tag mit passendem Arbeitseinsatz laden.",
-  TERMIHUB_CALENDAR_UNVERIFIED: "Diesen Kalender zuerst mit der aktuellen Verbindung lesen; bestehende Zuordnungen bleiben erhalten.",
-  TERMIHUB_CONTEXT_REVISION_REQUIRED: "Den Zielkontext frisch laden und die Zuordnung erneut prüfen.",
-  TERMIHUB_BUSY: "Ein TermiHub-Abruf läuft bereits. Die manuelle Planung bleibt verfügbar.",
+  TERMIHUB_RATE_LIMIT:
+    "TermiHub begrenzt die Abrufe. Den angegebenen Retryzeitpunkt abwarten.",
+  TERMIHUB_CONTRACT:
+    "TermiHub liefert einen unerwarteten Datenvertrag. Es wird kein verlässliches Zeitbudget behauptet.",
+  TERMIHUB_RESPONSE:
+    "TermiHub hat den Abruf abgewiesen oder einen Serverfehler geliefert.",
+  TERMIHUB_TOO_LARGE:
+    "Die TermiHub-Antwort überschreitet die erlaubte Grösse. Der Snapshot bleibt unbestätigt.",
+  TERMIHUB_REDIRECT:
+    "TermiHub leitet den Abruf weiter. Die Zugangsdaten werden nicht weitergereicht.",
+  TERMIHUB_SCOPE:
+    "TermiHub lieferte Daten ausserhalb der angeforderten Kalender. Sie werden nicht übernommen.",
+  TERMIHUB_NOT_CONNECTED:
+    "Zuerst die TermiHub-Verbindung sicher speichern und aktivieren.",
+  TERMIHUB_URL_INVALID:
+    "Eine HTTPS-Basisadresse ohne Zugangsdaten, Pfad oder Query eingeben.",
+  TERMIHUB_URL_BLOCKED:
+    "Diese TermiHub-Adresse ist nicht freigegeben. HTTPS und die serverseitige Freigabe privater Instanzen prüfen.",
+  TERMIHUB_MAPPING_REQUIRED:
+    "TermiHub-Zuordnungen in der eigenen Verbindungseinstellung anhand bestätigter IDs bearbeiten.",
+  TERMIHUB_ORGANIZATION_UNVERIFIED:
+    "Diese Organisations-ID ist mit der aktuellen Verbindung noch nicht nachgewiesen. Einen Tag mit passendem Arbeitseinsatz laden.",
+  TERMIHUB_CALENDAR_UNVERIFIED:
+    "Diesen Kalender zuerst mit der aktuellen Verbindung lesen; bestehende Zuordnungen bleiben erhalten.",
+  TERMIHUB_CONTEXT_REVISION_REQUIRED:
+    "Den Zielkontext frisch laden und die Zuordnung erneut prüfen.",
+  TERMIHUB_BUSY:
+    "Ein TermiHub-Abruf läuft bereits. Die manuelle Planung bleibt verfügbar.",
   TERMIHUB_COOLDOWN: "Bitte die angezeigte TermiHub-Abrufpause abwarten.",
-  TERMIHUB_DAY_CHANGED: "Der lokale Tag hat gewechselt. Die heutige Orientierung neu laden.",
-  TERMIHUB_DAY_INVALID: "Ein gültiges Datum im unterstützten Abfragezeitraum wählen.",
-  TERMIHUB_WORK_EXISTS: "TermiHub liefert Arbeitseinsätze für diesen Kontext. Die Quelle prüfen; manuelles Planen bleibt möglich.",
-  TERMIHUB_REQUEST_INVALID: "Der Aktualisierungsauftrag ist ungültig. Verbindungseinstellung prüfen.",
+  TERMIHUB_DAY_CHANGED:
+    "Der lokale Tag hat gewechselt. Die heutige Orientierung neu laden.",
+  TERMIHUB_DAY_INVALID:
+    "Ein gültiges Datum im unterstützten Abfragezeitraum wählen.",
+  TERMIHUB_WORK_EXISTS:
+    "TermiHub liefert Arbeitseinsätze für diesen Kontext. Die Quelle prüfen; manuelles Planen bleibt möglich.",
+  TERMIHUB_REQUEST_INVALID:
+    "Der Aktualisierungsauftrag ist ungültig. Verbindungseinstellung prüfen.",
   KEY_UNAVAILABLE:
     "Der Integrationsschlüssel ist nicht verfügbar. Lokale Konfiguration prüfen.",
 };
@@ -1005,7 +1037,13 @@ export function publicWorkError(e: unknown) {
   if (e instanceof z.ZodError)
     return errorResponse(400, "INVALID_REQUEST", "Bitte die Eingaben prüfen.");
   if (e instanceof WorkFault || e instanceof TermiHubFault)
-    return errorResponse(e instanceof TermiHubFault && [401, 403].includes(e.status) ? 409 : e.status, e.code, workErrorMessages[e.code]);
+    return errorResponse(
+      e instanceof TermiHubFault && [401, 403].includes(e.status)
+        ? 409
+        : e.status,
+      e.code,
+      workErrorMessages[e.code],
+    );
   return errorResponse(
     503,
     "SERVICE_UNAVAILABLE",
