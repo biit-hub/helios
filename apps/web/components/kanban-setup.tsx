@@ -124,6 +124,10 @@ export function KanbanSetup({ context }: Readonly<{ context: ContextView }>) {
         onClick={() => {
           setBusy(true);
           setError("");
+          setNotice("");
+          setOperation(null);
+          attempt.current = null;
+          finished.current = null;
           void inspect()
             .catch((e) => setError(e.message))
             .finally(() => setBusy(false));
