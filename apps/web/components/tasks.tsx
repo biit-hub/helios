@@ -10,6 +10,7 @@ import type {
 } from "@helios/contracts";
 import type { ReactNode } from "react";
 import { entryKey } from "@helios/contracts";
+import { announceTaskChange } from "./task-events";
 import { TaskDocument } from "./task-document";
 import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
@@ -69,6 +70,10 @@ export function TaskManager({
     [setup, setSetup] = useState(false);
   const visible = tasks.filter(
     (t) =>
+      t.state === "active" &&
+      t.data.project_id === context.projectId &&
+      !t.data.checked &&
+      !t.data.is_deleted &&
       (
         t.data.content +
         " " +
@@ -78,12 +83,7 @@ export function TaskManager({
       )
         .toLocaleLowerCase()
         .includes(search.toLocaleLowerCase()) &&
-      (status === "all" ||
-        (status === "unknown"
-          ? t.state === "unknown"
-          : status === "completed"
-            ? t.state === "completed" || t.data.checked
-            : t.sectionName === status)),
+      (status === "all" || t.sectionName === status),
   );
   return (
     <TaskPlanProvider context={context}>
@@ -103,8 +103,6 @@ export function TaskManager({
             {["Offen", "In Arbeit", "Wartet", "Abgeschlossen"].map((s) => (
               <option key={s}>{s}</option>
             ))}
-            <option value="completed">Nativ abgeschlossen</option>
-            <option value="unknown">Unbekannt</option>
           </select>
         </label>
         <button type="button" onClick={() => setSetup(!setup)}>
@@ -303,6 +301,14 @@ export function TaskEditor({
   initialMode?: "form" | "progress" | "clarification";
   expectedInstanceKey?: string;
 }) {
+  const submitted = useRef<{
+    action: TaskCommand["action"];
+    contextId: string | null;
+  } | null>(null);
+  const submitLock = useRef(false);
+  const completed = useRef<string | null>(null);
+  const closeRef = useRef(close);
+  closeRef.current = close;
   const [aiMode, setAiMode] = useState<
     "form" | "progress" | "clarification" | "capture"
   >(initialMode);
@@ -372,7 +378,6 @@ export function TaskEditor({
           "&taskId=" +
           encodeURIComponent(taskId),
       );
-      setInspection(data);
       setEpicDetach(false);
       const t = data.task;
       if (
@@ -382,6 +387,7 @@ export function TaskEditor({
         throw new Error(
           "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
         );
+      setInspection(data);
       const d = t.due?.datetime ?? t.due?.date ?? "";
       const absolute = /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(d);
       const instant = absolute ? new Date(d) : null;
@@ -439,7 +445,10 @@ export function TaskEditor({
     return () => clearTimeout(timer);
   }, [loadSource]);
   useEffect(() => {
-    if (!operation?.id || !["queued", "running"].includes(operation.status))
+    if (
+      !operation?.id ||
+      !["queued", "running", "partial", "unknown"].includes(operation.status)
+    )
       return;
     let alive = true;
     const timer = setInterval(
@@ -449,6 +458,19 @@ export function TaskEditor({
             const row = rows.find((r) => r.id === operation.id);
             if (alive && row) {
               setOperation(row);
+              if (
+                row.status === "succeeded" &&
+                completed.current !== row.id &&
+                submitted.current
+              ) {
+                completed.current = row.id;
+                const task = row.result?.task as { id?: string } | undefined;
+                announceTaskChange({
+                  ...submitted.current,
+                  taskId: task?.id ?? taskId,
+                });
+                closeRef.current();
+              }
               if (!["queued", "running", "succeeded"].includes(row.status))
                 setError(
                   taskError[row.code ?? ""] ??
@@ -463,12 +485,14 @@ export function TaskEditor({
       alive = false;
       clearInterval(timer);
     };
-  }, [operation?.id, operation?.status]);
+  }, [operation?.id, operation?.status, taskId]);
   const pending =
     busy ||
     (!!operation &&
-      ["queued", "running", "unknown"].includes(operation.status));
+      ["queued", "running", "unknown", "partial"].includes(operation.status));
   async function submit(action: TaskCommand["action"]) {
+    if (submitLock.current || pending) return;
+    submitLock.current = true;
     setError("");
     setBusy(true);
     try {
@@ -567,6 +591,10 @@ export function TaskEditor({
       const hash = JSON.stringify(body);
       if (attempt.current?.hash !== hash)
         attempt.current = { hash, key: crypto.randomUUID() };
+      submitted.current = {
+        action,
+        contextId: taskId ? context!.id : (selectedContext?.id ?? null),
+      };
       const result = await api("/api/tasks/submit", {
         ...body,
         key: attempt.current!.key,
@@ -582,6 +610,7 @@ export function TaskEditor({
       setError(e instanceof Error ? e.message : "Änderung fehlgeschlagen.");
     } finally {
       setBusy(false);
+      submitLock.current = false;
     }
   }
   return (

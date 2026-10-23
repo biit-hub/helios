@@ -1,4 +1,5 @@
 "use client";
+import { taskChangedEvent, type VerifiedTaskChange } from "./task-events";
 import { TermiHubConnection } from "./termihub-settings";
 import { Epics } from "./epics";
 import { MorningRoutine } from "./morning-routine";
@@ -59,6 +60,19 @@ export function Workbench({
     [newEmployer, setNewEmployer] = useState(false),
     [now, setNow] = useState(() => Date.now()),
     [refreshId, setRefreshId] = useState(0);
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const change = (event as CustomEvent<VerifiedTaskChange>).detail;
+      setNotice(
+        change.action === "create"
+          ? "Aufgabe in Todoist erstellt und nachgewiesen."
+          : "Änderung in Todoist gespeichert und nachgewiesen.",
+      );
+      setRefreshId((v) => v + 1);
+    };
+    window.addEventListener(taskChangedEvent, changed);
+    return () => window.removeEventListener(taskChangedEvent, changed);
+  }, []);
   async function load() {
     const d: WorkSnapshot = await request("/api/work");
     setSnapshot(d);
@@ -900,6 +914,26 @@ function TaskOverview({
                   : "Aufgaben über die Schaltfläche bewusst laden."}
               </p>
             </section>
+          )}
+          {!!list.historicalTasks?.length && (
+            <details className="card historical-tasks">
+              <summary>Historische und extern ungeklärte Aufgaben</summary>
+              <p>
+                Diese gespeicherten Nachweise gehören nicht zum bestätigten
+                aktuellen Aufgabenbestand. Hier sind keine Schreibaktionen
+                möglich.
+              </p>
+              {list.historicalTasks.map((task) => (
+                <TaskCard
+                  key={task.data.id}
+                  task={task}
+                  contextId={selected}
+                  tasks={list.historicalTasks!}
+                  disabled
+                  action={action}
+                />
+              ))}
+            </details>
           )}
           <TaskManager
             key={selected}
