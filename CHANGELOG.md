@@ -1,6 +1,6 @@
 # Changelog
 
-## E9.2 – Stabilisierung (in Arbeit)
+## E9.2 – Stabilisierung und UX
 
 - Aktuelle Aufgaben von historischen/unknown-Projektionen getrennt; historische Nachweise erhalten und ohne Schreibaktionen anzeigen.
 - Verifizierte Neuerstellung projizieren; Journalerfolg schliesst den Dialog und aktualisiert die Aufgabenliste. Doppelklickschutz und unveränderte Unknown-/Partial-Regeln.
@@ -11,7 +11,8 @@
 - Einheitliche Lucide-Icons, kompaktere Karten/Überschriften und kürzere Standardtexte bei erhaltenen Sicherheitshinweisen.
 - Reale LAN-KI-Laufzeiten getrennt gemessen; bestehende KI-Queue häufiger prüfen, inaktive Panels nicht periodisch neu laden. Modell und Sicherheitsvalidierungen unverändert.
 - Next und zugehörige ESLint-Konfiguration minimal auf 16.4.1 aktualisiert, um die beim Pflichtbuild gemeldeten Sicherheitslücken der Version 16.4.0 zu schliessen.
-- Noch offene Arbeiten, Freigabepunkt und Nachweise im E9.2-Prüfbericht; keine vollständige Abnahme.
+- Nach ausdrücklicher UX-003-Freigabe dreistufiger KI-Dialog: Klären, Einzelvorschläge bearbeiten, konkrete Auswahl bestätigen. Quellenkonflikte sperren die Freigabe; Abbrechen schützt ungespeicherte Eingaben. Originale und technische Nachweise standardmässig eingeklappt.
+- Technische Nachweise und offene manuelle Nachtests im E9.2-Prüfbericht; keine automatische menschliche Abnahme.
 
 ## E9.1 – UI-Konsolidierung
 

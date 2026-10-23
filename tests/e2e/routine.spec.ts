@@ -156,7 +156,7 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
     .getByLabel("Was hast du erledigt?", { exact: true })
     .fill("Quellen gesammelt. Noch 30 Minuten");
   await progress
-    .getByRole("button", { name: "Lokale KI-Auswertung starten", exact: true })
+    .getByRole("button", { name: "Vorschlag erstellen", exact: true })
     .click();
   await expect(
     progress.getByText("Entwurf bereit zur bewussten Prüfung.", {
@@ -167,6 +167,9 @@ test("E7 persistent morning routine, inbox without AI, reviewed progress, planni
     .getByLabel("Diese Änderung auswählen", { exact: true })
     .all())
     await choice.check();
+  await progress
+    .getByRole("button", { name: "Auswahl prüfen", exact: true })
+    .click();
   await progress
     .getByRole("button", {
       name: "Ausgewählte Änderungen bewusst speichern",
