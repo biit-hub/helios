@@ -45,3 +45,7 @@ E7/Morgenroutine verwendet für ihren Review denselben E6-Dialog. NAS-Ziel wird 
 3. **Änderungen bestätigen:** «Auswahl prüfen» zeigt die konkreten gewählten Werte. Erst «Ausgewählte Änderungen bewusst speichern» startet die vorhandene Journalsteuerung. Zurückgehen erhält Eingaben und Auswahl. Ändert sich die Quelle oder Entwurfsfassung, erneut prüfen.
 
 Originaleingabe, Quellenbelege und technische Nachweise sind standardmässig eingeklappt. Abbrechen beziehungsweise Entwurfswechsel schützt ungespeicherte Eingaben mit einer Verwerfen-Bestätigung. Bei Timeout bleibt die Eingabe erhalten. Partial/Unknown bleibt als solcher sichtbar; nur den bestehenden Auftrag nachprüfen und bewusst fortsetzen, niemals aus der Schrittanzeige Erfolg ableiten. Ist-klar, Einzelpatch-, Quellen- und Unknown-Regeln bleiben verbindlich.
+
+## E9.4 – Bewusster Fortschrittseinstieg
+
+Die Schnellaktion öffnet eine kompakte Suchliste mit aktuellen Aufgaben des gewählten Kontexts. Titel und Kontext, Tab/Enter, sichtbarer Fokus, Scrollbereich und Leerzustand unterstützen die Auswahl. Der einmalige Routingauftrag wird konsumiert; Schliessen, Kontextwechsel und Reload öffnen ihn nicht erneut. Erneut bewusst klicken bleibt möglich. Vorhandene Entwürfe werden über Gespeicherte Entwürfe wieder öffnen ausdrücklich fortgesetzt. Quellen-/Instanzprüfung und Einzelpatchfreigabe bleiben derselbe E6-Ablauf.

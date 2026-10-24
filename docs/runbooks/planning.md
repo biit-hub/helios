@@ -44,3 +44,7 @@ Vor E5-Images Migration 0007 kontrolliert ausführen, nach verschlüsseltem Back
 ## E9.3 – Kompakte Orientierung
 
 Fokus und Hauptauswahl stehen vor Kalenderdetails. «Arbeitszeit & Kalender» aufklappen, um Quellen und Zeitbudget zu prüfen. Bestätigte Einzelnachweise sind separat aufklappbar. Partial-/Unknown-Warnungen bleiben sichtbar; Aktualisieren verändert keinen bestätigten Plan automatisch.
+
+## E9.4 – Heutiges Datum und Aktualität
+
+Das heutige Datum rechts im Header ist von Plantag ansehen unabhängig. Ein historischer Plantag verändert weder das Headerdatum noch bestätigte Pläne. Die beiden Aktionen der Tagesauswahl behalten ihre Reihenfolge und Ziele: Aufgaben aktualisieren führt zur Aufgabenansicht, Tagesvorschau erstellen ist die Hauptaktion. Laufender Aufgabenrefresh wird dort sichtbar angezeigt. Solange ein Todoist-Read-Claim läuft oder ein Abruf fehlgeschlagen/veraltet ist, darf keine neue Vorschau als zuverlässig aktuell entstehen. Die zusätzliche serverseitige Claimprüfung verwendet den bestehenden Refreshvertrag; keine neue Queue oder Umplanung.

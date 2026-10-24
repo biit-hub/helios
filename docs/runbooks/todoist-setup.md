@@ -52,3 +52,7 @@ E9.2: Aktuelle Aufgaben und historische/extern ungeklärte Nachweise sind getren
 Verbindung unter Einstellungen → Verbindungen einrichten. Ein Step-up-Fehler öffnet die bestehende Sicherheitsbestätigung als Dialog und erhält den Token. Passwort und einen neuen TOTP-Code bestätigen, Dialog schliessen, die erhaltene Aktion bewusst erneut auslösen. Keine automatische zweite Mutation.
 
 Projekt und Kanban unter Kontexte & Projekte → Privat bzw. Arbeitgeber verwalten. «Arbeitgeber hinzufügen» befindet sich im Arbeitgeber-Tab; eine Neuerstellung aktiviert keinen anderen Arbeitskontext automatisch. TermiHub-Zuordnungen sind darunter erreichbar; andere Zuordnungen bleiben erhalten. Alle sechs Kontextfarben werden mit Farbvorschau angeboten.
+
+## E9.4 – Anzeigenamen und technische Referenzen
+
+Projektoptionen zeigen Namen. Gleichnamige Projekte sind unterscheidbar nummeriert; vor einer Zuordnung bei Bedarf Technische Projektzuordnung öffnen. Gespeichert wird weiterhin die unveränderte eindeutige ID, niemals der Name. Fehlende Referenzen bleiben als nicht verfügbar erkennbar und werden nicht automatisch ersetzt. Die Kontextfarbe hat weiterhin eine sichtbare Vorschau, aber keine zusätzliche Farbhilfe.

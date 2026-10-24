@@ -17,3 +17,7 @@ E4: Vor passenden Web-/Workerimages Migration 0006 ausführen. Readiness prüft 
 ## E9.3 – Diagnose und kontrolliertes Update
 
 «Probleme» ist direkt in der Hauptnavigation erreichbar und verwendet dieselben Problem- und Operationsdaten. Kein zweites Journal und keine Bereinigung unbekannter Einträge. Vor einem lokalen Imagewechsel verschlüsselt sichern, Wiederherstellbarkeit und alle bestehenden Tabellen prüfen; nur die ausdrücklich benannte Entwicklungsinstallation aktualisieren. Der Abschlussbericht nennt den tatsächlichen Installationsstand.
+
+## E9.4 – Datums-/Dauernachweise
+
+TODOIST_FIELDS_UNCONFIRMED bedeutet: Todoist hat geantwortet, aber der GET-Feldvergleich passt nicht vollständig. Bestätigte und nicht bestätigte Felder sind getrennt sichtbar; die Gesamtoperation bleibt unknown. Den ursprünglichen Pending-Schritt und seine Request-ID erhalten. Bewusstes Fortsetzen liest zuerst und sendet keinen ungeklärten Schritt erneut. Timeout, Netzwerk, Server und Antwortformat werden ohne Rohpayload erläutert. Ein behobener UI-Befund bedeutet nicht, dass alte Unknown-Operationen aufgelöst sind. [Ursache und verbleibende Dauer-Liveabnahme](../development/e9.4-verification.md).

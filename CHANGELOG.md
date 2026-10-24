@@ -1,8 +1,10 @@
 # Changelog
 
-## E9.4 – Stabilisierung und gezielter Feinschliff (in Arbeit)
+## E9.4 – Stabilisierung und gezielter Feinschliff (Abnahmen offen)
 
 - Feldgenaue Datums-/Dauernachweise im bestehenden Operationsjournal; beantwortete, aber nicht bestätigte Felder bleiben gesperrt. Timeout, Verbindung, Serverantwort und Ablehnung sind unterscheidbar; kein blindes Replay.
+- Fortschrittsdialog nur nach bewusster Aktion; Suchliste statt Aufgaben-Pills, explizite Wiederaufnahme gespeicherter Entwürfe bleibt erhalten.
+- Heutiges Zurich-Datum im Header, unabhängige Plantagsauswahl, ausgerichtete Farbfelder ohne unnötige Hilfe, Namen statt technischer IDs und einheitliche Tagesauswahl-Aktionen.
 - Tagesvorschläge bleiben während eines laufenden Todoist-Refreshs gesperrt.
 - Isolierter Free-Konto-Vertrag: Datum/Uhrzeit funktionieren, Dauer wird trotz HTTP 200 ignoriert. Native Dauer bleibt verbindlich; positive berechtigungspflichtige Live-Abnahme bleibt offen.
 

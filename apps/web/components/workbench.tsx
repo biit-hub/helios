@@ -1,5 +1,7 @@
 "use client";
-import { UiDialog, InfoTip } from "./ui-help";
+import { headerDate, taskDateLabel, dateLabel } from "./task-dates";
+import { optionNames } from "./option-names";
+import { UiDialog } from "./ui-help";
 import { taskChangedEvent, type VerifiedTaskChange } from "./task-events";
 import {
   rememberContext,
@@ -299,6 +301,13 @@ export function Workbench({
               view={view === "mobile" ? "tasks" : view}
             />
           )}
+          <time
+            className="ux-header-date"
+            aria-label="Heutiges Datum in Europe/Zurich"
+            dateTime={headerDate(new Date(now)).split(".").reverse().join("-")}
+          >
+            {headerDate(new Date(now))}
+          </time>
         </header>
         <aside className="ux-sidebar" aria-label="Kontext und Schnellaktionen">
           {contextual && (
@@ -377,12 +386,6 @@ export function Workbench({
         <main id="main-content" tabIndex={-1}>
           <div className="ux-page-heading">
             <h1>{pageTitle[view]}</h1>
-            {contextual && current && (
-              <p className="context-caption" data-theme={current.theme}>
-                <span className="context-dot" />
-                {current.name}
-              </p>
-            )}
           </div>
           {contextual && !current && snapshot && (
             <section className="card">
@@ -898,6 +901,7 @@ function ContextEditor({
     termihubEmployerId: context?.termihubEmployerId ?? null,
     termihubInstanceRef: context?.termihubInstanceRef ?? null,
   });
+  const projectNames = optionNames(snapshot.projects, "Projekt");
   const [saveError, setSaveError] = useState("");
   const field = (patch: Partial<ContextInput>) => {
     onDirty?.();
@@ -939,13 +943,7 @@ function ContextEditor({
           />
         </label>
         <label>
-          <span className="ux-field-caption">
-            <span>Kontextfarbe</span>
-            <InfoTip label="Kontextfarbe">
-              Die Farbe kennzeichnet diesen Kontext. Allgemeine Ansichten
-              bleiben warm-orange.
-            </InfoTip>
-          </span>
+          Kontextfarbe
           <div className="ux-color-picker">
             <select
               disabled={busy}
@@ -984,7 +982,7 @@ function ContextEditor({
             {data.projectId &&
               !snapshot.projects.some((p) => p.id === data.projectId) && (
                 <option value={data.projectId}>
-                  Nicht mehr verfügbar · {data.projectId}
+                  Bestehendes Projekt · nicht mehr verfügbar
                 </option>
               )}
             {snapshot.projects.map((p) => (
@@ -997,7 +995,7 @@ function ContextEditor({
                   (!!p.assignedTo && p.assignedTo !== context?.id)
                 }
               >
-                {p.name} · {p.id}
+                {projectNames.get(p.id)}
                 {p.inbox
                   ? " · Eingang, nicht zuordenbar"
                   : p.assignedTo && p.assignedTo !== context?.id
@@ -1037,6 +1035,20 @@ function ContextEditor({
             {saveError}
           </p>
         )}
+        <details className="technical-details">
+          <summary>Technische Projektzuordnung</summary>
+          <ul>
+            {snapshot.projects.map((project) => (
+              <li key={project.id}>
+                {projectNames.get(project.id)}: {project.id}
+              </li>
+            ))}
+          </ul>
+          {data.projectId &&
+            !snapshot.projects.some(
+              (project) => project.id === data.projectId,
+            ) && <p>Bestehende Referenz: {data.projectId}</p>}
+        </details>
         <button type="submit" disabled={busy}>
           Kontext speichern
         </button>
@@ -1061,6 +1073,7 @@ function TaskCard({
   disabled,
   action,
   compact = false,
+  snapshotZone = "Europe/Zurich",
 }: Readonly<{
   task: TaskView;
   contextId: string;
@@ -1068,6 +1081,7 @@ function TaskCard({
   disabled: boolean;
   action: Action;
   compact?: boolean;
+  snapshotZone?: string;
 }>) {
   const [comments, setComments] = useState<CommentView[] | null>(null),
     [error, setError] = useState("");
@@ -1091,7 +1105,7 @@ function TaskCard({
         {task.sectionName
           ? ""
           : t.section_id
-            ? " · Abschnitt-ID: " + t.section_id
+            ? " · Abschnitt noch nicht verifiziert"
             : ""}
       </p>
       {task.sectionName === "Wartet" && task.waiting && (
@@ -1112,14 +1126,16 @@ function TaskCard({
         <div>
           <dt>Geplant</dt>
           <dd>
-            {t.due?.datetime ?? t.due?.date ?? "Nicht gesetzt"}
-            {t.due?.timezone ? " · " + t.due.timezone : ""}
+            {taskDateLabel(t.due, snapshotZone)}
+            {(t.due?.datetime ?? t.due?.date ?? "").includes("T")
+              ? " · " + snapshotZone
+              : ""}
             {t.due?.is_recurring ? " · wiederkehrend" : ""}
           </dd>
         </div>
         <div>
           <dt>Deadline</dt>
-          <dd>{t.deadline?.date ?? "Nicht gesetzt"}</dd>
+          <dd>{t.deadline ? dateLabel(t.deadline.date) : "Nicht gesetzt"}</dd>
         </div>
       </dl>
       <Details>
@@ -1128,14 +1144,19 @@ function TaskCard({
           {t.description || "Keine Beschreibung vorhanden."}
         </p>
         <p>Labels: {t.labels.join(", ") || "Keine"}</p>
-        <p>Todoist-ID: {t.id}</p>
+        <details className="technical-details">
+          <summary>Technische Aufgabendetails</summary>
+          <p>Todoist-ID: {t.id}</p>
+          {t.section_id && <p>Abschnitt-ID: {t.section_id}</p>}
+          {t.parent_id && <p>Übergeordnete Referenz: {t.parent_id}</p>}
+        </details>
         {t.parent_id && (
           <p>
             Übergeordnete Aufgabe:{" "}
             {parent ? (
               <a href={"#task-" + parent.data.id}>{parent.data.content}</a>
             ) : (
-              t.parent_id + " · in dieser Lesesicht nicht verfügbar"
+              "In dieser Lesesicht nicht verfügbar"
             )}
           </p>
         )}
@@ -1225,7 +1246,7 @@ function TaskOverview({
             )
           }
         >
-          Aufgaben aktualisieren
+          {busy ? "Aufgaben werden aktualisiert …" : "Aufgaben aktualisieren"}
         </button>
       </div>
       {pause && (
@@ -1283,6 +1304,7 @@ function TaskOverview({
                 <TaskCard
                   key={task.data.id}
                   task={task}
+                  snapshotZone={snapshot.timezone}
                   contextId={selected}
                   tasks={list.historicalTasks!}
                   disabled
@@ -1301,6 +1323,7 @@ function TaskOverview({
                 compact
                 key={task.data.id}
                 task={task}
+                snapshotZone={snapshot.timezone}
                 contextId={selected}
                 tasks={list.tasks}
                 disabled={busy || pause}

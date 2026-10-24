@@ -1,4 +1,12 @@
 "use client";
+import { useSearchParams } from "next/navigation";
+import {
+  dateLabel,
+  taskDateLabel,
+  taskDateInputs,
+  taskDateTime,
+} from "./task-dates";
+import { TaskOperationEvidence } from "./task-operation-evidence";
 import { nativeTaskOrder } from "./task-list-order";
 import { UiDialog, InfoTip } from "./ui-help";
 import { Icon } from "@helios/ui";
@@ -42,8 +50,14 @@ const taskError: Record<string, string> = {
     "Der definitiv fehlgeschlagene Schritt wurde zur Korrektur aufgehoben. Es wurde keine externe Änderung als Erfolg behauptet.",
   OUTCOME_UNKNOWN:
     "Das Ergebnis ist ungeklärt. Zuerst in Todoist prüfen; es wird nicht blind erneut geschrieben.",
+  TODOIST_FIELDS_UNCONFIRMED:
+    "Todoist hat die Anfrage beantwortet, aber nicht alle angeforderten Felder gespeichert. Nachweise unten prüfen; es wird nicht automatisch erneut geschrieben. Berechtigungen können einzelne Felder einschränken.",
+  TODOIST_REJECTED:
+    "Todoist hat die Änderung abgewiesen. Eingaben und Datums-/Dauerwerte prüfen.",
   TASK_SOURCE_CONFLICT:
     "Todoist wurde zwischenzeitlich geändert. Die Eingaben bleiben erhalten. Quelle neu laden und Änderungen erneut prüfen.",
+  TODOIST_AUTH:
+    "Todoist hat die Verbindung abgewiesen. Den Token in den Einstellungen prüfen. Die Eingaben bleiben erhalten.",
   TODOIST_PERMISSION:
     "Todoist erlaubt diese Änderung mit diesem Konto nicht. Die Eingaben bleiben erhalten.",
   TASK_SCOPE_CONFLICT:
@@ -77,22 +91,35 @@ export function TaskManager({
     [dateFilter, setDateFilter] = useState("all"),
     [deadlineFilter, setDeadlineFilter] = useState("all"),
     [sort, setSort] = useState("native"),
-    [initialMode, setInitialMode] = useState<"form" | "progress">(() =>
-      typeof window !== "undefined" &&
-      new URL(window.location.href).searchParams.get("mode") === "progress"
-        ? "progress"
-        : "form",
-    ),
-    [progressPicking, setProgressPicking] = useState(
-      () =>
-        typeof window !== "undefined" &&
-        new URL(window.location.href).searchParams.get("progress") === "pick",
-    ),
-    [editing, setEditing] = useState<string | null>(() =>
-      typeof window === "undefined"
-        ? null
-        : new URL(window.location.href).searchParams.get("task"),
-    );
+    [initialMode, setInitialMode] = useState<"form" | "progress">("form"),
+    [progressPicking, setProgressPicking] = useState(false),
+    [progressSearch, setProgressSearch] = useState(""),
+    [editing, setEditing] = useState<string | null>(null);
+  const query = useSearchParams();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const url = new URL(window.location.href);
+      const requestedContext = url.searchParams.get("context");
+      if (requestedContext && requestedContext !== context.id) return;
+      const pick = url.searchParams.get("progress") === "pick";
+      const task = url.searchParams.get("task");
+      if (!pick && !task) return;
+      if (pick) {
+        setProgressSearch("");
+        setProgressPicking(true);
+      }
+      if (task) {
+        setInitialMode(
+          url.searchParams.get("mode") === "progress" ? "progress" : "form",
+        );
+        setEditing(task);
+      }
+      for (const key of ["progress", "task", "mode"])
+        url.searchParams.delete(key);
+      window.history.replaceState(window.history.state, "", url);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [query, context.id]);
   useEffect(() => {
     const changed = (event: Event) => {
       const change = (event as CustomEvent<VerifiedTaskChange>).detail;
@@ -134,6 +161,16 @@ export function TaskManager({
         (dateFilter === "set" ? !!t.data.due : !t.data.due)) &&
       (deadlineFilter === "all" ||
         (deadlineFilter === "set" ? !!t.data.deadline : !t.data.deadline)),
+  );
+  const progressTasks = nativeTaskOrder(tasks).filter(
+    (t) =>
+      t.state === "active" &&
+      t.data.project_id === context.projectId &&
+      !t.data.checked &&
+      !t.data.is_deleted &&
+      t.data.content
+        .toLocaleLowerCase()
+        .includes(progressSearch.toLocaleLowerCase()),
   );
   const compare: Record<string, (a: TaskView, b: TaskView) => number> = {
     native: () => 0,
@@ -267,8 +304,12 @@ export function TaskManager({
               <h3>{t.data.content}</h3>
               <span className="help">
                 {t.sectionName ?? "Ohne Abschnitt"} · P{5 - t.data.priority}
-                {t.data.due ? " · Geplant " + t.data.due.date : ""}
-                {t.data.deadline ? " · Deadline " + t.data.deadline.date : ""}
+                {t.data.due
+                  ? " · Geplant " + taskDateLabel(t.data.due, snapshot.timezone)
+                  : ""}
+                {t.data.deadline
+                  ? " · Deadline " + dateLabel(t.data.deadline.date)
+                  : ""}
               </span>
               <button
                 type="button"
@@ -299,22 +340,39 @@ export function TaskManager({
           close={() => setProgressPicking(false)}
         >
           <p>Für welche Aufgabe möchtest du Fortschritt notieren?</p>
-          {ordered.map((t) => (
-            <button
-              type="button"
-              key={t.data.id}
-              onClick={() => {
-                setInitialMode("progress");
-                setEditing(t.data.id);
-                setProgressPicking(false);
-              }}
-            >
-              {t.data.content}
-            </button>
-          ))}
-          {!ordered.length && (
+          <label>
+            Aufgabe suchen
+            <input
+              type="search"
+              value={progressSearch}
+              onChange={(e) => setProgressSearch(e.target.value)}
+              autoComplete="off"
+            />
+          </label>
+          <ul
+            className="progress-task-list"
+            aria-label="Aufgaben für Fortschritt"
+          >
+            {progressTasks.map((t) => (
+              <li key={t.data.id}>
+                <button
+                  type="button"
+                  key={t.data.id}
+                  onClick={() => {
+                    setInitialMode("progress");
+                    setEditing(t.data.id);
+                    setProgressPicking(false);
+                  }}
+                >
+                  <strong>{t.data.content}</strong>
+                  <span>{context.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {!progressTasks.length && (
             <p>
-              Keine aktuelle Aufgabe verfügbar. Aufgabenstand und Filter prüfen.
+              Keine passende aktuelle Aufgabe. Suche oder Aufgabenstand prüfen.
             </p>
           )}
         </UiDialog>
@@ -394,7 +452,7 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
   );
   return (
     (relevant.length > 0 || readError) && (
-      <details className="card operation-list">
+      <details className="card operation-list" open={contextId === undefined}>
         <summary>
           Aufgabenänderungen und Einzelergebnisse
           {readError ? " · Abruf fehlgeschlagen" : ""}
@@ -402,7 +460,8 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
         {readError && <p role="alert">{readError}</p>}
         {operationError && <p role="alert">{operationError}</p>}
         {relevant.map((r) => (
-          <div key={r.id}>
+          <div key={r.id} id={"operation-" + r.id}>
+            <h3>Aufgabenänderung</h3>
             {r.input && (
               <details>
                 <summary>Bestätigte Originaleingaben</summary>
@@ -452,6 +511,7 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
                 ))}
               </p>
             )}
+            <TaskOperationEvidence operation={r} />
             {["unknown", "failed", "partial"].includes(r.status) && (
               <button
                 type="button"
@@ -574,10 +634,7 @@ export function TaskEditor({
           "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
         );
       setInspection(data);
-      const d = t.due?.datetime ?? t.due?.date ?? "";
-      const absolute = /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(d);
-      const instant = absolute ? new Date(d) : null;
-      const pad = (n: number) => String(n).padStart(2, "0");
+      const dates = taskDateInputs(t.due, snapshot.timezone);
       const values = {
         title: t.content,
         description: t.description,
@@ -585,18 +642,8 @@ export function TaskEditor({
         labels: t.labels.filter(
           (x) => context?.kind !== "private" || x !== "fun",
         ),
-        date: instant
-          ? instant.getFullYear() +
-            "-" +
-            pad(instant.getMonth() + 1) +
-            "-" +
-            pad(instant.getDate())
-          : d.slice(0, 10),
-        time: instant
-          ? pad(instant.getHours()) + ":" + pad(instant.getMinutes())
-          : d.includes("T")
-            ? d.slice(11, 16)
-            : "",
+        date: dates.date,
+        time: dates.time,
         deadline: t.deadline?.date ?? "",
         duration:
           t.duration?.unit === "minute" ? String(t.duration.amount) : "",
@@ -625,7 +672,7 @@ export function TaskEditor({
     } finally {
       setBusy(false);
     }
-  }, [taskId, context, expectedInstanceKey]);
+  }, [taskId, context, expectedInstanceKey, snapshot.timezone]);
   useEffect(() => {
     const timer = setTimeout(() => void loadSource(), 0);
     return () => clearTimeout(timer);
@@ -746,7 +793,7 @@ export function TaskEditor({
           "due",
           date
             ? time
-              ? new Date(date + "T" + time).toISOString()
+              ? taskDateTime(date, time, snapshot.timezone)
               : date
             : null,
           date !== base.current.date || time !== base.current.time,
@@ -953,6 +1000,7 @@ export function TaskEditor({
                   "Änderung nicht bestätigt.")}
           </p>
         )}
+        {operation && <TaskOperationEvidence operation={operation} />}
         {operation &&
           ["unknown", "failed", "partial"].includes(operation.status) && (
             <button
@@ -1097,7 +1145,7 @@ export function TaskEditor({
                   />
                 </label>
                 <label>
-                  Geplante Uhrzeit (Ortszeit dieses Browsers)
+                  Geplante Uhrzeit ({snapshot.timezone ?? "Europe/Zurich"})
                   <input
                     type="time"
                     disabled={!date}
