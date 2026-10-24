@@ -24,3 +24,9 @@ Bei ungültigem Token oder fehlenden Rechten die Verbindung bewusst prüfen und 
 Snapshotbereinigung entfernt nach 30 Tagen ausschliesslich abgelaufene abgeleitete Versionen. Es werden keine Kalenderquellen, Zuordnungen, Credentials oder historischen Tagespläne bereinigt. Lokale verschlüsselte Backups und isolierte Wiederherstellungsproben genügen in der Entwicklung; ein NAS wird nicht vorausgesetzt. Bei Schlüsselverlust sind Token nach kontrollierter Wiederherstellung beziehungsweise Schlüsselrotation erneut zu prüfen.
 
 [Externer API-Vertrag](../integrations/termihub.md), [Snapshotentscheid](../architecture/termihub-calendar.md), [offene Live- und manuelle Abnahme](../development/e9-verification.md).
+
+## E9.3 – Darstellung
+
+Zugangsdaten und bewusste Leseabrufe unter Einstellungen → Verbindungen. Kontextbezogene Arbeitsorganisationen unter Kontexte & Projekte; allgemeine Quellenzuordnung zusätzlich unter Arbeitszeiten & Kalender. Ausgeblendete Organisationsfelder bleiben im vorhandenen Mappingformular mit ihren bisherigen Werten erhalten. Gemeinsam genutzte und ausgeschlossene Kalenderquellen gelten weiterhin kontextübergreifend.
+
+In Fokus und Tagesplan ist die Kalenderorientierung zunächst kompakt. Zum Prüfen der Quellen, Zeitzonen und früheren Orientierung aufklappen. Fehlende Aktualität oder Zuordnung liefert weiterhin kein verlässliches freies Budget. Ein geänderter Kalenderbasis-Hinweis und Lese-/Mutationsfehler bleiben sichtbar; es erfolgt keine automatische Neuplanung.

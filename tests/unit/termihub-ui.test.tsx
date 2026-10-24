@@ -123,6 +123,9 @@ it("labels stale bounds as historical and leaves manual planning available", asy
     ),
   );
   render(<CalendarContextPanel contextId="synthetic-context" />);
+  fireEvent.click(
+    (await screen.findByText("Arbeitszeit & Kalender")).closest("summary")!,
+  );
   expect(await screen.findByText("Veralteter Kalenderstand")).toBeVisible();
   expect(screen.getByText(/Frühere Orientierung: 30–90 Min/)).toBeVisible();
   expect(
@@ -244,6 +247,9 @@ it("explains the actual unmapped sources and offers a direct settings link", asy
     ),
   );
   render(<CalendarContextPanel contextId="synthetic" />);
+  fireEvent.click(
+    (await screen.findByText("Arbeitszeit & Kalender")).closest("summary")!,
+  );
   expect(await screen.findByText(/Synthetic open source/)).toBeVisible();
   expect(
     screen.getByRole("link", { name: "Kalenderzuordnungen öffnen" }),

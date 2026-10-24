@@ -85,6 +85,11 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
     .fill("Verwaltungsaufgabe E4");
   await expect(page.locator(".task-list .task-card")).toHaveCount(1);
   async function open(title = "Synthetische Aufgabe E4 bearbeitet") {
+    const row = page
+      .locator(".task-entry")
+      .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    if ((await row.getAttribute("open")) === null)
+      await row.locator(":scope > summary").click();
     await page
       .getByRole("button", {
         name: "Aufgabe öffnen und bearbeiten: " + title,
@@ -95,6 +100,7 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
     await expect(editor.getByLabel("Titel", { exact: true })).toHaveValue(
       title,
     );
+    await editor.locator(".ux-editor-actions > summary").click();
     return editor;
   }
   dialog = await open("Synthetische Verwaltungsaufgabe E4");
@@ -112,6 +118,7 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await dialog
     .getByRole("combobox", { name: "Priorität", exact: true })
     .selectOption("3");
+  await dialog.locator(".ux-editor-planning > summary").click();
   await dialog
     .getByLabel("Geplantes Datum", { exact: true })
     .fill("2026-10-20");
@@ -130,6 +137,7 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
     await page.getByLabel("Aufgaben suchen", { exact: true }).inputValue(),
   ).toBe("");
   dialog = await open();
+  await dialog.locator(".ux-editor-planning > summary").click();
   await expect(
     dialog.getByRole("textbox", { name: "Beschreibung", exact: true }),
   ).toHaveValue(/Die Bearbeitung wurde geprüft/);

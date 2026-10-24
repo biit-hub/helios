@@ -1,0 +1,811 @@
+/* E9.3: approved composition, using the existing six context palettes. */
+.ux-workspace {
+  --accent: #9c4f18;
+  --soft: #f6ead7;
+  --background: #fbf8f1;
+  --border: #e5d8c4;
+  background:
+    radial-gradient(ellipse at top left, #faeed5, transparent 600px),
+    var(--background);
+  min-height: 100vh;
+}
+.ux-workspace .work-shell {
+  max-width: none;
+  padding: 78px 0 0;
+  margin: 0;
+}
+.ux-workspace .ux-topbar {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 78px;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-start;
+  gap: 28px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: #fffcf5f7;
+}
+.ux-topbar .brand {
+  gap: 12px;
+  flex-shrink: 0;
+}
+.ux-topbar .brand-orb {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
+}
+.ux-topbar .brand-orb::after {
+  inset: 11px;
+}
+.ux-topbar .brand-title {
+  font-size: 20px;
+  letter-spacing: 3px;
+}
+.ux-topbar .brand-kicker,
+.ux-topbar .brand-tagline {
+  display: none;
+}
+.ux-workspace .work-nav {
+  flex: 1;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow-x: auto;
+}
+.ux-workspace .work-nav a {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  min-height: 40px;
+  gap: 6px;
+  text-decoration: none;
+}
+.ux-workspace .work-nav a:last-child {
+  margin-left: 0;
+}
+.ux-workspace .ux-sidebar {
+  position: fixed;
+  top: 78px;
+  bottom: 0;
+  left: 0;
+  width: 218px;
+  padding: 28px 20px 18px;
+  border-right: 1px solid var(--border);
+  background: #fcf7ed;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+}
+.ux-sidebar .context-picker {
+  max-width: none;
+}
+.ux-sidebar .context-pills {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+.ux-workspace .context-pill {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.ux-workspace .context-pill[aria-pressed="true"] {
+  background: var(--soft);
+  border-color: var(--accent);
+  outline: 0;
+  box-shadow: inset 3px 0 var(--accent);
+  font-weight: 700;
+}
+.ux-workspace .context-pill::after {
+  content: none;
+}
+.context-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.ux-quick-actions {
+  display: grid;
+  gap: 8px;
+}
+.ux-quick-actions .eyebrow {
+  margin: 0 0 4px;
+}
+.ux-workspace .ux-quick-actions > button,
+.ux-workspace .ux-quick-actions > a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 1px solid #9c4f18;
+  border-radius: 12px;
+  background: #9c4f18;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  text-decoration: none;
+}
+.ux-quick-actions > a[aria-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.ux-future {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 10px;
+}
+.ux-future button {
+  width: 100%;
+  font-size: 12px;
+  padding: 9px;
+}
+.ux-future small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ux-sidebar-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+  padding-top: 25px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.ux-workspace .work-shell > main {
+  margin-left: 218px;
+  padding: 30px 36px 48px;
+  min-width: 0;
+}
+.ux-workspace .work-shell > footer {
+  margin-left: 218px;
+  padding: 16px 36px;
+  font-size: 11px;
+}
+.ux-workspace h1 {
+  font-size: 30px;
+  margin: 0 0 7px;
+  letter-spacing: -0.8px;
+}
+.ux-workspace h2 {
+  font-size: 20px;
+}
+.ux-workspace h3 {
+  font-size: 16px;
+}
+.ux-workspace .ux-page-heading {
+  margin-bottom: 26px;
+}
+.context-caption {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ux-workspace .card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 6px 25px #372a1804;
+  margin: 16px 0;
+  padding: 22px;
+}
+.ux-workspace p {
+  line-height: 1.5;
+}
+.ux-workspace button,
+.ux-workspace input,
+.ux-workspace select {
+  min-height: 40px;
+}
+.ux-workspace button {
+  padding: 9px 14px;
+  font-size: 13px;
+}
+.ux-workspace input,
+.ux-workspace select,
+.ux-workspace textarea {
+  font-size: 14px;
+  border-radius: 12px;
+}
+.ux-workspace .panel-heading {
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ux-workspace .panel-heading label {
+  font-size: 12px;
+}
+.ux-workspace .task-list {
+  display: block;
+}
+.ux-workspace .task-entry {
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.task-entry > summary {
+  padding: 15px 18px;
+  cursor: pointer;
+}
+.task-entry > summary strong {
+  font-size: 15px;
+}
+.task-entry > summary .help {
+  display: block;
+  margin: 4px 0 0 15px;
+  font-size: 12px;
+}
+.task-entry > summary:hover {
+  background: #fbf2e2;
+}
+.task-entry > summary:focus-visible {
+  outline: 3px solid #9c4f18;
+  outline-offset: -3px;
+}
+.ux-workspace .task-entry .task-card {
+  border: 0;
+  margin: 0;
+  padding: 12px 18px;
+  box-shadow: none;
+  background: transparent;
+}
+.ux-workspace .task-entry > button {
+  margin: 4px 0 16px 18px;
+}
+.ux-workspace .task-entry .task-dates {
+  margin: 8px 0;
+}
+.ux-workspace .task-entry .task-heading {
+  margin-bottom: 5px;
+}
+.ux-workspace .task-entry .task-heading h3 {
+  margin: 0;
+}
+.ux-filter-options {
+  margin: 0 0 16px;
+}
+.ux-filter-options > summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.ux-workspace .calendar-context {
+  padding: 0;
+  margin: 18px 0;
+}
+.calendar-context > summary {
+  cursor: pointer;
+  padding: 16px 20px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.calendar-context[open] {
+  padding: 0 20px 20px;
+}
+.calendar-context[open] > summary {
+  margin-inline: -20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.ux-workspace .focus-layout {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  align-items: start;
+  gap: 18px;
+}
+.ux-workspace .focus-layout > .focus-hero {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin: 0;
+  border-top: 3px solid var(--border);
+  padding: 26px;
+}
+.ux-workspace .focus-hero::before {
+  display: none;
+}
+.ux-workspace .planning .focus-hero h2 {
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 16px 0;
+}
+.ux-workspace .focus-layout > [aria-label="Hauptauswahl"] {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+}
+.ux-workspace .focus-layout > .reserve-stack {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+}
+.ux-workspace .agenda-entry {
+  padding: 12px;
+  margin-block: 6px;
+  border-radius: 12px;
+}
+.ux-workspace .agenda-entry h3 {
+  font-size: 15px;
+  margin: 3px 0 8px;
+}
+.ux-workspace .agenda-actions {
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.ux-workspace .agenda-actions button {
+  min-height: 32px;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+.ux-settings-layout {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+.ux-workspace .settings-jumps {
+  display: grid;
+  position: sticky;
+  top: 100px;
+  gap: 6px;
+  margin: 0;
+}
+.ux-workspace .settings-jumps button {
+  display: block;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: 12px;
+  text-align: left;
+  min-height: 44px;
+  padding: 12px 16px;
+}
+.ux-workspace .settings-jumps button[aria-current="page"] {
+  background: var(--soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+.ux-settings-content {
+  min-width: 0;
+}
+.ux-settings-content .settings-panel {
+  margin-top: 0;
+}
+.ux-tabs {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 22px;
+}
+.ux-tabs button {
+  background: transparent;
+  color: var(--text);
+  border-color: transparent;
+}
+.ux-tabs button[aria-selected="true"] {
+  background: var(--soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+.ux-settings-content .context-editor {
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.ux-settings-content .context-editor > h3 {
+  font-size: 14px;
+}
+.ux-settings-content .context-editor form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+  align-items: start;
+}
+.context-editor form > label:has(select),
+.context-editor form > p,
+.context-editor form > .check {
+  grid-column: 1 / -1;
+}
+.context-editor form > label:has(.ux-color-picker) {
+  grid-column: auto;
+}
+.ux-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ux-color-picker select {
+  min-width: 0;
+  flex: 1;
+}
+.ux-color-swatch {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #0003;
+  border-radius: 10px;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px #ffffff70;
+  flex-shrink: 0;
+}
+.ux-workspace .ux-epic-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -54px;
+  margin-bottom: 24px;
+}
+.ux-workspace .ux-icon-button {
+  padding: 8px;
+  min-width: 40px;
+}
+.ux-workspace .epic-grid {
+  gap: 16px;
+}
+.ux-workspace .epic-grid .card {
+  margin: 0;
+}
+.ux-workspace .task-dialog {
+  max-width: 800px;
+  padding: 24px;
+}
+.ux-workspace .task-dialog .task-source {
+  font-size: 12px;
+  margin: 10px 0;
+}
+.ux-workspace .task-dialog details {
+  margin-block: 12px;
+}
+.ux-workspace .task-dialog details > summary {
+  cursor: pointer;
+  padding: 9px 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ux-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  color: var(--text);
+  margin: auto;
+  padding: 24px;
+}
+.ux-workspace .ux-dialog {
+  margin: auto;
+}
+.ux-dialog::backdrop {
+  background: #30271970;
+  backdrop-filter: blur(3px);
+}
+.ux-dialog .settings-panel {
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.ux-dialog .panel-heading h2 {
+  margin: 0;
+}
+.ux-tooltip {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.ux-workspace .ux-tooltip > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.ux-tooltip [role="tooltip"] {
+  position: absolute;
+  z-index: 70;
+  left: 0;
+  bottom: calc(100% + 6px);
+  width: min(260px, 60vw);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px #30271920;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.ux-workspace [hidden] {
+  display: none !important;
+}
+@media (max-width: 1100px) {
+  .ux-workspace .ux-topbar {
+    gap: 16px;
+    padding-inline: 16px;
+  }
+  .ux-workspace .work-shell > main {
+    padding: 26px 24px 40px;
+  }
+  .ux-settings-layout {
+    grid-template-columns: 155px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .ux-workspace .focus-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ux-workspace .focus-layout > .focus-hero,
+  .ux-workspace .focus-layout > [aria-label="Hauptauswahl"],
+  .ux-workspace .focus-layout > .reserve-stack {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+@media (max-width: 760px) {
+  .ux-workspace .work-shell {
+    padding-top: 110px;
+  }
+  .ux-workspace .ux-topbar {
+    height: 110px;
+    display: block;
+    padding: 12px 16px;
+  }
+  .ux-topbar .brand {
+    margin-bottom: 10px;
+  }
+  .ux-workspace .work-nav {
+    width: 100%;
+  }
+  .ux-workspace .work-nav a {
+    padding: 7px 10px;
+    min-height: 36px;
+    font-size: 12px;
+  }
+  .ux-workspace .ux-sidebar {
+    position: static;
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    gap: 14px;
+    background: transparent;
+  }
+  .ux-sidebar .context-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ux-sidebar .eyebrow {
+    font-size: 10px;
+  }
+  .ux-sidebar .context-picker > .eyebrow {
+    display: none;
+  }
+  .ux-sidebar .context-pill {
+    padding: 7px 10px;
+  }
+  .ux-sidebar-footer {
+    display: none;
+  }
+  .ux-quick-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .ux-quick-actions > .eyebrow {
+    grid-column: 1/-1;
+  }
+  .ux-workspace .ux-quick-actions > button,
+  .ux-workspace .ux-quick-actions > a {
+    font-size: 11px;
+    padding: 7px;
+    gap: 4px;
+    min-height: 46px;
+  }
+  .ux-future {
+    grid-column: 1/-1;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ux-future button {
+    width: auto;
+    font-size: 11px;
+    min-height: 30px;
+    padding: 5px 8px;
+  }
+  .ux-workspace .work-shell > main {
+    margin: 0;
+    padding: 22px 16px 36px;
+  }
+  .ux-workspace .work-shell > footer {
+    margin: 0;
+    padding: 12px 16px;
+  }
+  .ux-workspace h1 {
+    font-size: 27px;
+  }
+  .ux-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .ux-workspace .settings-jumps {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .ux-workspace .settings-jumps button {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  .ux-workspace .card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+  .ux-settings-content .context-editor form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ux-workspace .focus-layout > .focus-hero {
+    padding: 20px;
+  }
+  .ux-workspace .planning .focus-hero h2 {
+    font-size: 24px;
+  }
+  .ux-workspace .calendar-context {
+    padding: 0;
+  }
+  .ux-workspace .calendar-context[open] {
+    padding: 0 18px 18px;
+  }
+  .ux-workspace .calendar-context[open] > summary {
+    margin-inline: -18px;
+  }
+  .ux-workspace .task-dialog {
+    padding: 18px;
+  }
+}
+
+.ux-primary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #9c4f18;
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+}
+.ux-workspace .focus-hero > details {
+  margin-block: 16px;
+  font-size: 14px;
+}
+.ux-workspace .focus-hero > details > summary {
+  cursor: pointer;
+}
+
+/* Fixed sidebar owns the capture dialog; it must stack above the fixed header. */
+.ux-workspace .ux-sidebar {
+  z-index: 31;
+}
+.ux-workspace .task-entry > summary h3 {
+  display: inline;
+  font-size: 15px;
+  margin: 0;
+}
+.ux-workspace .task-inline-details {
+  padding: 12px 18px;
+}
+@media (max-width: 760px) {
+  .ux-workspace .ux-sidebar {
+    z-index: auto;
+  }
+}
+
+.ux-workspace .task-entry > summary {
+  position: relative;
+  padding-right: 62px;
+}
+.ux-workspace .task-entry > summary .task-open {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  min-height: 32px;
+  padding: 6px 8px;
+}
+
+.ux-workspace .context-pill::before {
+  content: none;
+}
+.ux-sidebar .context-picker {
+  text-align: left;
+  width: 100%;
+}
+.ux-sidebar .context-picker .context-pills {
+  justify-content: stretch;
+}
+.ux-sidebar .context-pill {
+  width: 100%;
+  margin: 0;
+}
+.ux-workspace .planning > .panel-heading {
+  margin: 0 0 8px;
+  align-items: center;
+}
+.ux-workspace .planning > .panel-heading label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ux-workspace .planning > .panel-heading input {
+  width: 150px;
+}
+.ux-workspace .planning > p.help {
+  margin: 4px 0 8px;
+}
+.ux-workspace .planning > button.secondary {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+.ux-workspace .operation-panel h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.ux-workspace .operation-panel p {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.ux-workspace .operation-panel details {
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .ux-sidebar .context-pill {
+    width: auto;
+  }
+  .ux-workspace .planning > .panel-heading label {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 760px) {
+  .ux-tooltip [role="tooltip"] {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+  }
+}

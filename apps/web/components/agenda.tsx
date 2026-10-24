@@ -154,11 +154,28 @@ export function ConfirmedAgenda({
           <section className="card focus-hero">
             <p className="eyebrow">DEIN NÄCHSTER SCHRITT</p>
             <h2>{focus.source.content}</h2>
-            <p>Ein Schritt genügt.</p>
-            {focus.source.description && (
-              <p className="focus-description">{focus.source.description}</p>
-            )}
-            <EntryDetails entry={focus} />
+            <div className="button-row">
+              <Link
+                className="ux-primary-link"
+                href={
+                  "/tasks?context=" +
+                  context.id +
+                  "&task=" +
+                  encodeURIComponent(focus.taskId) +
+                  "&mode=progress"
+                }
+              >
+                <Icon name="progress" />
+                Fortschritt notieren
+              </Link>
+            </div>
+            <details>
+              <summary>Aufgabendetails</summary>
+              {focus.source.description && (
+                <p className="focus-description">{focus.source.description}</p>
+              )}
+              <EntryDetails entry={focus} />
+            </details>
             <Link
               href={
                 "/tasks?context=" +
@@ -167,7 +184,7 @@ export function ConfirmedAgenda({
                 encodeURIComponent(focus.taskId)
               }
             >
-              Aufgabe öffnen
+              Bearbeiten
             </Link>
           </section>
         )}

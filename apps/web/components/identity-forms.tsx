@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { UiDialog } from "./ui-help";
 import { Brand } from "@helios/ui";
 type Payload = {
   error?: { code: string; message: string };
@@ -48,6 +49,7 @@ function go(path: string) {
     [
       "/",
       "/tasks",
+      "/problems",
       "/plan",
       "/login",
       "/setup",
@@ -62,11 +64,18 @@ function go(path: string) {
 function Frame({
   title,
   children,
+  embedded = false,
 }: {
   title: string;
   children: React.ReactNode;
+  embedded?: boolean;
 }) {
-  return (
+  return embedded ? (
+    <section className="card auth-card">
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ) : (
     <div className="shell auth-shell">
       <header>
         <Brand />
@@ -392,7 +401,10 @@ export function Logout() {
     </>
   );
 }
-export function SecurityForm() {
+export function SecurityForm({
+  embedded = false,
+}: Readonly<{ embedded?: boolean }> = {}) {
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -441,41 +453,54 @@ export function SecurityForm() {
     }
   }
   return (
-    <Frame title="Sicherheit">
+    <Frame title="Sicherheit" embedded={embedded}>
       <p>
         Sensible Änderungen benötigen eine Bestätigung mit Passwort und einem
         neuen Authenticator-Code.
       </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void run("step-up", { password, code });
-        }}
-      >
-        <label>
-          Aktuelles Passwort
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            maxLength={128}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        <label>
-          Neuer Authenticator-Code
-          <input
-            autoComplete="one-time-code"
-            inputMode="numeric"
-            required
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-        </label>
-        <button disabled={busy}>Sicherheitsaktionen bestätigen</button>
-      </form>
+      <button type="button" onClick={() => setConfirmationOpen(true)}>
+        Bestätigung öffnen
+      </button>
+      {confirmationOpen && (
+        <UiDialog
+          title="Sicherheitsaktionen bestätigen"
+          busy={busy}
+          close={() => setConfirmationOpen(false)}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void run("step-up", { password, code });
+            }}
+          >
+            <label>
+              Aktuelles Passwort
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                maxLength={128}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </label>
+            <label>
+              Neuer Authenticator-Code
+              <input
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                required
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </label>
+            <button disabled={busy}>Sicherheitsaktionen bestätigen</button>
+          </form>
+          {message && <p role="status">{message}</p>}
+          {error && <p role="alert">{error}</p>}
+        </UiDialog>
+      )}
       <Status error={error} busy={busy} />
       {message && <p role="status">{message}</p>}
       <section>
@@ -567,7 +592,7 @@ export function SecurityForm() {
         <Link href="/">Zur Anwendung</Link> ·{" "}
         <Link href="/mobile">Mobile Ansicht</Link>
       </nav>
-      <Logout />
+      {!embedded && <Logout />}
     </Frame>
   );
 }

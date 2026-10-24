@@ -55,3 +55,16 @@ Gemeinsame Icons verwenden jetzt das etablierte [Lucide-React-System](https://lu
 Bestehende Navigation ist sichtbar in aktiven Kontext und allgemeine Ansichten gruppiert, ohne neue Hauptziele. Kopfbereich zeigt die zentrale Kontextwahl; Routinecursor und allgemeine Einstellungen verändern sie nicht. Kürzere Standardtexte, maximal 34px Hauptüberschrift und gezielt 20px Einstellungskarten/16px Abschnittsabstände. Body-Schrift und Sicherheits-/Bestätigungshinweise bleiben lesbar.
 
 Abbrechen schützt ungespeicherte Eingaben. Labels verwenden eine Tastatur-/Maus-Mehrfachauswahl mit entfernbarem Chip; neue Labels werden nicht erzeugt. Kanban liegt bei der jeweiligen Projektzuordnung. Der am 23.10.2026 ausdrücklich [freigegebene KI-Dialog](e9.2-ai-dialog-proposal.md) verwendet drei Schritte mit sichtbarer aktueller Stufe. «Vorschlag erstellen» ist die Hauptaktion der Klärung; die beendende Aktion heisst dort «Klärung beenden». Im Bearbeitungsschritt bleiben Einzelwahl, Texte und Ablehnung erhalten. «Auswahl prüfen» führt ohne Todoist-Schreibzugriff zur separaten Bestätigung. Originale, Quellenbelege und technische Nachweise sind standardmässig eingeklappt. Kompaktere Patchkarten und umbrechende Aktionszeilen erhalten die Grundschrift. Die Testzustandsnavigation des Prototyps ist nicht Bestandteil der Anwendung.
+
+## E9.3 – Bestätigte Übernahme
+
+Der separat visuell freigegebene E9.3-Prototyp konkretisiert V2. Seine acht Lieferprüfsummen wurden vor der Übernahme geprüft; Originalquellen und synthetische Anwendung verbleiben ausserhalb dieses Repositorys. Fachkomponenten werden weiterverwendet.
+
+- `ux-redesign.css` komponiert die bestehenden Tokens: warme orange Grundgestaltung auf allen Ansichten; die sechs vorhandenen Paletten kennzeichnen Kontext-Pills und Farbvorschauen. Allgemeine Ansichten erhalten keine Kontext-Hintergrundfarbe.
+- 78px-Kopfzeile mit Marke und zusammenhängender Navigation; 218px-Seitenleiste mit Kontexten und verfügbaren Aktionen. Keine Auswahl-Häkchen; Namen, Farbe, Rahmen und `aria-pressed` kennzeichnen die Auswahl.
+- Kleine Fenster stapeln die Seitenleiste oberhalb des Inhalts; die Navigation scrollt innerhalb ihrer eigenen Zeile. Zweispaltige Einstellungen wechseln auf eine Spalte. Fokus/Hauptauswahl bleiben in sinnvoller Lesereihenfolge.
+- Umrandete Karten, kompakte Zeilen und native Details für Informationsstufen. Bearbeiten ist ausdrücklich. Planung und zusätzliche Bearbeitungsaktionen sind im echten Formular aufklappbar; sämtliche Fachaktionen bleiben vorhanden.
+- `InfoTip` bietet Fokus, Maus und Tap sowie Escape. `UiDialog` verwendet native Modalität, Fokus-Rückgabe und gesperrtes Schliessen während einer laufenden Bestätigung. Sicherheitswarnungen und ungeklärte Mutationsergebnisse bleiben sichtbar.
+- `/problems` ist eine neue geschützte Präsentationsroute. Sie verwendet bestehende Problem- und Operationsdaten; kein weiteres Journal. Sicherheit bleibt in den Einstellungen, die bisherige Sicherheits-URL funktioniert weiter.
+
+Abweichungen und Abnahmegrenzen: [E9.3-Verifikation](../development/e9.3-verification.md).

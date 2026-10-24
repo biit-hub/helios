@@ -38,3 +38,11 @@ Ziel-/Checklisten-/Linkbearbeitung und manueller Epic-Abschluss: [E8-Bedienung u
 Labels suchen: tippen, mit Pfeilen/Enter oder Maus wählen, mehrere Chips entfernen. Nur reale vorhandene Labels sind auswählbar; keine Neuanlage. Bei Katalogausfall bleiben bereits geladene Aufgabenlabels erhalten. Abbrechen ohne Eingaben schliesst direkt; ungespeicherte Eingaben werden nur nach ausdrücklichem Verwerfen aufgegeben. Bei laufender Formularmutation bleibt der Dialog mit Status erhalten; Unknown/Partial werden nicht als Erfolg behandelt.
 
 Kanban-Einrichtung befindet sich in Einstellungen bei der jeweiligen Projektzuordnung. Abschnitte prüfen, nur die angezeigten fehlenden Namen bewusst anlegen und externen Nachweis abwarten. Bei mehrdeutiger Struktur direkt in Todoist klären. Keine vorhandenen Aufgaben oder Abschnitte werden umgebaut.
+
+## E9.3 – Kompakte Ansicht
+
+Aufgabenzeile per Klick, Enter oder Leertaste aufklappen. Details ansehen und Kommentare lesen; erst «Bearbeiten» öffnet das Formular. Darin Planung/Datum/Dauer/Deadline und zusätzliche manuelle Aktionen gezielt aufklappen. Der dreistufige KI-Dialog mit Einzelpatchfreigabe bleibt erhalten.
+
+Weitere Filter & Sortierung verändert nur die Lesesicht. Planungsdatum und Deadline werden getrennt gefiltert. Standard ist die native Geschwisterreihenfolge soweit Positionsdaten gelesen wurden; Abschnitte behalten ihre geladene Folge. Ohne native Positionsdaten bleibt die geladene Folge erhalten. Für aktuelle Positionsdaten Todoist bewusst aktualisieren. Kein Reorder-Endpunkt wird dafür aufgerufen.
+
+«Probleme» in der Hauptnavigation zeigt dieselben Problem-/Journalstände. Geprüft ist nicht behoben. Ein Unknown-Ergebnis weder löschen noch automatisch wiederholen. BUG-003 bleibt ein separater offener Testbefund.

@@ -118,6 +118,7 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
     name: "Aufgabe bearbeiten",
     exact: true,
   });
+  await dialog.locator(".ux-editor-actions > summary").click();
   await expect(
     dialog.getByRole("heading", {
       name: "Epic manuell abschliessen",

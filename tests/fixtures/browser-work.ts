@@ -65,7 +65,7 @@ export async function bootstrapWorkSettings(
   await page.getByRole("button", { name: "Privat", exact: true }).click();
   await page.getByRole("link", { name: "Einstellungen", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Arbeitgeber & Privat" }),
+    page.getByRole("heading", { name: "Privater Kontext" }),
   ).toBeVisible();
   expect(
     await page.request
@@ -73,6 +73,7 @@ export async function bootstrapWorkSettings(
       .then((r) => r.json())
       .then((v) => v.contexts),
   ).toHaveLength(1);
+  await page.getByRole("button", { name: "Verbindungen", exact: true }).click();
   // A normal login does not grant permission to replace integration credentials.
   await page.getByLabel("Neuer Todoist-API-Token").fill(token);
   await page
@@ -81,7 +82,7 @@ export async function bootstrapWorkSettings(
   const connection = page
     .locator("section")
     .filter({ has: page.getByRole("heading", { name: "Todoist verbinden" }) });
-  await expect(connection.getByRole("alert")).toHaveText(
+  await expect(page.locator("#todoist-settings [role=alert]")).toHaveText(
     "Bitte zuerst Passwort und neuen Authenticator-Code bestätigen.",
   );
   await expect(
@@ -91,7 +92,9 @@ export async function bootstrapWorkSettings(
     }),
   ).toBeDisabled();
   await expect(page.getByLabel("Neuer Todoist-API-Token")).toHaveValue(token);
-  await connection.getByRole("link", { name: /Passwort und neuen/ }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Sensible Änderungen bestätigen" }),
+  ).toBeVisible();
   await page.getByLabel("Aktuelles Passwort", { exact: true }).fill(password);
   await page
     .getByLabel("Neuer Authenticator-Code", { exact: true })
@@ -102,6 +105,7 @@ export async function bootstrapWorkSettings(
   await expect(
     page.getByText("Bestätigung für maximal fünf Minuten gültig."),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Schliessen", exact: true }).click();
   await page.getByLabel("Neuer Todoist-API-Token").fill(token);
   await page
     .getByRole("button", { name: "Token verschlüsselt speichern", exact: true })
@@ -121,5 +125,8 @@ export async function bootstrapWorkSettings(
     page.getByText("Verbindung: Verbunden", { exact: true }),
   ).toBeVisible();
 
+  await page
+    .getByRole("button", { name: "Kontexte & Projekte", exact: true })
+    .click();
   return { password, nextCode, errors };
 }

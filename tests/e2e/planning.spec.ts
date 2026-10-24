@@ -28,6 +28,7 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
     ["Atelier Beispiel", projects[1]!],
     ["Leerer Kontext", projects[2]!],
   ] as const) {
+    await page.getByRole("tab", { name: "Arbeitgeber", exact: true }).click();
     await page
       .getByRole("button", { name: "Arbeitgeber hinzufügen", exact: true })
       .click();
@@ -43,7 +44,9 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
     await row
       .getByRole("button", { name: "Kontext speichern", exact: true })
       .click();
-    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("combobox", { name: "Arbeitgeber", exact: true }),
+    ).toContainText(name);
   }
   async function refreshTasks() {
     await page.getByRole("link", { name: "Aufgaben", exact: true }).click();

@@ -106,3 +106,11 @@ Noch kein stabiler Tag, GitHub Release oder Docker-Hub-Image veröffentlicht.
 ### E8 – Epics und SMART-Ziele
 
 Native Epic-Übersicht/-Hierarchie; gezielte Ziel-/Checklisten-/Linkbearbeitung mit Vorschau; lokale SMART-, Zerlegungs- und Verständnisentwürfe mit Benutzerkorrekturen. F1-Abschluss trennt offene Teilbäume nach Bestätigung und prüft deren Erhalt vor dem Epic-Close. Keine automatische Epic-Erledigung. Migration 0010 ergänzt abgeleitete Korrekturdaten. Manuelle E3–E8-Abnahmen bleiben offen.
+
+## E9.3 – Freigegebenes UX-Redesign
+
+- Kompakte Kopfzeile, kontextbezogene Seitenleiste, einheitliche Schnellaktionen und eigener Problem-Navigationspunkt mit dem bestehenden Journalreader.
+- Kompakter Fokus, Kalenderdetails auf Abruf, direkt aufklappbare Aufgaben und kleine Epic-Aktualisierung.
+- Zweispaltige Einstellungen, Privat-/Arbeitgeber-Tabs, bestehende Arbeitgeberverwaltung, sechs Farbvorschauen und Sicherheitsdialog bei Bedarf.
+- Zusätzliche reine Listenfilter und Sortierung; gelesene native Geschwisterpositionen bleiben erhalten. Keine Neuordnung in Todoist oder bestätigten Tagesplänen.
+- Keine SQL-Migration, zweite Schreibpipeline oder Demo-Geschäftslogik. BUG-003 bleibt separat offen. Details im E9.3-Prüfbericht.

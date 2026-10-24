@@ -31,6 +31,7 @@ test("TermiHub settings, guarded mappings, refreshed budget and unchanged confir
   await expect(
     page.getByText("Gespeichert. Todoist-Inhalte bleiben unverändert."),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Verbindungen", exact: true }).click();
   const panel = page.getByRole("region", { name: "TermiHub-Einstellungen" });
   await panel.getByLabel("TermiHub-Serveradresse").fill(fixtureOrigin);
   await panel
@@ -42,6 +43,9 @@ test("TermiHub settings, guarded mappings, refreshed budget and unchanged confir
   await expect(panel.getByLabel("Neuer TermiHub-API-Token")).toHaveValue("");
   await panel
     .getByRole("button", { name: "Verbindung prüfen & Kalender lesen" })
+    .click();
+  await page
+    .getByRole("button", { name: "Arbeitszeiten & Kalender", exact: true })
     .click();
   await expect(panel.getByText(/Synthetic calendar ·/)).toBeVisible({
     timeout: 35000,
@@ -82,10 +86,10 @@ test("TermiHub settings, guarded mappings, refreshed budget and unchanged confir
     page.getByText("Aufgabenstand vollständig aktualisiert."),
   ).toBeVisible();
   await page.getByRole("link", { name: "Fokus", exact: true }).click();
-  await expect(
-    page.getByText("Aktueller Kalenderstand", { exact: true }),
-  ).toBeVisible({ timeout: 35000 });
-  await expect(page.getByText(/480 Min./)).toBeVisible();
+  await expect(page.locator(".calendar-context > summary")).toContainText(
+    "480 Min.",
+    { timeout: 35000 },
+  );
   await page
     .getByRole("button", { name: "Tagesvorschau erstellen", exact: true })
     .click();
@@ -107,6 +111,7 @@ test("TermiHub settings, guarded mappings, refreshed budget and unchanged confir
     method: "POST",
     body: JSON.stringify({ mode: "busy" }),
   });
+  await page.locator(".calendar-context > summary").click();
   await expect(
     page.getByRole("button", { name: "Kalenderstand aktualisieren" }),
   ).toBeEnabled();

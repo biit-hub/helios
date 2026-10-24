@@ -1,4 +1,5 @@
 "use client";
+import { UiDialog, InfoTip } from "./ui-help";
 import { taskChangedEvent, type VerifiedTaskChange } from "./task-events";
 import {
   rememberContext,
@@ -13,8 +14,8 @@ import { MorningRoutine } from "./morning-routine";
 import { Problems } from "./problems";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Brand } from "@helios/ui";
-import { WorkbenchNavigation, SettingsJumpLinks } from "./workbench-navigation";
+import { Brand, Icon } from "@helios/ui";
+import { WorkbenchNavigation, SettingsChapters } from "./workbench-navigation";
 import { themes, problemMessages } from "@helios/contracts";
 import type {
   ContextInput,
@@ -24,9 +25,9 @@ import type {
   TaskView,
   CommentView,
 } from "@helios/contracts";
-import { TaskManager, TaskCapture } from "./tasks";
+import { TaskManager, TaskCapture, TaskOperations } from "./tasks";
 import { PlanningPanel } from "./planning";
-import { Logout } from "./identity-forms";
+import { Logout, SecurityForm } from "./identity-forms";
 async function request(path: string, body?: unknown, signal?: AbortSignal) {
   const r = await fetch(path, {
     method: body === undefined ? "GET" : "POST",
@@ -48,14 +49,24 @@ export function Workbench({
   epics = false,
   settings = false,
   mobile = false,
+  problems = false,
+  security = false,
 }: Readonly<{
   planning?: "focus" | "plan";
   routine?: boolean;
   epics?: boolean;
   settings?: boolean;
   mobile?: boolean;
+  problems?: boolean;
+  security?: boolean;
 }>) {
   const navigationLocked = useNavigationLocked();
+  const [chapter, setChapter] = useState(security ? "security" : "contexts"),
+    [settingTab, setSettingTab] = useState("private"),
+    [settingEmployer, setSettingEmployer] = useState(""),
+    [stepUpOpen, setStepUpOpen] = useState(false),
+    [stepUpBusy, setStepUpBusy] = useState(false);
+  const contextual = !settings && !routine && !problems;
   const [snapshot, setSnapshot] = useState<WorkSnapshot | null>(null),
     [selected, setSelected] = useState(""),
     [loaded, setLoaded] = useState<{
@@ -66,9 +77,23 @@ export function Workbench({
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
     [newEmployer, setNewEmployer] = useState(false),
+    [newEmployerDirty, setNewEmployerDirty] = useState(false),
+    [discardEmployer, setDiscardEmployer] = useState(false),
     [now, setNow] = useState(() => Date.now()),
     [refreshId, setRefreshId] = useState(0);
   const current = snapshot?.contexts.find((c) => c.id === selected);
+  useEffect(() => {
+    if (!settings) return;
+    const followHash = () => {
+      const hash = window.location.hash;
+      if (hash === "#termihub-settings") setChapter("hours");
+      if (hash === "#todoist-settings") setChapter("connections");
+      if (hash === "#sensitive-changes") setStepUpOpen(true);
+    };
+    followHash();
+    window.addEventListener("hashchange", followHash);
+    return () => window.removeEventListener("hashchange", followHash);
+  }, [settings]);
   useEffect(() => {
     const changed = (event: Event) => {
       const change = (event as CustomEvent<VerifiedTaskChange>).detail;
@@ -112,7 +137,16 @@ export function Workbench({
     };
   }, []);
   useEffect(() => {
-    if (!selected || settings || mobile || planning || routine || epics) return;
+    if (
+      !selected ||
+      settings ||
+      mobile ||
+      planning ||
+      routine ||
+      epics ||
+      problems
+    )
+      return;
     const abort = new AbortController();
     let alive = true;
     request(
@@ -155,6 +189,7 @@ export function Workbench({
     epics,
     current?.revision,
     current?.projectId,
+    problems,
   ]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -175,6 +210,11 @@ export function Workbench({
       );
       return result;
     } catch (e) {
+      if (
+        e instanceof Error &&
+        e.message.includes("Passwort und neuen Authenticator-Code bestätigen")
+      )
+        setStepUpOpen(true);
       setError(
         e instanceof Error ? e.message : "Die Anfrage ist fehlgeschlagen.",
       );
@@ -194,8 +234,22 @@ export function Workbench({
     Date.parse(snapshot.integration.nextAllowedAt) > now;
   return (
     <div
-      className={"workspace" + (mobile ? " mobile-workspace" : "")}
+      className={"workspace ux-workspace" + (mobile ? " mobile-workspace" : "")}
       onClickCapture={(event) => {
+        if (
+          !navigationLocked &&
+          (event.target as HTMLElement).closest('a[aria-disabled="true"]')
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (
+          (event.target as HTMLElement).closest('a[href="#sensitive-changes"]')
+        ) {
+          event.preventDefault();
+          setStepUpOpen(true);
+        }
         if (
           navigationLocked &&
           (event.target as HTMLElement).closest("a[href]")
@@ -207,112 +261,138 @@ export function Workbench({
           );
         }
       }}
-      data-theme={current?.theme ?? "copper"}
+      data-theme="copper"
     >
       <a className="skip-link" href="#main-content">
         Zum Inhalt
       </a>
       <div className="work-shell">
-        <header>
+        <header className="ux-topbar">
           <Brand />
-          <div className="context-picker">
-            <span className="help">
-              Aktiver Kontext · Fokus, Tagesplan, Aufgaben & Epics
-            </span>
-            <div
-              className="context-pills"
-              role="group"
-              aria-label="Kontext auswählen"
+          {!mobile && (
+            <WorkbenchNavigation
+              busy={busy || navigationLocked}
+              contextId={selected}
+              view={
+                problems
+                  ? "problems"
+                  : routine
+                    ? "morning"
+                    : settings
+                      ? "settings"
+                      : epics
+                        ? "epics"
+                        : (planning ?? "tasks")
+              }
+            />
+          )}
+        </header>
+        <aside className="ux-sidebar" aria-label="Kontext und Schnellaktionen">
+          {contextual && (
+            <div className="context-picker">
+              <span className="eyebrow">Arbeitskontext</span>
+              <div
+                className="context-pills"
+                role="group"
+                aria-label="Kontext auswählen"
+              >
+                {snapshot?.contexts
+                  .filter((c) => c.active)
+                  .map((c) => (
+                    <button
+                      type="button"
+                      key={c.id}
+                      className="context-pill"
+                      data-theme={c.theme}
+                      aria-pressed={selected === c.id}
+                      disabled={busy || navigationLocked}
+                      onClick={() => {
+                        setSelected(c.id);
+                        rememberContext(c.id);
+                        const url = new URL(window.location.href);
+                        url.searchParams.set("context", c.id);
+                        window.history.replaceState(
+                          window.history.state,
+                          "",
+                          url.pathname + url.search,
+                        );
+                        setError("");
+                      }}
+                    >
+                      <span className="context-dot" />
+                      {c.name}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+          <div className="ux-quick-actions">
+            <p className="eyebrow">Schnellaktionen</p>
+            {snapshot && (
+              <TaskCapture
+                snapshot={snapshot}
+                sidebar
+                disabled={busy || navigationLocked}
+              />
+            )}
+            <Link
+              aria-disabled={
+                !contextual || !current?.configured || navigationLocked || busy
+              }
+              href={"/tasks?context=" + selected + "&progress=pick"}
             >
-              {snapshot?.contexts
-                .filter((c) => c.active)
-                .map((c) => (
-                  <button
-                    type="button"
-                    key={c.id}
-                    className="context-pill"
-                    data-theme={c.theme}
-                    aria-pressed={selected === c.id}
-                    disabled={busy || navigationLocked}
-                    onClick={() => {
-                      setSelected(c.id);
-                      rememberContext(c.id);
-                      const url = new URL(window.location.href);
-                      url.searchParams.set("context", c.id);
-                      window.history.replaceState(
-                        window.history.state,
-                        "",
-                        url.pathname + url.search,
-                      );
-                      setError("");
-                    }}
-                  >
-                    {c.name}
-                  </button>
-                ))}
+              <Icon name="progress" />
+              Fortschritt notieren
+            </Link>
+            <Link aria-disabled={navigationLocked} href="/morning">
+              <Icon name="morning" />
+              Morgenroutine starten
+            </Link>
+            <div className="ux-future">
+              <button type="button" disabled>
+                <Icon name="sparkles" />
+                KI-Auftrag starten
+              </button>
+              <small>Noch nicht verfügbar</small>
             </div>
           </div>
-        </header>
-        {!mobile && (
-          <WorkbenchNavigation
-            busy={busy || navigationLocked}
-            contextId={selected}
-            view={
-              routine
-                ? "morning"
-                : settings
-                  ? "settings"
-                  : epics
-                    ? "epics"
-                    : (planning ?? "tasks")
-            }
-          />
-        )}
-        <main id="main-content" tabIndex={-1}>
-          <div className="eyebrow">
-            {routine
-              ? "IN DEINEM TEMPO"
-              : settings
-                ? "DEIN ARBEITSRAUM"
-                : mobile
-                  ? "DEINE KONTEXTE"
-                  : planning
-                    ? "DEIN TAG, DEIN FOKUS"
-                    : "DEINE AUFGABEN, BEWUSST VERWALTET"}
+          <div className="ux-sidebar-footer">
+            <span>Ein Schritt nach dem anderen.</span>
+            <Logout />
           </div>
-          <h1>
-            {routine
-              ? "Ein ruhiger Start in deinen Tag."
-              : settings
-                ? "Alles am richtigen Platz."
-                : mobile
-                  ? "Für wen startest du heute?"
-                  : planning
-                    ? "Ein guter nächster Schritt."
-                    : (current?.name ?? "Deine Aufgaben")}
-          </h1>
-          <p className="lead">
-            {routine
-              ? "Du kannst jederzeit pausieren und später fortsetzen."
-              : settings
-                ? "Kontexte und Verbindungen verwalten."
-                : mobile
-                  ? "Die gemeinsame Morgenroutine folgt in einer späteren Etappe."
-                  : planning
-                    ? "Bestätigte Pläne bleiben beim Aktualisieren erhalten."
-                    : "Aktuelle Aufgaben im gewählten Kontext."}
-          </p>
-          {(routine || settings) && (
-            <p className="view-scope help">
-              Allgemeine Ansicht · die zentrale Kontextwahl bleibt erhalten.
-            </p>
-          )}
-          {!routine && !settings && !mobile && !current && snapshot && (
+        </aside>
+        <main id="main-content" tabIndex={-1}>
+          <div className="ux-page-heading">
+            <h1>
+              {problems
+                ? "Probleme"
+                : settings
+                  ? "Einstellungen"
+                  : routine
+                    ? "Morgenroutine"
+                    : epics
+                      ? "Epics und Ziele"
+                      : planning === "focus"
+                        ? "Dein Fokus"
+                        : planning === "plan"
+                          ? "Dein Tagesplan"
+                          : mobile
+                            ? "Deine Kontexte"
+                            : "Aufgaben"}
+            </h1>
+            {contextual && current && (
+              <p className="context-caption" data-theme={current.theme}>
+                <span className="context-dot" />
+                {current.name}
+              </p>
+            )}
+          </div>
+          {contextual && !current && snapshot && (
             <section className="card">
               <h2>Kontext bewusst auswählen</h2>
               <p>
-                Wähle oben einen aktiven Kontext. Eine fehlende oder
-                deaktivierte Auswahl wird nicht automatisch durch Privat
+                Wähle einen aktiven Kontext in der Seitenleiste. Eine fehlende
+                oder deaktivierte Auswahl wird nicht automatisch durch Privat
                 ersetzt.
               </p>
             </section>
@@ -328,54 +408,210 @@ export function Workbench({
             <p role="status">Einstellungen werden geladen …</p>
           )}
           {snapshot && settings && (
-            <>
-              <SettingsJumpLinks />
-              <StepUp onError={setError} />
-              <Connection
-                data={snapshot}
+            <div className="ux-settings-layout">
+              <SettingsChapters
+                chapter={chapter}
+                select={setChapter}
                 busy={busy || navigationLocked}
-                pause={pause}
+              />
+              <div className="ux-settings-content">
+                <div hidden={chapter !== "contexts"}>
+                  <div
+                    className="ux-tabs"
+                    role="tablist"
+                    aria-label="Kontexttyp"
+                  >
+                    {["private", "employer"].map((tab) => (
+                      <button
+                        type="button"
+                        key={tab}
+                        role="tab"
+                        aria-selected={settingTab === tab}
+                        disabled={busy || navigationLocked}
+                        onClick={() => setSettingTab(tab)}
+                      >
+                        {tab === "private" ? "Privat" : "Arbeitgeber"}
+                      </button>
+                    ))}
+                  </div>
+                  <section
+                    id="contexts-settings"
+                    className="card settings-panel"
+                  >
+                    <div className="panel-heading">
+                      <h2>
+                        {settingTab === "private"
+                          ? "Privater Kontext"
+                          : "Arbeitgeberkontext"}
+                      </h2>
+                      {settingTab === "employer" && (
+                        <button
+                          type="button"
+                          disabled={busy || navigationLocked}
+                          onClick={() => {
+                            setNewEmployerDirty(false);
+                            setDiscardEmployer(false);
+                            setNewEmployer(true);
+                          }}
+                        >
+                          <Icon name="plus" />
+                          Arbeitgeber hinzufügen
+                        </button>
+                      )}
+                    </div>
+                    {settingTab === "employer" && (
+                      <label>
+                        Arbeitgeber
+                        <select
+                          value={
+                            settingEmployer ||
+                            snapshot.contexts.find((c) => c.kind !== "private")
+                              ?.id ||
+                            ""
+                          }
+                          disabled={busy || navigationLocked}
+                          onChange={(e) => {
+                            setSettingEmployer(e.target.value);
+                            setNewEmployer(false);
+                          }}
+                        >
+                          <option value="" disabled>
+                            Arbeitgeber auswählen
+                          </option>
+                          {snapshot.contexts
+                            .filter((c) => c.kind !== "private")
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                                {!c.active ? " · inaktiv" : ""}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                    )}
+                    {settingTab === "employer" && newEmployer && (
+                      <UiDialog
+                        title="Arbeitgeber hinzufügen"
+                        busy={busy}
+                        close={() => {
+                          if (newEmployerDirty) setDiscardEmployer(true);
+                          else setNewEmployer(false);
+                        }}
+                      >
+                        {discardEmployer && (
+                          <div>
+                            <p>Ungespeicherte Eingaben verwerfen?</p>
+                            <button
+                              type="button"
+                              onClick={() => setDiscardEmployer(false)}
+                            >
+                              Weiterbearbeiten
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => setNewEmployer(false)}
+                            >
+                              Eingaben verwerfen
+                            </button>
+                          </div>
+                        )}
+                        <div hidden={discardEmployer}>
+                          <ContextEditor
+                            onDirty={() => setNewEmployerDirty(true)}
+                            key="new"
+                            snapshot={snapshot}
+                            busy={busy || navigationLocked}
+                            save={async (data) => {
+                              const result = (await action(
+                                "context-save",
+                                data,
+                              )) as { id: string };
+                              setSettingEmployer(result.id);
+                              setNewEmployer(false);
+                            }}
+                          />
+                        </div>
+                      </UiDialog>
+                    )}
+                    {snapshot.contexts.map((c) => (
+                      <div
+                        key={c.id + ":" + c.revision}
+                        hidden={
+                          settingTab === "private"
+                            ? c.kind !== "private"
+                            : c.id !==
+                              (settingEmployer ||
+                                snapshot.contexts.find(
+                                  (v) => v.kind !== "private",
+                                )?.id)
+                        }
+                      >
+                        <ContextEditor
+                          context={c}
+                          snapshot={snapshot}
+                          busy={busy || navigationLocked}
+                          save={(data) => action("context-save", data)}
+                        />
+                      </div>
+                    ))}
+                  </section>
+                </div>
+                <div hidden={chapter !== "connections"}>
+                  <Connection
+                    data={snapshot}
+                    busy={busy || navigationLocked}
+                    pause={pause}
+                    action={action}
+                  />
+                </div>
+                <div
+                  hidden={
+                    chapter !== "contexts" &&
+                    chapter !== "connections" &&
+                    chapter !== "hours"
+                  }
+                >
+                  <TermiHubConnection
+                    onChange={load}
+                    contextId={
+                      chapter === "contexts"
+                        ? settingTab === "private"
+                          ? snapshot.contexts.find((c) => c.kind === "private")
+                              ?.id
+                          : settingEmployer ||
+                            snapshot.contexts.find((c) => c.kind !== "private")
+                              ?.id
+                        : undefined
+                    }
+                    mode={chapter === "connections" ? "connection" : "mapping"}
+                    onStepUp={() => setStepUpOpen(true)}
+                  />
+                </div>
+                {chapter === "security" && <SecurityForm embedded />}
+              </div>
+            </div>
+          )}
+          {snapshot && problems && (
+            <>
+              <TaskOperations />
+              <Problems
+                snapshot={snapshot}
+                busy={busy || navigationLocked}
                 action={action}
               />
-              <section id="contexts-settings" className="card settings-panel">
-                <div className="panel-heading">
-                  <div>
-                    <h2>Arbeitgeber & Privat</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setNewEmployer(!newEmployer)}
-                  >
-                    Arbeitgeber hinzufügen
-                  </button>
-                </div>
-                {newEmployer && (
-                  <ContextEditor
-                    key="new"
-                    snapshot={snapshot}
-                    busy={busy || navigationLocked}
-                    save={async (data) => {
-                      await action("context-save", data);
-                      setNewEmployer(false);
-                    }}
-                  />
-                )}
-                {snapshot.contexts.map((c) => (
-                  <ContextEditor
-                    key={c.id + ":" + c.revision}
-                    context={c}
-                    snapshot={snapshot}
-                    busy={busy || navigationLocked}
-                    save={(data) => action("context-save", data)}
-                  />
-                ))}
-              </section>
-              <TermiHubConnection onChange={load} />
-              <div id="integration-problems">
-                <Problems snapshot={snapshot} busy={busy} action={action} />
-              </div>
             </>
           )}
+          {stepUpOpen && (
+            <UiDialog
+              title="Sensible Änderungen bestätigen"
+              busy={stepUpBusy}
+              close={() => setStepUpOpen(false)}
+            >
+              <StepUp onError={setError} onBusy={setStepUpBusy} />
+            </UiDialog>
+          )}
+
           {epics && current && snapshot && (
             <Epics key={current.id} context={current} snapshot={snapshot} />
           )}
@@ -391,6 +627,7 @@ export function Workbench({
             !planning &&
             !routine &&
             !epics &&
+            !problems &&
             current && (
               <TaskOverview
                 snapshot={snapshot}
@@ -414,35 +651,41 @@ export function Workbench({
             </section>
           )}
         </main>
-        {snapshot && !mobile && <TaskCapture snapshot={snapshot} />}
+
         <footer>
-          <span>
-            Helios · Dein Zugang ist geschützt. · Todoist bleibt führend.
-          </span>
-          <Logout />
+          <span>Helios · Dein Zugang ist geschützt.</span>
         </footer>
       </div>
     </div>
   );
 }
-function StepUp({ onError }: Readonly<{ onError: (v: string) => void }>) {
+function StepUp({
+  onError,
+  onBusy,
+}: Readonly<{
+  onError: (v: string) => void;
+  onBusy: (busy: boolean) => void;
+}>) {
   const [pwd, setPwd] = useState(""),
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
-    [ok, setOk] = useState(false);
+    [ok, setOk] = useState(false),
+    [localError, setLocalError] = useState("");
   return (
     <section id="sensitive-changes" className="card settings-panel auth-card">
-      <h2>Sensible Änderungen bestätigen</h2>
       <p>
         Tokenwechsel sowie Projekt- und Kalenderzuordnungen benötigen Passwort
         und einen neuen Authenticator-Code. Die Bestätigung gilt höchstens fünf
         Minuten.
       </p>
+      {localError && <p role="alert">{localError}</p>}
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
+          onBusy(true);
           setOk(false);
+          setLocalError("");
           try {
             await request("/api/identity/step-up", { password: pwd, code });
             setPwd("");
@@ -450,17 +693,20 @@ function StepUp({ onError }: Readonly<{ onError: (v: string) => void }>) {
             setOk(true);
             onError("");
           } catch (e) {
-            onError(
+            setLocalError(
               e instanceof Error ? e.message : "Bestätigung fehlgeschlagen.",
             );
           } finally {
             setBusy(false);
+            onBusy(false);
           }
         }}
       >
         <label>
           Aktuelles Passwort
           <input
+            disabled={busy}
+            maxLength={128}
             type="password"
             autoComplete="current-password"
             value={pwd}
@@ -471,6 +717,8 @@ function StepUp({ onError }: Readonly<{ onError: (v: string) => void }>) {
         <label>
           Neuer Authenticator-Code
           <input
+            disabled={busy}
+            maxLength={6}
             autoComplete="one-time-code"
             inputMode="numeric"
             pattern="[0-9]{6}"
@@ -642,10 +890,12 @@ function ContextEditor({
   snapshot,
   busy,
   save,
+  onDirty,
 }: Readonly<{
   context?: ContextView;
   snapshot: WorkSnapshot;
   busy: boolean;
+  onDirty?: () => void;
   save: (data: ContextInput) => Promise<unknown>;
 }>) {
   const [data, setData] = useState<ContextInput>({
@@ -658,10 +908,12 @@ function ContextEditor({
     termihubEmployerId: context?.termihubEmployerId ?? null,
     termihubInstanceRef: context?.termihubInstanceRef ?? null,
   });
-  const field = (patch: Partial<ContextInput>) =>
+  const field = (patch: Partial<ContextInput>) => {
+    onDirty?.();
     setData((d) => ({ ...d, ...patch }));
+  };
   return (
-    <article className="context-editor auth-card" data-theme={data.theme}>
+    <article className="context-editor auth-card">
       <h3>
         {context?.name ?? "Neuer Arbeitgeber"}{" "}
         <span className="help">
@@ -687,23 +939,34 @@ function ContextEditor({
             onChange={(e) => field({ name: e.target.value })}
           />
         </label>
-        <fieldset>
-          <legend>Farbschema</legend>
-          <div className="theme-options">
-            {Object.entries(themes).map(([key, name]) => (
-              <button
-                key={key}
-                type="button"
-                data-theme={key}
-                className="theme-choice"
-                aria-pressed={data.theme === key}
-                onClick={() => field({ theme: key as ContextInput["theme"] })}
-              >
-                {name}
-              </button>
-            ))}
+        <label>
+          Kontextfarbe
+          <InfoTip label="Kontextfarbe">
+            Die Farbe kennzeichnet diesen Kontext. Allgemeine Ansichten bleiben
+            warm-orange.
+          </InfoTip>
+          <div className="ux-color-picker">
+            <select
+              aria-label="Kontextfarbe"
+              value={data.theme}
+              onChange={(e) =>
+                field({ theme: e.target.value as ContextInput["theme"] })
+              }
+            >
+              {Object.entries(themes).map(([key, name]) => (
+                <option key={key} value={key}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <span
+              role="img"
+              aria-label={"Farbvorschau: " + themes[data.theme]}
+              data-theme={data.theme}
+              className="ux-color-swatch"
+            />
           </div>
-        </fieldset>
+        </label>
         <label>
           Todoist-Projekt
           <select
@@ -777,26 +1040,30 @@ function TaskCard({
   tasks,
   disabled,
   action,
+  compact = false,
 }: Readonly<{
   task: TaskView;
   contextId: string;
   tasks: TaskView[];
   disabled: boolean;
   action: Action;
+  compact?: boolean;
 }>) {
   const [comments, setComments] = useState<CommentView[] | null>(null),
     [error, setError] = useState("");
   const t = task.data;
+  const Details = compact ? "div" : "details";
   const parent = tasks.find((p) => p.data.id === t.parent_id);
   return (
     <article
       className={
-        "card task-card " + (task.state === "unknown" ? "unknown-task" : "")
+        (compact ? "task-inline-details " : "card task-card ") +
+        (task.state === "unknown" ? "unknown-task" : "")
       }
       id={"task-" + t.id}
     >
       <div className="task-heading">
-        <h3>{t.content}</h3>
+        {!compact && <h3>{t.content}</h3>}
         <span className="pill">Priorität {5 - t.priority}</span>
       </div>
       <p className="help">
@@ -806,9 +1073,9 @@ function TaskCard({
             ? "Von Todoist als erledigt gemeldet"
             : task.state === "deleted"
               ? "Von Todoist als gelöscht gemeldet"
-              : "Offen"}
+              : (task.sectionName ?? "Ohne Abschnitt")}
         {task.sectionName
-          ? " · Abschnitt: " + task.sectionName
+          ? ""
           : t.section_id
             ? " · Abschnitt-ID: " + t.section_id
             : ""}
@@ -841,8 +1108,8 @@ function TaskCard({
           <dd>{t.deadline?.date ?? "Nicht gesetzt"}</dd>
         </div>
       </dl>
-      <details>
-        <summary>Aufgabendetails</summary>
+      <Details>
+        {!compact && <summary>Aufgabendetails</summary>}
         <p className="task-description">
           {t.description || "Keine Beschreibung vorhanden."}
         </p>
@@ -904,7 +1171,7 @@ function TaskCard({
             )}
           </div>
         )}
-      </details>
+      </Details>
     </article>
   );
 }
@@ -1017,6 +1284,7 @@ function TaskOverview({
             snapshot={snapshot}
             renderTask={(task) => (
               <TaskCard
+                compact
                 key={task.data.id}
                 task={task}
                 contextId={selected}
