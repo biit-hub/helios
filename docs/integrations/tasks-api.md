@@ -31,3 +31,7 @@ GET /api/tasks?kind=labels liefert vollständige persönliche und geteilte Label
 GET /api/tasks?kind=kanban&contextId=UUID prüft ausschliesslich das aktuelle zugeordnete Nicht-Eingangsprojekt und liefert projectId, contextRevision, present, missing und ambiguous. Neue sections-Kommandos benötigen sectionSetup mit projectId, contextRevision und bewusst bestätigten missing-Namen. Alte bereits angenommene Journale bleiben durch ihren serverseitigen Payload gebunden kompatibel. Kein neuer Auftrag bei Unknown.
 
 GET /api/work?contextId=UUID enthält projectId/contextRevision, aktuelle tasks und getrennte historicalTasks ohne Schreibaktionen. Externer Zustand bleibt unbekannt, solange kein nativer Nachweis vorliegt. Nach succeeded wird die Liste automatisch neu gelesen; ein angenommener Auftrag bleibt ausdrücklich unbestätigt.
+
+## E9.4 – Feldgenauer Nachweis
+
+Das bestehende Journal speichert beim Nachlesen `verification` mit bestätigten und nicht bestätigten Feldnamen sowie Zeit und Antwortnachweis. Ein HTTP-Erfolg mit abweichenden Feldern bleibt `unknown`; der neue Code `TODOIST_FIELDS_UNCONFIRMED` unterscheidet diesen Fall von einer verlorenen Antwort. Der gespeicherte Pending-Schritt und seine Request-ID bleiben erhalten. Bewusstes Fortsetzen liest zuerst; es sendet den ungeklärten Schritt nicht erneut. Kein Zurücksetzen bestehender Journale. Datum ohne Uhrzeit wird nur bestätigt, wenn die Uhrzeit tatsächlich entfernt wurde; Dauern werden samt Einheit geprüft.

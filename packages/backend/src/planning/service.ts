@@ -237,6 +237,7 @@ export function createPlanningService(
       if (
         !c.lastSyncAt ||
         Date.now() - c.lastSyncAt.getTime() > 300000 ||
+        i.readClaim !== null ||
         i.state !== "ready"
       )
         throw new WorkFault("SOURCE_STALE", 409);

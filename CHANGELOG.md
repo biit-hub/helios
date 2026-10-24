@@ -1,5 +1,11 @@
 # Changelog
 
+## E9.4 – Stabilisierung und gezielter Feinschliff (in Arbeit)
+
+- Feldgenaue Datums-/Dauernachweise im bestehenden Operationsjournal; beantwortete, aber nicht bestätigte Felder bleiben gesperrt. Timeout, Verbindung, Serverantwort und Ablehnung sind unterscheidbar; kein blindes Replay.
+- Tagesvorschläge bleiben während eines laufenden Todoist-Refreshs gesperrt.
+- Isolierter Free-Konto-Vertrag: Datum/Uhrzeit funktionieren, Dauer wird trotz HTTP 200 ignoriert. Native Dauer bleibt verbindlich; positive berechtigungspflichtige Live-Abnahme bleibt offen.
+
 ## E9.2 – Stabilisierung und UX
 
 - Aktuelle Aufgaben von historischen/unknown-Projektionen getrennt; historische Nachweise erhalten und ohne Schreibaktionen anzeigen.

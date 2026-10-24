@@ -43,6 +43,7 @@ import {
   matchesFields,
   createTaskWriter,
   TaskRateLimit,
+  TaskWriteUnknown,
 } from "./todoist";
 import type { TaskWriter } from "./todoist";
 import { patchDocument } from "./document";
@@ -51,11 +52,18 @@ import { finishPlanLink } from "../planning/agenda-store";
 import { validatePlanAddition } from "../planning/agenda-source";
 type Operation = typeof planOperations.$inferSelect;
 type Progress = {
+  failure?: { kind: string; httpStatus?: number };
   detached?: string[];
   effects?: Record<string, unknown>[];
   children?: TodoistTask[];
   task?: TodoistTask;
   stage?: string;
+  verification?: {
+    matched: string[];
+    unmatched: string[];
+    checkedAt: string;
+    acknowledged: boolean;
+  };
   pending?: {
     kind: string;
     body?: Record<string, unknown>;
@@ -159,6 +167,33 @@ export function createTaskExecutor(
         throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
       return p;
     }
+    async function verifyFields(
+      task: TodoistTask,
+      pending: NonNullable<Progress["pending"]>,
+    ) {
+      const body = pending.body ?? {};
+      const fields = Object.keys(body).filter(
+        (key) => !["duration_unit", "due_lang"].includes(key),
+      );
+      const matched = fields.filter((key) =>
+        matchesFields(task, {
+          [key]: body[key],
+          ...(key === "duration" ? { duration_unit: body.duration_unit } : {}),
+        }),
+      );
+      const unmatched = fields.filter((key) => !matched.includes(key));
+      await save({
+        verification: {
+          matched,
+          unmatched,
+          checkedAt: new Date().toISOString(),
+          acknowledged: pending.acknowledged === true,
+        },
+      });
+      if (unmatched.length && pending.acknowledged)
+        throw new WorkFault("TODOIST_FIELDS_UNCONFIRMED", 409);
+      return unmatched.length === 0;
+    }
     async function verifyPending(token: string): Promise<boolean> {
       const pending = progress.pending;
       if (!pending) return true;
@@ -171,7 +206,7 @@ export function createTaskExecutor(
           (command.sectionId !== undefined &&
             command.sectionId !== null &&
             t.section_id !== command.sectionId) ||
-          !matchesFields(t, pending.body ?? {})
+          !(await verifyFields(t, pending))
         )
           return false;
         await save({ task: t, pending: undefined, stage: "done" });
@@ -276,7 +311,7 @@ export function createTaskExecutor(
         return false;
       }
       if (pending.kind === "update") {
-        if (!matchesFields(t, pending.body ?? {})) return false;
+        if (!(await verifyFields(t, pending))) return false;
       }
       if (pending.kind === "move") {
         const b = pending.body ?? {};
@@ -463,10 +498,14 @@ export function createTaskExecutor(
           progress.pending!.requestId!,
         );
       } catch (e) {
+        if (e instanceof TaskWriteUnknown)
+          await save({ failure: { kind: e.reason, httpStatus: e.httpStatus } });
         if (
           e instanceof TaskRateLimit ||
           (e instanceof WorkFault &&
-            ["TODOIST_PERMISSION", "TODOIST_REJECTED"].includes(e.code))
+            ["TODOIST_AUTH", "TODOIST_PERMISSION", "TODOIST_REJECTED"].includes(
+              e.code,
+            ))
         )
           await save({ pending: undefined, effects: progress.effects ?? [] });
         throw e;

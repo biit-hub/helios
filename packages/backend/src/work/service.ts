@@ -737,6 +737,7 @@ export function createWorkService(
           .from(s.integrationProblems)
           .where(eq(s.integrationProblems.userId, userId));
         return {
+          timezone: config.PLAN_TIMEZONE,
           contexts: cs.map((c) => ({
             id: c.id,
             name: c.name,
