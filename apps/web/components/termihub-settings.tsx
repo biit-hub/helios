@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { TermiHubSettings } from "@helios/contracts";
 import { routineRequest as api } from "./routine-http";
+import { useNavigationLock } from "./navigation-lock";
 const at = (v: string | null) =>
   v ? new Date(v).toLocaleString("de-CH") : "Noch nicht abgerufen";
 function formText(form: FormData, key: string) {
@@ -41,6 +42,7 @@ export function TermiHubConnection({
     [busy, setBusy] = useState(false),
     [token, setToken] = useState(""),
     [day, setDay] = useState("");
+  useNavigationLock(busy);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);

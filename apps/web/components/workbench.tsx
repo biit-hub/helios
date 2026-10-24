@@ -898,6 +898,7 @@ function ContextEditor({
     termihubEmployerId: context?.termihubEmployerId ?? null,
     termihubInstanceRef: context?.termihubInstanceRef ?? null,
   });
+  const [saveError, setSaveError] = useState("");
   const field = (patch: Partial<ContextInput>) => {
     onDirty?.();
     setData((d) => ({ ...d, ...patch }));
@@ -917,12 +918,20 @@ function ContextEditor({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void save(data).catch(() => {});
+          setSaveError("");
+          void save(data).catch((error: unknown) => {
+            setSaveError(
+              error instanceof Error
+                ? error.message
+                : "Der Kontext konnte nicht gespeichert werden.",
+            );
+          });
         }}
       >
         <label>
           Anzeigename
           <input
+            disabled={busy}
             required
             maxLength={100}
             value={data.name}
@@ -939,6 +948,7 @@ function ContextEditor({
           </span>
           <div className="ux-color-picker">
             <select
+              disabled={busy}
               aria-label="Kontextfarbe"
               value={data.theme}
               onChange={(e) =>
@@ -966,6 +976,7 @@ function ContextEditor({
         <label>
           Todoist-Projekt
           <select
+            disabled={busy}
             value={data.projectId ?? ""}
             onChange={(e) => field({ projectId: e.target.value || null })}
           >
@@ -1006,6 +1017,7 @@ function ContextEditor({
         {context?.kind !== "private" && (
           <label className="check">
             <input
+              disabled={busy}
               type="checkbox"
               checked={data.active}
               onChange={(e) => field({ active: e.target.checked })}
@@ -1020,6 +1032,11 @@ function ContextEditor({
           Projektwechsel verändert keine Todoist-Aufgabe. Deaktivierung erhält
           lokale Referenzen.
         </p>
+        {saveError && (
+          <p role="alert" className="form-error">
+            {saveError}
+          </p>
+        )}
         <button type="submit" disabled={busy}>
           Kontext speichern
         </button>

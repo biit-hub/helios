@@ -200,3 +200,63 @@ it("does not emit an empty explicit context while general-page metadata is still
     "/plan",
   );
 });
+
+it("keeps a rejected employer save visible inside the dialog and protects pending inputs", async () => {
+  let complete!: (response: Response) => void;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (path: string) => {
+      if (path === "/api/work/context-save")
+        return new Promise<Response>((resolve) => {
+          complete = resolve;
+        });
+      return Response.json({
+        contexts: [],
+        projects: [],
+        problems: [],
+        integration: {
+          revision: 0,
+          enabled: false,
+          hasToken: false,
+          keyAvailable: true,
+          state: "not_connected",
+          lastCheckedAt: null,
+          lastCatalogAt: null,
+          nextAllowedAt: null,
+        },
+      });
+    }),
+  );
+  render(<Workbench settings />);
+  await screen.findByRole("tab", { name: "Arbeitgeber" });
+  fireEvent.click(screen.getByRole("tab", { name: "Arbeitgeber" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Arbeitgeber hinzufügen" }),
+  );
+  const dialog = within(
+    screen.getByRole("dialog", { name: "Arbeitgeber hinzufügen" }),
+  );
+  const name = dialog.getByLabelText("Anzeigename");
+  fireEvent.change(name, { target: { value: "Synthetischer Arbeitgeber" } });
+  fireEvent.click(dialog.getByRole("button", { name: "Kontext speichern" }));
+  expect(name).toBeDisabled();
+  expect(dialog.getByRole("combobox", { name: "Kontextfarbe" })).toBeDisabled();
+  expect(dialog.getByLabelText("Todoist-Projekt")).toBeDisabled();
+  expect(dialog.getByLabelText("Kontext aktiv")).toBeDisabled();
+  await act(async () =>
+    complete(
+      Response.json(
+        { error: { message: "Konflikt: Bitte erneut prüfen." } },
+        { status: 409 },
+      ),
+    ),
+  );
+  expect(dialog.getByRole("alert")).toHaveTextContent(
+    "Konflikt: Bitte erneut prüfen.",
+  );
+  expect(name).toHaveValue("Synthetischer Arbeitgeber");
+  expect(name).toBeEnabled();
+  expect(
+    screen.getByRole("dialog", { name: "Arbeitgeber hinzufügen" }),
+  ).toBeVisible();
+});
