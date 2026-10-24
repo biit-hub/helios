@@ -36,7 +36,12 @@ export function TaskOperationEvidence({
     response: "Antwort nicht sicher auswertbar; externe Wirkung offen",
   };
   const pending = operation.result?.pending as
-    | { requestId?: string; kind?: string; acknowledged?: boolean }
+    | {
+        requestId?: string;
+        kind?: string;
+        acknowledged?: boolean;
+        body?: Record<string, unknown>;
+      }
     | undefined;
   return (
     <section className="operation-evidence" aria-label="Operationsnachweise">
@@ -92,6 +97,14 @@ export function TaskOperationEvidence({
             <>
               <dt>Request-ID</dt>
               <dd>{pending.requestId}</dd>
+            </>
+          )}
+          {pending?.body && (
+            <>
+              <dt>Gesendete Felder</dt>
+              <dd>
+                <pre>{JSON.stringify(pending.body, null, 2)}</pre>
+              </dd>
             </>
           )}
           {verification?.checkedAt && (

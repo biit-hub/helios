@@ -83,9 +83,9 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   await expect(
     page.getByRole("heading", { name: "Ausflug vorbereiten", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("2026-10-23", { exact: true })).toBeVisible();
+  await expect(page.getByText("23.10.2026", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("2026-10-20T10:00:00 · Europe/Zurich", { exact: true }),
+    page.getByText("20.10.2026 · 10:00 · Europe/Zurich", { exact: true }),
   ).toBeVisible();
   const child = page.locator(".task-card").filter({
     has: page.getByRole("heading", { name: "Verbindung nachschlagen" }),

@@ -431,6 +431,17 @@ export function TermiHubConnection({
               {organizationNames.get(o.id)}: {o.id}
             </li>
           ))}
+          {i.contexts
+            .filter(
+              (c) =>
+                c.organizationId &&
+                !i.organizations.some((o) => o.id === c.organizationId),
+            )
+            .map((c) => (
+              <li key={c.id}>
+                {c.name}: bestehende Organisationsreferenz {c.organizationId}
+              </li>
+            ))}
           {calendars.map((c) => (
             <li key={c.id}>
               {c.name}: {c.id}

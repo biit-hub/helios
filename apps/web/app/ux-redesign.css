@@ -929,3 +929,16 @@
     margin: 0;
   }
 }
+
+.progress-task-search {
+  display: grid;
+  gap: 6px;
+}
+.progress-task-search input {
+  width: 100%;
+  min-width: 0;
+}
+.technical-details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -340,7 +340,7 @@ export function TaskManager({
           close={() => setProgressPicking(false)}
         >
           <p>Für welche Aufgabe möchtest du Fortschritt notieren?</p>
-          <label>
+          <label className="progress-task-search">
             Aufgabe suchen
             <input
               type="search"
