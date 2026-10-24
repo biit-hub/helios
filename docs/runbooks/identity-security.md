@@ -15,3 +15,7 @@ Die Fassade verlangt korrekten Origin für jede Mutation, validiert Fetch-Metada
 Keine Defaultbenutzer/Passwörter/produktiven Testaccounts. Fehler sind generisch, Logs bestehen nur aus Ereigniscodes; keine Passwörter, Rohfehler, Codes, QR-URIs, Cookies oder Setupnachweise. Adminausgabe nur interaktiv und mit explizitem Einmalcontainer ohne Logtreiber. Lokale Dateirechte/NTFS-Zugriff auf private .env und Backupidentitäten beschränken.
 
 E2-Fachzugriffe verwenden denselben transaktionsgebundenen Guard. Integrationsverschlüsselung nutzt einen eigenen INTEGRATION_KEY; siehe [Kontexte/Todoist](../architecture/contexts-todoist.md) und [Einrichtung](todoist-setup.md).
+
+## E9.3 – Sicherheitsdialog
+
+Sicherheit unter Einstellungen öffnen. «Bestätigung öffnen» zeigt Passwort/TOTP als Dialog. Bei geschützten Verbindungs- und Zuordnungsänderungen führt die Serverablehnung direkt zur benötigten Bestätigung. Eingaben bleiben erhalten; danach die erhaltene Aktion bewusst erneut auslösen. Fristen, Replay-/Session-/Widerrufsprüfungen bleiben serverseitig führend.

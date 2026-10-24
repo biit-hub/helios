@@ -37,7 +37,10 @@ Die manuellen E3-/E4-Abnahmen bleiben ausdrücklich aufgeschoben und offen. Tech
 
 Vor E5-Images Migration 0007 kontrolliert ausführen, nach verschlüsseltem Backup und gestopptem Worker. Sie ergänzt Spalten und Schutztrigger; alte bestätigte Quellen und Historien werden nicht migriert oder ersetzt. Readiness E5 prüft agenda und Beobachtungsfelder. Lokale verschlüsselte Sicherungen genügen weiterhin; Synology-Ziel erst zur Produktivinstallation konfigurieren.
 
-
 ## Kalenderorientierung ab E9
 
 [TermiHub einrichten](termihub.md). Die Orientierung gilt für den ganzen gemeldeten Plantag, einschliesslich vergangener Zeit; kein ab jetzt freier Stundenplan. Frische/vollständige Daten unterstützen bewusste Vorschläge, stale/partial/unmapped bleiben ohne zuverlässiges Budget. Kalenderänderungen ersetzen keine bestehenden Pläne. Eine neue Vorschau erfordert weiterhin die ausdrückliche Aktion; manuelle Aufnahme bleibt verfügbar.
+
+## E9.3 – Kompakte Orientierung
+
+Fokus und Hauptauswahl stehen vor Kalenderdetails. «Arbeitszeit & Kalender» aufklappen, um Quellen und Zeitbudget zu prüfen. Bestätigte Einzelnachweise sind separat aufklappbar. Partial-/Unknown-Warnungen bleiben sichtbar; Aktualisieren verändert keinen bestätigten Plan automatisch.

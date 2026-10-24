@@ -13,3 +13,7 @@ NPM später: nur Web in ein ausdrücklich ausgewähltes existierendes Proxy-Netz
 Updates niemals mit blindem main-Pull vornehmen, solange kein stabiles Release existiert. Ausgangscommit/Image notieren, Backup erstellen, Worker stoppen, Migration prüfen, Images austauschen, Health/Job/Layout prüfen. Schema-Inkompatibilität verlangt einen geprüften Restore, keinen automatischen Downgrade.
 
 E4: Vor passenden Web-/Workerimages Migration 0006 ausführen. Readiness prüft kind/payload/result im bestehenden Journal. Ausstehende Aufgabenoperationen unter Aufgaben prüfen; HTTP 202 ist kein Nachweis. Bei unknown/Create/Comment/Close kein blindes Replay. Details: [Aufgabenverwaltung und Troubleshooting](tasks.md).
+
+## E9.3 – Diagnose und kontrolliertes Update
+
+«Probleme» ist direkt in der Hauptnavigation erreichbar und verwendet dieselben Problem- und Operationsdaten. Kein zweites Journal und keine Bereinigung unbekannter Einträge. Vor einem lokalen Imagewechsel verschlüsselt sichern, Wiederherstellbarkeit und alle bestehenden Tabellen prüfen; nur die ausdrücklich benannte Entwicklungsinstallation aktualisieren. Der Abschlussbericht nennt den tatsächlichen Installationsstand.

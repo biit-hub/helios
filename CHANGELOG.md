@@ -114,3 +114,4 @@ Native Epic-Übersicht/-Hierarchie; gezielte Ziel-/Checklisten-/Linkbearbeitung 
 - Zweispaltige Einstellungen, Privat-/Arbeitgeber-Tabs, bestehende Arbeitgeberverwaltung, sechs Farbvorschauen und Sicherheitsdialog bei Bedarf.
 - Zusätzliche reine Listenfilter und Sortierung; gelesene native Geschwisterpositionen bleiben erhalten. Keine Neuordnung in Todoist oder bestätigten Tagesplänen.
 - Keine SQL-Migration, zweite Schreibpipeline oder Demo-Geschäftslogik. BUG-003 bleibt separat offen. Details im E9.3-Prüfbericht.
+- Sicherheit: transitives Undici gezielt auf 8.12.2 korrigiert; keine Abschwächung der Audit-Gates.
