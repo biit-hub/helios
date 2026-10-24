@@ -129,3 +129,11 @@ E9 ergänzt [TermiHub-Verbindung und Kalenderorientierung](docs/runbooks/termihu
 ### E9.1 – UI-Konsolidierung
 
 Die Oberfläche orientiert sich am verifizierten Sites-V2-Export. [Design-Audit](docs/design/e9.1-ui-audit.md), [gemeinsames Designsystem](docs/design/design-system.md) und [Prüfung/manuelle visuelle Abnahme](docs/development/e9.1-verification.md) beschreiben die Umsetzung. Referenzquellen und lokale Vergleichsbilder werden nicht veröffentlicht. Die fachliche manuelle E3–E9-Abnahme bleibt offen.
+
+## E9.3 – Freigegebenes UX-Redesign
+
+Die Hauptnavigation steht kompakt neben der Marke. Eine linke Seitenleiste bündelt die bewusste Kontextwahl und orange Schnellaktionen; allgemeine Ansichten behalten die Auswahl intern. Fokus und Tagesplan zeigen die Arbeit vor der aufklappbaren Kalenderorientierung. Aufgaben bieten kompakte Zeilen mit direkt aufklappbaren Details und einer eigenen Bearbeitungsaktion. Epics, Morgenroutine und sämtliche fachlichen Schutzregeln bleiben erhalten.
+
+Einstellungen: links das Kapitel wählen, rechts Privat oder Arbeitgeber bearbeiten. Unter Arbeitgeber lassen sich weitere Arbeitgeber hinzufügen. Alle sechs Kontextfarben besitzen eine sichtbare Vorschau. Verbindungen werden separat eingerichtet, Todoist-Projekt, Kanban und TermiHub-Zuordnung bleiben beim Kontext erreichbar. Sensible Änderungen fordern die bestehende Passwort-/TOTP-Bestätigung im Dialog an; danach die erhaltene Aktion bewusst erneut auslösen. Unbekannte externe Ergebnisse werden nicht automatisch wiederholt.
+
+[Übernahme und Prüfstand](docs/development/e9.3-verification.md), [manueller Design-Nachtest](docs/runbooks/e9.3-design-review.md). BUG-003 und die abschliessende menschliche Funktions-/Designabnahme bleiben offen. Kein stabiles Release und keine Produktivfreigabe.

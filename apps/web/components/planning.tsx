@@ -159,12 +159,6 @@ export function PlanningPanel({
               />
             </label>
           </div>
-          <CalendarContextPanel
-            key={context.id + ":" + data.day}
-            contextId={context.id}
-            day={data.day}
-            basis={data.plan?.calendarBasis}
-          />
           <p className="help">
             {plan ? states[plan.status] : "Noch kein Tagesplan"} ·{" "}
             {context.name}
@@ -177,7 +171,7 @@ export function PlanningPanel({
           )}
           {context.configured && !plan && (
             <section className="card">
-              <h2>Ein ruhiger Start für deinen Tag.</h2>
+              <h2>Deine Tagesauswahl</h2>
               <p>
                 Aktualisiere zuerst die Aufgaben dieses Kontexts. Danach kannst
                 du eine kleine Auswahl prüfen.
@@ -208,6 +202,12 @@ export function PlanningPanel({
               }
             />
           )}
+          <CalendarContextPanel
+            key={context.id + ":" + data.day}
+            contextId={context.id}
+            day={data.day}
+            basis={data.plan?.calendarBasis}
+          />
           {plan && (
             <>
               {plan.status !== "confirmed" && (
@@ -389,6 +389,7 @@ function Operation({
     return () => clearInterval(timer);
   }, [op?.retryAt]);
   if (!op) return null;
+  const Steps = op.status === "confirmed" ? "details" : "div";
   return (
     <section className="card operation-panel" aria-label="Bestätigungsstand">
       <h2>Bestätigungsstand</h2>
@@ -425,26 +426,29 @@ function Operation({
           </button>
         </>
       )}
-      <ul>
-        {op.steps.map((s) => (
-          <li key={s.taskId}>
-            {
-              data.plan?.entries.find((e) => e.taskId === s.taskId)?.source
-                .content
-            }
-            :{" "}
-            {s.status === "local"
-              ? messages.HIERARCHY_KEPT
-              : s.status === "verified"
-                ? "Abschnitt bestätigt"
-                : s.status === "pending"
-                  ? "Noch offen"
-                  : s.status === "sending"
-                    ? "Ergebnis ausstehend"
-                    : (messages[s.code ?? ""] ?? "Prüfung erforderlich")}
-          </li>
-        ))}
-      </ul>
+      <Steps>
+        {op.status === "confirmed" && <summary>Einzelnachweise</summary>}
+        <ul>
+          {op.steps.map((s) => (
+            <li key={s.taskId}>
+              {
+                data.plan?.entries.find((e) => e.taskId === s.taskId)?.source
+                  .content
+              }
+              :{" "}
+              {s.status === "local"
+                ? messages.HIERARCHY_KEPT
+                : s.status === "verified"
+                  ? "Abschnitt bestätigt"
+                  : s.status === "pending"
+                    ? "Noch offen"
+                    : s.status === "sending"
+                      ? "Ergebnis ausstehend"
+                      : (messages[s.code ?? ""] ?? "Prüfung erforderlich")}
+            </li>
+          ))}
+        </ul>
+      </Steps>
     </section>
   );
 }

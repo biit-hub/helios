@@ -21,6 +21,7 @@ export function safeReturnTo(value: unknown) {
     [
       "/",
       "/tasks",
+      "/problems",
       "/plan",
       "/morning",
       "/mobile",

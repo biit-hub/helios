@@ -13,6 +13,11 @@ import {
   X,
   ArrowUpRight,
   GripVertical,
+  Info,
+  RefreshCw,
+  MessageSquare,
+  Sparkles,
+  TriangleAlert,
 } from "lucide-react";
 const icons = {
   focus: Target,
@@ -29,6 +34,11 @@ const icons = {
   close: X,
   open: ArrowUpRight,
   drag: GripVertical,
+  info: Info,
+  refresh: RefreshCw,
+  progress: MessageSquare,
+  sparkles: Sparkles,
+  problems: TriangleAlert,
 };
 export function Icon({ name }: Readonly<{ name: keyof typeof icons }>) {
   const Component = icons[name];

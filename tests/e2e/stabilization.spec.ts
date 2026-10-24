@@ -28,6 +28,7 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
   await privateRow
     .getByRole("button", { name: "Kontext speichern", exact: true })
     .click();
+  await page.getByRole("tab", { name: "Arbeitgeber", exact: true }).click();
   await page
     .getByRole("button", { name: "Arbeitgeber hinzufügen", exact: true })
     .click();
@@ -44,7 +45,7 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
   await newRow
     .getByRole("button", { name: "Kontext speichern", exact: true })
     .click();
-  await page.getByRole("button", { name: "Atelier Test", exact: true }).click();
+
   await control({
     removeSection: { projectId: projects[1]!.id, name: "Wartet" },
   });
@@ -73,12 +74,18 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
       .getByRole("navigation", { name: "Hauptnavigation" })
       .getByRole("link", { name, exact: true })
       .click();
-    await expect(page).toHaveURL(
-      new RegExp(path === "/" ? "^" + baseURL + "/\\?" : path + "\\?"),
-    );
-    await expect(
-      page.getByRole("button", { name: "Atelier Test", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => new URL(page.url()).pathname).toBe(path);
+    if (!["/morning", "/settings/contexts"].includes(path!)) {
+      const context = page.getByRole("button", {
+        name: "Atelier Test",
+        exact: true,
+      });
+      if (name === "Fokus") await context.click();
+      await expect(context).toHaveAttribute("aria-pressed", "true");
+    } else
+      await expect(
+        page.getByRole("group", { name: "Kontext auswählen" }),
+      ).toHaveCount(0);
   }
   await page.reload();
   await expect(

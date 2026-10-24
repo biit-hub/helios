@@ -19,10 +19,12 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
     .filter({ has: page.getByRole("heading", { name: /Privat/ }) });
   await privateRow.getByLabel("Anzeigename").fill("Mein Privat");
   await privateRow
-    .getByRole("button", { name: "Waldgrün", exact: true })
-    .click();
+    .getByRole("combobox", { name: /Kontextfarbe/ })
+    .selectOption("green");
   await expect(
-    privateRow.getByRole("group", { name: "Farbschema" }).getByRole("button"),
+    privateRow
+      .getByRole("combobox", { name: /Kontextfarbe/ })
+      .locator("option"),
   ).toHaveCount(6);
   await privateRow
     .getByRole("combobox", { name: "Todoist-Projekt", exact: true })
@@ -31,8 +33,9 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
     .getByRole("button", { name: "Kontext speichern", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Mein Privat", exact: true }),
+    privateRow.getByRole("heading", { name: /Mein Privat/ }),
   ).toBeVisible();
+  await page.getByRole("tab", { name: "Arbeitgeber", exact: true }).click();
   for (const [name, p] of [
     ["Atelier Nord", projects[1]!],
     ["Studio West", projects[2]!],
@@ -45,20 +48,25 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
       has: page.getByRole("heading", { name: /Neuer Arbeitgeber/ }),
     });
     await row.getByLabel("Anzeigename").fill(name);
-    await row.getByRole("button", { name: "Meerblau", exact: true }).click();
+    await row
+      .getByRole("combobox", { name: /Kontextfarbe/ })
+      .selectOption("blue");
     await row
       .getByRole("combobox", { name: "Todoist-Projekt", exact: true })
       .selectOption(p.id);
     await row
       .getByRole("button", { name: "Kontext speichern", exact: true })
       .click();
-    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("combobox", { name: "Arbeitgeber", exact: true }),
+    ).toContainText(name);
   }
   await page.screenshot({ path: "private/e2-settings.png", fullPage: true });
   await page.reload();
+  await page.getByRole("tab", { name: "Arbeitgeber", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Labor Süd", exact: true }),
-  ).toBeVisible();
+    page.getByRole("combobox", { name: "Arbeitgeber", exact: true }),
+  ).toContainText("Labor Süd");
   await page.getByRole("link", { name: "Aufgaben", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Mein Privat", exact: true }),
@@ -69,6 +77,9 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   await page
     .getByRole("button", { name: "Aufgaben aktualisieren", exact: true })
     .click();
+  await expect(page.locator(".task-entry > summary").first()).toBeVisible();
+  for (const summary of await page.locator(".task-entry > summary").all())
+    await summary.click();
   await expect(
     page.getByRole("heading", { name: "Ausflug vorbereiten", exact: true }),
   ).toBeVisible();
@@ -79,7 +90,7 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   const child = page.locator(".task-card").filter({
     has: page.getByRole("heading", { name: "Verbindung nachschlagen" }),
   });
-  await child.locator("summary").click();
+
   await expect(
     child.getByRole("link", { name: "Ausflug vorbereiten", exact: true }),
   ).toBeVisible();
@@ -87,7 +98,7 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   const parent = page.locator(".task-card").filter({
     has: page.getByRole("heading", { name: "Ausflug vorbereiten" }),
   });
-  await parent.locator("summary").click();
+
   await expect(
     parent.getByRole("button", { name: "Kommentare lesen" }),
   ).toBeEnabled({ timeout: 20000 });
@@ -111,6 +122,7 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
     page.getByRole("button", { name: "Atelier Nord", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("link", { name: "Einstellungen", exact: true }).click();
+  await page.getByRole("button", { name: "Verbindungen", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Verbindung prüfen & Projekte laden" }),
   ).toBeEnabled({ timeout: 20000 });
@@ -125,7 +137,7 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   await expect(page.getByRole("alert").first()).toContainText(
     "API-Token abgewiesen",
   );
-  await page.reload();
+  await page.getByRole("link", { name: "Probleme", exact: true }).click();
   await expect(
     page.locator(".problem-row").getByText(/API-Token abgewiesen/),
   ).toBeVisible();

@@ -1,4 +1,6 @@
 "use client";
+import { nativeTaskOrder } from "./task-list-order";
+import { UiDialog, InfoTip } from "./ui-help";
 import { Icon } from "@helios/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
@@ -70,6 +72,22 @@ export function TaskManager({
 }) {
   const [search, setSearch] = useState(""),
     [status, setStatus] = useState("all"),
+    [priorityFilter, setPriorityFilter] = useState("all"),
+    [labelFilter, setLabelFilter] = useState(""),
+    [dateFilter, setDateFilter] = useState("all"),
+    [deadlineFilter, setDeadlineFilter] = useState("all"),
+    [sort, setSort] = useState("native"),
+    [initialMode, setInitialMode] = useState<"form" | "progress">(() =>
+      typeof window !== "undefined" &&
+      new URL(window.location.href).searchParams.get("mode") === "progress"
+        ? "progress"
+        : "form",
+    ),
+    [progressPicking, setProgressPicking] = useState(
+      () =>
+        typeof window !== "undefined" &&
+        new URL(window.location.href).searchParams.get("progress") === "pick",
+    ),
     [editing, setEditing] = useState<string | null>(() =>
       typeof window === "undefined"
         ? null
@@ -84,12 +102,16 @@ export function TaskManager({
       ) {
         setSearch("");
         setStatus("all");
+        setPriorityFilter("all");
+        setLabelFilter("");
+        setDateFilter("all");
+        setDeadlineFilter("all");
       }
     };
     window.addEventListener(taskChangedEvent, changed);
     return () => window.removeEventListener(taskChangedEvent, changed);
   }, [context.id]);
-  const visible = tasks.filter(
+  const visible = nativeTaskOrder(tasks).filter(
     (t) =>
       t.state === "active" &&
       t.data.project_id === context.projectId &&
@@ -104,8 +126,30 @@ export function TaskManager({
       )
         .toLocaleLowerCase()
         .includes(search.toLocaleLowerCase()) &&
-      (status === "all" || t.sectionName === status),
+      (status === "all" || t.sectionName === status) &&
+      (priorityFilter === "all" ||
+        t.data.priority === Number(priorityFilter)) &&
+      (!labelFilter || t.data.labels.includes(labelFilter)) &&
+      (dateFilter === "all" ||
+        (dateFilter === "set" ? !!t.data.due : !t.data.due)) &&
+      (deadlineFilter === "all" ||
+        (deadlineFilter === "set" ? !!t.data.deadline : !t.data.deadline)),
   );
+  const compare: Record<string, (a: TaskView, b: TaskView) => number> = {
+    native: () => 0,
+    priority: (a, b) => b.data.priority - a.data.priority,
+    title: (a, b) => a.data.content.localeCompare(b.data.content, "de"),
+    due: (a, b) =>
+      (a.data.due?.datetime ?? a.data.due?.date ?? "9999").localeCompare(
+        b.data.due?.datetime ?? b.data.due?.date ?? "9999",
+      ),
+    deadline: (a, b) =>
+      (a.data.deadline?.date ?? "9999").localeCompare(
+        b.data.deadline?.date ?? "9999",
+      ),
+  };
+  const ordered = [...visible].sort(compare[sort] ?? compare.native);
+
   return (
     <TaskPlanProvider context={context}>
       <div className="task-filters">
@@ -127,32 +171,158 @@ export function TaskManager({
           </select>
         </label>
       </div>
+      <details className="ux-filter-options">
+        <summary>Weitere Filter & Sortierung</summary>
+        <InfoTip label="Sortierung">
+          Die native Reihenfolge berücksichtigt gelesene Geschwisterpositionen;
+          die Abschnittsfolge bleibt wie geladen. Fehlen Positionsdaten, bleibt
+          die geladene Reihenfolge erhalten. Sortieren verändert nur diese
+          Ansicht. Todoist und bestätigte Tagespläne bleiben unverändert.
+        </InfoTip>
+        <div className="task-filters">
+          <label>
+            <span>Priorität</span>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <option value="all">Alle Prioritäten</option>
+              {[4, 3, 2, 1].map((p) => (
+                <option key={p} value={p}>
+                  P{5 - p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Label</span>
+            <select
+              value={labelFilter}
+              onChange={(e) => setLabelFilter(e.target.value)}
+            >
+              <option value="">Alle Labels</option>
+              {[...new Set(tasks.flatMap((t) => t.data.labels))]
+                .sort((a, b) => a.localeCompare(b, "de"))
+                .map((l) => (
+                  <option key={l}>{l}</option>
+                ))}
+            </select>
+          </label>
+          <label>
+            <span>Planungsdatum</span>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            >
+              <option value="all">Alle</option>
+              <option value="set">Mit Planungsdatum</option>
+              <option value="unset">Ohne Planungsdatum</option>
+            </select>
+          </label>
+          <label>
+            <span>Deadline</span>
+            <select
+              value={deadlineFilter}
+              onChange={(e) => setDeadlineFilter(e.target.value)}
+            >
+              <option value="all">Alle</option>
+              <option value="set">Mit Deadline</option>
+              <option value="unset">Ohne Deadline</option>
+            </select>
+          </label>
+          <label>
+            <span>Sortierung</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="native">Native Todoist-Reihenfolge</option>
+              <option value="priority">Priorität</option>
+              <option value="title">Titel</option>
+              <option value="due">Planungsdatum</option>
+              <option value="deadline">Deadline</option>
+            </select>
+          </label>
+        </div>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            setSearch("");
+            setStatus("all");
+            setPriorityFilter("all");
+            setLabelFilter("");
+            setDateFilter("all");
+            setDeadlineFilter("all");
+            setSort("native");
+          }}
+        >
+          Filter zurücksetzen
+        </button>
+      </details>
       {!visible.length && tasks.length > 0 && (
         <p>Keine Aufgaben für diesen Filter.</p>
       )}
       <div className="task-list">
-        {visible.map((t) => (
-          <div className="task-entry" key={t.data.id}>
+        {ordered.map((t) => (
+          <details className="task-entry task-card" key={t.data.id}>
+            <summary>
+              <h3>{t.data.content}</h3>
+              <span className="help">
+                {t.sectionName ?? "Ohne Abschnitt"} · P{5 - t.data.priority}
+                {t.data.due ? " · Geplant " + t.data.due.date : ""}
+                {t.data.deadline ? " · Deadline " + t.data.deadline.date : ""}
+              </span>
+              <button
+                type="button"
+                className="secondary task-open"
+                aria-label={"Aufgabe öffnen und bearbeiten: " + t.data.content}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setInitialMode("form");
+                  setEditing(t.data.id);
+                }}
+              >
+                <Icon name="open" />
+              </button>
+            </summary>
             {renderTask(t)}
             <AddToPlan
               taskId={t.data.id}
               instanceKey={entryKey({ taskId: t.data.id, source: t.data })}
               context={context}
             />
-            <button
-              type="button"
-              className="secondary task-open"
-              aria-label={"Aufgabe öffnen und bearbeiten: " + t.data.content}
-              onClick={() => setEditing(t.data.id)}
-            >
-              Öffnen & bearbeiten <Icon name="open" />
-            </button>
-          </div>
+          </details>
         ))}
       </div>
+      {progressPicking && (
+        <UiDialog
+          title="Fortschritt: Aufgabe auswählen"
+          close={() => setProgressPicking(false)}
+        >
+          <p>Für welche Aufgabe möchtest du Fortschritt notieren?</p>
+          {ordered.map((t) => (
+            <button
+              type="button"
+              key={t.data.id}
+              onClick={() => {
+                setInitialMode("progress");
+                setEditing(t.data.id);
+                setProgressPicking(false);
+              }}
+            >
+              {t.data.content}
+            </button>
+          ))}
+          {!ordered.length && (
+            <p>
+              Keine aktuelle Aufgabe verfügbar. Aufgabenstand und Filter prüfen.
+            </p>
+          )}
+        </UiDialog>
+      )}
       {editing && (
         <TaskEditor
           key={editing}
+          initialMode={initialMode}
           context={context}
           taskId={editing}
           snapshot={snapshot}
@@ -163,13 +333,22 @@ export function TaskManager({
     </TaskPlanProvider>
   );
 }
-export function TaskCapture({ snapshot }: { snapshot: WorkSnapshot }) {
+export function TaskCapture({
+  snapshot,
+  sidebar = false,
+  disabled = false,
+}: Readonly<{
+  snapshot: WorkSnapshot;
+  disabled?: boolean;
+  sidebar?: boolean;
+}>) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
-        className="capture-button"
+        className={sidebar ? "sidebar-capture" : "capture-button"}
+        disabled={disabled}
         onClick={() => setOpen(true)}
       >
         <Icon name="plus" /> Aufgabe erfassen
@@ -178,8 +357,9 @@ export function TaskCapture({ snapshot }: { snapshot: WorkSnapshot }) {
     </>
   );
 }
-export function TaskOperations({ contextId }: { contextId: string }) {
-  const [operationError, setOperationError] = useState("");
+export function TaskOperations({ contextId }: { contextId?: string }) {
+  const [operationError, setOperationError] = useState(""),
+    [readError, setReadError] = useState("");
   const [rows, setRows] = useState<
     (TaskOperationView & { contextId: string | null })[]
   >([]);
@@ -188,9 +368,17 @@ export function TaskOperations({ contextId }: { contextId: string }) {
     const read = () =>
       void api("/api/tasks")
         .then((v) => {
-          if (alive) setRows(v);
+          if (alive) {
+            setRows(v);
+            setReadError("");
+          }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (alive)
+            setReadError(
+              "Operationsstand konnte nicht geladen werden. Ein vorhandener Stand ist möglicherweise veraltet.",
+            );
+        });
     read();
     const timer = setInterval(read, 2500);
     return () => {
@@ -199,12 +387,19 @@ export function TaskOperations({ contextId }: { contextId: string }) {
     };
   }, []);
   const relevant = rows.filter(
-    (r) => r.contextId === contextId || r.contextId === null,
+    (r) =>
+      contextId === undefined ||
+      r.contextId === contextId ||
+      r.contextId === null,
   );
   return (
-    relevant.length > 0 && (
+    (relevant.length > 0 || readError) && (
       <details className="card operation-list">
-        <summary>Aufgabenänderungen und Einzelergebnisse</summary>
+        <summary>
+          Aufgabenänderungen und Einzelergebnisse
+          {readError ? " · Abruf fehlgeschlagen" : ""}
+        </summary>
+        {readError && <p role="alert">{readError}</p>}
         {operationError && <p role="alert">{operationError}</p>}
         {relevant.map((r) => (
           <div key={r.id}>
@@ -828,12 +1023,15 @@ export function TaskEditor({
           </div>
         )}
         {inspection && context && (
-          <TaskDocument
-            key={inspection.basis}
-            context={context}
-            taskId={inspection.task.id}
-            snapshot={snapshot}
-          />
+          <details className="ux-editor-document">
+            <summary>Ziel, Checkliste & Links</summary>
+            <TaskDocument
+              key={inspection.basis}
+              context={context}
+              taskId={inspection.task.id}
+              snapshot={snapshot}
+            />
+          </details>
         )}
         <fieldset
           hidden={aiMode !== "form"}
@@ -867,7 +1065,7 @@ export function TaskEditor({
             </label>
             <div className="task-fields">
               <label>
-                Priorität
+                <span>Priorität</span>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(Number(e.target.value))}
@@ -886,63 +1084,68 @@ export function TaskEditor({
                   setLabels(next);
                 }}
               />
-              <label>
-                Geplantes Datum
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-              </label>
-              <label>
-                Geplante Uhrzeit (Ortszeit dieses Browsers)
-                <input
-                  type="time"
-                  disabled={!date}
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                />
-              </label>
-              {taskId && (
-                <label>
-                  Neue Wiederholung (vollständiger Todoist-Text, Englisch)
-                  <input
-                    value={recurring}
-                    placeholder="every week starting 2026-11-01"
-                    onChange={(e) => setRecurring(e.target.value)}
-                  />
-                </label>
-              )}
-              {inspection?.task.due?.is_recurring && (
-                <label className="check-label">
-                  <input
-                    type="checkbox"
-                    checked={removeRecurrence}
-                    onChange={(e) => setRemoveRecurrence(e.target.checked)}
-                  />
-                  Wiederholung entfernen: geändertes oder geleertes
-                  Planungsdatum ausdrücklich bestätigen
-                </label>
-              )}
-              <label>
-                Echte Deadline
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                />
-              </label>
-              <label>
-                Dauer in Minuten
-                <input
-                  type="number"
-                  min={1}
-                  max={14400}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                />
-              </label>
             </div>
+            <details className="ux-editor-planning">
+              <summary>Planung · Datum, Dauer & Deadline</summary>
+              <div className="task-fields">
+                <label>
+                  Geplantes Datum
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Geplante Uhrzeit (Ortszeit dieses Browsers)
+                  <input
+                    type="time"
+                    disabled={!date}
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                  />
+                </label>
+                {taskId && (
+                  <label>
+                    Neue Wiederholung (vollständiger Todoist-Text, Englisch)
+                    <input
+                      value={recurring}
+                      placeholder="every week starting 2026-11-01"
+                      onChange={(e) => setRecurring(e.target.value)}
+                    />
+                  </label>
+                )}
+                {inspection?.task.due?.is_recurring && (
+                  <label className="check-label">
+                    <input
+                      type="checkbox"
+                      checked={removeRecurrence}
+                      onChange={(e) => setRemoveRecurrence(e.target.checked)}
+                    />
+                    Wiederholung entfernen: geändertes oder geleertes
+                    Planungsdatum ausdrücklich bestätigen
+                  </label>
+                )}
+                <label>
+                  Echte Deadline
+                  <input
+                    type="date"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Dauer in Minuten
+                  <input
+                    type="number"
+                    min={1}
+                    max={14400}
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                  />
+                </label>
+              </div>
+            </details>
             {selectedContext?.kind === "private" && (
               <label className="check-label">
                 <input
@@ -1032,9 +1235,8 @@ export function TaskEditor({
             </button>
           </form>
           {taskId && inspection && (
-            <>
-              <hr />
-              <h3>Weitere bewusste Aktionen</h3>
+            <details className="ux-editor-actions">
+              <summary>Weitere bewusste Aktionen</summary>
               <label>
                 Kommentar
                 <textarea
@@ -1254,7 +1456,7 @@ export function TaskEditor({
               >
                 Aktuelle Quelle neu laden und Entwurf ersetzen
               </button>
-            </>
+            </details>
           )}
         </fieldset>
       </section>

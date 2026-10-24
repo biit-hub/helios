@@ -1,4 +1,6 @@
-vi.mock("../../apps/web/components/termihub-settings", () => ({ TermiHubConnection: () => null }));
+vi.mock("../../apps/web/components/termihub-settings", () => ({
+  TermiHubConnection: () => null,
+}));
 import { afterEach, expect, it, vi } from "vitest";
 import {
   fireEvent,
@@ -34,6 +36,7 @@ function connection() {
 }
 async function submitToken() {
   render(<Workbench settings />);
+  fireEvent.click(await screen.findByRole("button", { name: "Verbindungen" }));
   const input = await screen.findByLabelText("Neuer Todoist-API-Token");
   fireEvent.change(input, { target: { value: "synthetic-token-only" } });
   fireEvent.click(

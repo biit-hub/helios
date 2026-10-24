@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@helios/ui";
 import { useEffect, useState } from "react";
 import type {
   ContextView,
@@ -40,26 +41,26 @@ export function Epics({
   }, [path]);
   return (
     <section>
-      <h2>Epics und Ziele</h2>
-      <p>
-        Vorhaben aus Todoist mit Label epic. Ziele und Checklisten bleiben in
-        der ursprünglichen Beschreibung.
-      </p>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          setBusy(true);
-          setError("");
-          void request("/api/work/tasks-refresh", { contextId: context.id })
-            .then(() => request(path))
-            .then(setRows)
-            .catch((e) => setError(e.message))
-            .finally(() => setBusy(false));
-        }}
-      >
-        Epics aus Todoist aktualisieren
-      </button>
+      <div className="ux-epic-toolbar">
+        <button
+          type="button"
+          disabled={busy}
+          aria-label="Epics aus Todoist aktualisieren"
+          title="Epics aus Todoist aktualisieren"
+          className="secondary ux-icon-button"
+          onClick={() => {
+            setBusy(true);
+            setError("");
+            void request("/api/work/tasks-refresh", { contextId: context.id })
+              .then(() => request(path))
+              .then(setRows)
+              .catch((e) => setError(e.message))
+              .finally(() => setBusy(false));
+          }}
+        >
+          <Icon name="refresh" />
+        </button>
+      </div>
       {error && <p role="alert">{error}</p>}
       {(!rows || busy) && <output>Epics werden geladen …</output>}
       {rows?.length === 0 && (

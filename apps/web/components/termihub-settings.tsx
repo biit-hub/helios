@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { TermiHubSettings } from "@helios/contracts";
 import { routineRequest as api } from "./routine-http";
+import { useNavigationLock } from "./navigation-lock";
 const at = (v: string | null) =>
   v ? new Date(v).toLocaleString("de-CH") : "Noch nicht abgerufen";
 function formText(form: FormData, key: string) {
@@ -26,13 +27,22 @@ const states: Record<string, string> = {
 };
 export function TermiHubConnection({
   onChange,
-}: Readonly<{ onChange: () => Promise<unknown> }>) {
+  contextId,
+  mode = "all",
+  onStepUp,
+}: Readonly<{
+  onChange: () => Promise<unknown>;
+  contextId?: string;
+  mode?: "all" | "connection" | "mapping";
+  onStepUp?: () => void;
+}>) {
   const [data, setData] = useState<TermiHubSettings | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [token, setToken] = useState(""),
     [day, setDay] = useState("");
+  useNavigationLock(busy);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -54,7 +64,7 @@ export function TermiHubConnection({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [contextId]);
   useEffect(() => {
     if (!data?.syncing) return;
     const timer = setInterval(
@@ -78,6 +88,12 @@ export function TermiHubConnection({
       );
       return true;
     } catch (e) {
+      if (
+        (e as Error).message.includes(
+          "Passwort und neuen Authenticator-Code bestätigen",
+        )
+      )
+        onStepUp?.();
       setError((e as Error).message);
       return false;
     } finally {
@@ -127,148 +143,160 @@ export function TermiHubConnection({
       className="card settings-panel termihub-settings"
       aria-label="TermiHub-Einstellungen"
     >
-      <h2>TermiHub verbinden</h2>
-      <p>
-        Arbeitszeiten und Kalender dienen als Orientierung. Helios liest
-        ausschliesslich; bestätigte Tagespläne bleiben erhalten.
-      </p>
-      <output>
-        Verbindung:{" "}
-        {states[i.state] ??
-          "Abruf fehlgeschlagen · Verbindung und Lese-Berechtigungen prüfen"}
-      </output>
-      <p className="help">
-        Letzter Abrufversuch: {at(i.lastCheckedAt)} · Letzter vollständiger
-        Abruf: {at(i.lastSyncAt)}
-      </p>
-      <p className="help">
-        Vor Token- und Zuordnungsänderungen oben{" "}
-        <a href="#sensitive-changes">
-          Passwort und neuen Authenticator-Code bestätigen
-        </a>
-        . Benötigte Leserechte: events:read, work_locations:read, travel:read.
-      </p>
-      {!i.keyAvailable && (
-        <p role="alert">
-          Der gemeinsame Integrationsschlüssel fehlt. Bitte die
-          Serverkonfiguration prüfen.
+      <h2>
+        {mode === "mapping"
+          ? "TermiHub · Arbeitszeiten & Kalender"
+          : "TermiHub verbinden"}
+      </h2>
+      <div hidden={mode === "mapping"}>
+        <p>
+          Arbeitszeiten und Kalender dienen als Orientierung. Helios liest
+          ausschliesslich; bestätigte Tagespläne bleiben erhalten.
         </p>
-      )}
-      <form
-        key={i.revision}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const values = new FormData(e.currentTarget);
-          if (
-            await act("save", {
-              revision: i.revision,
-              baseUrl: values.get("baseUrl"),
-              token,
-            })
-          )
-            setToken("");
-        }}
-      >
-        <fieldset className="settings-group">
-          <legend>1. Verbindung einrichten</legend>
-          <label>
-            TermiHub-Serveradresse
-            <input
-              name="baseUrl"
-              type="url"
-              placeholder="https://termihub.example.invalid"
-              defaultValue={i.baseUrl}
-              maxLength={2048}
-              required
-            />
-          </label>
-          <label>
-            Neuer TermiHub-API-Token
-            <input
-              type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              maxLength={4096}
-              required
-            />
-          </label>
-          <button type="submit" disabled={busy || !i.keyAvailable}>
-            TermiHub-Token verschlüsselt speichern
-          </button>
-        </fieldset>
-      </form>
-      <p className="help">
-        {i.hasToken
-          ? "Token hinterlegt · wird nicht erneut ausgegeben."
-          : "Kein Token hinterlegt."}{" "}
-        HTTPS-Serveradresse ohne Pfad verwenden.
-      </p>
-      <div className="settings-group">
-        <h3>2. Daten lesen und Verbindung prüfen</h3>
-        <div className="button-row">
-          <label>
-            Referenztag für Arbeitsorganisationen
-            <input
-              type="date"
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-            />
-          </label>
-          <button
-            type="button"
-            disabled={
-              busy ||
-              i.syncing ||
-              pause ||
-              !i.enabled ||
-              !i.hasToken ||
-              !i.keyAvailable
-            }
-            onClick={() => void act("refresh", day ? { day } : {})}
-          >
-            Verbindung prüfen & Kalender lesen
-          </button>
-          <button
-            type="button"
-            className="secondary"
-            disabled={busy}
-            onClick={() => void reload().catch((e) => setError(e.message))}
-          >
-            Gespeicherten Stand neu laden
-          </button>
-          {i.hasToken && (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void act(i.enabled ? "disable" : "enable", {
-                    revision: i.revision,
-                  })
-                }
-              >
-                {i.enabled ? "TermiHub deaktivieren" : "TermiHub aktivieren"}
-              </button>
-              <button
-                type="button"
-                className="secondary"
-                disabled={busy}
-                onClick={() => void act("remove", { revision: i.revision })}
-              >
-                TermiHub-Token entfernen
-              </button>
-            </>
-          )}
-        </div>
-        {pause && (
-          <p className="help">
-            Nächster Abruf frühestens: {at(i.nextAllowedAt)}.
+        <output>
+          Verbindung:{" "}
+          {states[i.state] ??
+            "Abruf fehlgeschlagen · Verbindung und Lese-Berechtigungen prüfen"}
+        </output>
+        <p className="help">
+          Letzter Abrufversuch: {at(i.lastCheckedAt)} · Letzter vollständiger
+          Abruf: {at(i.lastSyncAt)}
+        </p>
+        <p className="help">
+          Vor Token- und Zuordnungsänderungen{" "}
+          <a href="#sensitive-changes">
+            Passwort und neuen Authenticator-Code bestätigen
+          </a>
+          . Benötigte Leserechte: events:read, work_locations:read, travel:read.
+        </p>
+        {!i.keyAvailable && (
+          <p role="alert">
+            Der gemeinsame Integrationsschlüssel fehlt. Bitte die
+            Serverkonfiguration prüfen.
           </p>
         )}
+        <form
+          key={i.revision}
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const values = new FormData(e.currentTarget);
+            if (
+              await act("save", {
+                revision: i.revision,
+                baseUrl: values.get("baseUrl"),
+                token,
+              })
+            )
+              setToken("");
+          }}
+        >
+          <fieldset className="settings-group">
+            <legend>1. Verbindung einrichten</legend>
+            <label>
+              TermiHub-Serveradresse
+              <input
+                name="baseUrl"
+                type="url"
+                placeholder="https://termihub.example.invalid"
+                defaultValue={i.baseUrl}
+                maxLength={2048}
+                required
+              />
+            </label>
+            <label>
+              Neuer TermiHub-API-Token
+              <input
+                type="password"
+                autoComplete="off"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                maxLength={4096}
+                required
+              />
+            </label>
+            <button type="submit" disabled={busy || !i.keyAvailable}>
+              TermiHub-Token verschlüsselt speichern
+            </button>
+          </fieldset>
+        </form>
+        <p className="help">
+          {i.hasToken
+            ? "Token hinterlegt · wird nicht erneut ausgegeben."
+            : "Kein Token hinterlegt."}{" "}
+          HTTPS-Serveradresse ohne Pfad verwenden.
+        </p>
+        <div className="settings-group">
+          <h3>2. Daten lesen und Verbindung prüfen</h3>
+          <div className="button-row">
+            <label>
+              Referenztag für Arbeitsorganisationen
+              <input
+                type="date"
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={
+                busy ||
+                i.syncing ||
+                pause ||
+                !i.enabled ||
+                !i.hasToken ||
+                !i.keyAvailable
+              }
+              onClick={() => void act("refresh", day ? { day } : {})}
+            >
+              Verbindung prüfen & Kalender lesen
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              onClick={() => void reload().catch((e) => setError(e.message))}
+            >
+              Gespeicherten Stand neu laden
+            </button>
+            {i.hasToken && (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void act(i.enabled ? "disable" : "enable", {
+                      revision: i.revision,
+                    })
+                  }
+                >
+                  {i.enabled ? "TermiHub deaktivieren" : "TermiHub aktivieren"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => void act("remove", { revision: i.revision })}
+                >
+                  TermiHub-Token entfernen
+                </button>
+              </>
+            )}
+          </div>
+          {pause && (
+            <p className="help">
+              Nächster Abruf frühestens: {at(i.nextAllowedAt)}.
+            </p>
+          )}
+        </div>
       </div>
+      {mode === "mapping" && !i.hasToken && (
+        <p>
+          Keine TermiHub-Verbindung hinterlegt. Unter Verbindungen einrichten.
+        </p>
+      )}
       {i.enabled && i.hasToken && (
         <form
+          hidden={mode === "connection"}
           key={"mapping:" + i.revision}
           onSubmit={(e) => {
             e.preventDefault();
@@ -307,7 +335,7 @@ export function TermiHubConnection({
             {i.contexts
               .filter((c) => c.active)
               .map((c) => (
-                <label key={c.id}>
+                <label key={c.id} hidden={!!contextId && c.id !== contextId}>
                   {c.name} · Arbeitsorganisation
                   <select
                     name={"organization:" + c.id}

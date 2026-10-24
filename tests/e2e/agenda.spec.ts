@@ -169,6 +169,7 @@ test("E5 ordering, keyboard and pointer drag, focus, persistent cyclic reserve a
       exact: true,
     }),
   });
+  await extra.locator(":scope > summary").click();
   await extra
     .getByRole("button", {
       name: "Bewusst in den Tagesplan aufnehmen",

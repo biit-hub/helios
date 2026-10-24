@@ -101,6 +101,9 @@ test("complete bootstrap, MFA, simultaneous sessions, step-up, recovery and pass
   ).toBe(true);
   await page.goto("/settings/security");
   await expect(page.locator(".sessions li")).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Bestätigung öffnen", exact: true })
+    .click();
   await page.getByLabel("Aktuelles Passwort").fill(password);
   await page
     .getByLabel("Neuer Authenticator-Code")
@@ -112,8 +115,11 @@ test("complete bootstrap, MFA, simultaneous sessions, step-up, recovery and pass
     })
     .click();
   await expect(
-    page.getByText("Bestätigung für maximal fünf Minuten gültig."),
+    page
+      .getByRole("dialog")
+      .getByText("Bestätigung für maximal fünf Minuten gültig."),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Schliessen", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Alle anderen Sitzungen widerrufen",
@@ -168,6 +174,9 @@ test("complete bootstrap, MFA, simultaneous sessions, step-up, recovery and pass
     .click();
   await expect(page).toHaveURL(baseURL + "/");
   await page.goto("/settings/security");
+  await page
+    .getByRole("button", { name: "Bestätigung öffnen", exact: true })
+    .click();
   await page.getByLabel("Aktuelles Passwort").fill(password);
   await page
     .getByLabel("Neuer Authenticator-Code")
@@ -179,8 +188,11 @@ test("complete bootstrap, MFA, simultaneous sessions, step-up, recovery and pass
     })
     .click();
   await expect(
-    page.getByText("Bestätigung für maximal fünf Minuten gültig."),
+    page
+      .getByRole("dialog")
+      .getByText("Bestätigung für maximal fünf Minuten gültig."),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Schliessen", exact: true }).click();
   await page
     .getByLabel("Neues Passwort", { exact: true })
     .fill("Another synthetic passphrase 73!");

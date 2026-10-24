@@ -43,7 +43,7 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
   return (
     <>
       <p>
-        <strong>{labels[v.state] ?? "Kalenderstand prüfen"}</strong>
+        <strong>Kalenderdetails</strong>
         {v.retrievedAt && (
           <> · Stand {new Date(v.retrievedAt).toLocaleString("de-CH")}</>
         )}
@@ -217,11 +217,7 @@ export function CalendarContextPanel({
       </p>
     );
   return (
-    <section
-      className="card calendar-context"
-      aria-label="Kalenderorientierung"
-    >
-      <h2>Arbeitszeit & Kalender</h2>
+    <>
       {basis &&
         shown.some(
           (c) =>
@@ -234,46 +230,64 @@ export function CalendarContextPanel({
             entsteht nur auf deinen Auftrag.
           </output>
         )}
-      {shown.map((c) => (
-        <div key={c.contextId}>
-          <h3>{c.name}</h3>
-          <Summary value={c.orientation} />
-          {contextId && data.isToday && !c.orientation.work.length && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={c.orientation.noWorkConfirmed}
-                disabled={busy}
-                onChange={(e) =>
-                  void act("decision", {
-                    contextId: c.contextId,
-                    contextRevision: c.orientation.contextRevision,
-                    revision: c.orientation.decisionRevision,
-                    day: data.day,
-                    noWorkConfirmed: e.target.checked,
-                  })
-                }
-              />
-              Für diesen Kontext ist heute bewusst keine Arbeitszeit vorgesehen.
-            </label>
-          )}
-        </div>
-      ))}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void act("refresh", { day: data.day })}
+      <details
+        className="card calendar-context"
+        aria-label="Kalenderorientierung"
       >
-        Kalenderstand aktualisieren
-      </button>
-      <Link href="/settings/contexts#termihub-settings">
-        Zuordnungen prüfen
-      </Link>
-      <p className="help">
-        Neue Kalenderdaten ändern deine Auswahl und bestätigte Tagespläne nicht
-        automatisch.
-      </p>
+        <summary>
+          <strong>Arbeitszeit & Kalender</strong>
+          <span>
+            {shown
+              .map((c) =>
+                c.orientation.reliable && c.orientation.budget
+                  ? budget(c.orientation.budget) + " frei"
+                  : (labels[c.orientation.state] ?? "Kalenderstand prüfen"),
+              )
+              .join(" · ")}
+          </span>
+        </summary>
+        {shown.map((c) => (
+          <div key={c.contextId}>
+            <h3>{c.name}</h3>
+            <Summary value={c.orientation} />
+            {contextId && data.isToday && !c.orientation.work.length && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={c.orientation.noWorkConfirmed}
+                  disabled={busy}
+                  onChange={(e) =>
+                    void act("decision", {
+                      contextId: c.contextId,
+                      contextRevision: c.orientation.contextRevision,
+                      revision: c.orientation.decisionRevision,
+                      day: data.day,
+                      noWorkConfirmed: e.target.checked,
+                    })
+                  }
+                />
+                Für diesen Kontext ist heute bewusst keine Arbeitszeit
+                vorgesehen.
+              </label>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void act("refresh", { day: data.day })}
+        >
+          Kalenderstand aktualisieren
+        </button>
+        <Link href="/settings/contexts#termihub-settings">
+          Zuordnungen prüfen
+        </Link>
+        <p className="help">
+          Neue Kalenderdaten ändern deine Auswahl und bestätigte Tagespläne
+          nicht automatisch.
+        </p>
+      </details>
       {error && <p role="alert">{error}</p>}
-    </section>
+    </>
   );
 }

@@ -192,6 +192,7 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
     }),
   ).toBeVisible({ timeout: 30000 });
   await editor.getByRole("button", { name: "Formular", exact: true }).click();
+  await editor.locator(".ux-editor-actions > summary").click();
   await editor
     .getByRole("button", {
       name: "Aktuelle Quelle neu laden und Entwurf ersetzen",

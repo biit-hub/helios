@@ -8,16 +8,21 @@ const phase = process.env.DESIGN_CAPTURE_PHASE ?? "current";
 if (!["before", "after", "current"].includes(phase))
   throw new Error("Unknown design capture phase");
 async function capture(page: Page, name: string) {
-  await expect(
-    page.locator('.context-picker [aria-pressed="true"]'),
-  ).toBeVisible();
+  const contextual = ["/", "/plan", "/tasks", "/epics"].includes(
+    new URL(page.url()).pathname,
+  );
+  if (contextual)
+    await expect(
+      page.locator('.context-picker [aria-pressed="true"]'),
+    ).toBeVisible();
   const folder = `private/e9-1/${phase}`;
   mkdirSync(folder, { recursive: true });
   for (const width of [1440, 1024]) {
     await page.setViewportSize({ width, height: 1000 });
-    await expect(
-      page.locator('.context-picker [aria-pressed="true"]'),
-    ).toBeVisible();
+    if (contextual)
+      await expect(
+        page.locator('.context-picker [aria-pressed="true"]'),
+      ).toBeVisible();
     if (name === "epics")
       await expect(page.locator(".epic-grid h3").first()).toBeVisible();
     if (name === "agenda" || name === "focus")
@@ -79,7 +84,7 @@ test("E9.1 synthetic desktop design evidence: settings, tasks, dialogs, plan, fo
   );
   const { errors } = await bootstrapWorkSettings(page, baseURL);
   await expect(
-    page.getByRole("heading", { name: "TermiHub verbinden" }),
+    page.getByRole("heading", { name: "Privater Kontext" }),
   ).toBeVisible();
   if (phase !== "before") {
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -94,6 +99,7 @@ test("E9.1 synthetic desktop design evidence: settings, tasks, dialogs, plan, fo
   await capture(page, "settings");
   await connectProject(page, "planning");
   await capture(page, "tasks");
+  await page.locator(".task-entry > summary").first().click();
   await page
     .getByRole("button", { name: /^Aufgabe öffnen und bearbeiten:/ })
     .first()
@@ -236,6 +242,7 @@ test("E9.1 synthetic desktop design evidence: TermiHub mappings, read error and 
     body: JSON.stringify({ reset: true, mode: "ok" }),
   });
   expect(reset.ok).toBe(true);
+  await page.getByRole("button", { name: "Verbindungen", exact: true }).click();
   const panel = page.getByRole("region", { name: "TermiHub-Einstellungen" });
   await panel.getByLabel("TermiHub-Serveradresse").fill(fixtureOrigin);
   await panel
@@ -254,6 +261,12 @@ test("E9.1 synthetic desktop design evidence: TermiHub mappings, read error and 
       exact: true,
     })
     .click();
+  await expect(
+    panel.getByRole("group", { name: "1. Verbindung einrichten", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Arbeitszeiten & Kalender", exact: true })
+    .click();
   await expect(panel.getByText(/Synthetic calendar ·/)).toBeVisible({
     timeout: 35000,
   });
@@ -263,7 +276,7 @@ test("E9.1 synthetic desktop design evidence: TermiHub mappings, read error and 
         name: "1. Verbindung einrichten",
         exact: true,
       }),
-    ).toBeVisible();
+    ).toBeHidden();
     await expect(
       panel.getByRole("group", {
         name: "4. Kalender bewusst zuordnen",
@@ -308,6 +321,7 @@ test("E9.1 synthetic desktop design evidence: TermiHub mappings, read error and 
   } finally {
     release();
   }
+  await page.getByRole("button", { name: "Verbindungen", exact: true }).click();
   await expect(panel.getByLabel("TermiHub-Serveradresse")).toBeVisible();
   expect(errors).toEqual([]);
 });

@@ -31,6 +31,8 @@ export const todoistTaskSchema = z.object({
   id: externalId,
   project_id: externalId,
   parent_id: externalId.nullable(),
+  child_order: z.number().int().nullish(),
+  order_key: z.string().max(1000).nullish(),
   section_id: externalId.nullable(),
   content: z.string().max(20000),
   description: z.string().max(100000),

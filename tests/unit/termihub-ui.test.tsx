@@ -123,6 +123,9 @@ it("labels stale bounds as historical and leaves manual planning available", asy
     ),
   );
   render(<CalendarContextPanel contextId="synthetic-context" />);
+  fireEvent.click(
+    (await screen.findByText("Arbeitszeit & Kalender")).closest("summary")!,
+  );
   expect(await screen.findByText("Veralteter Kalenderstand")).toBeVisible();
   expect(screen.getByText(/Frühere Orientierung: 30–90 Min/)).toBeVisible();
   expect(
@@ -244,6 +247,9 @@ it("explains the actual unmapped sources and offers a direct settings link", asy
     ),
   );
   render(<CalendarContextPanel contextId="synthetic" />);
+  fireEvent.click(
+    (await screen.findByText("Arbeitszeit & Kalender")).closest("summary")!,
+  );
   expect(await screen.findByText(/Synthetic open source/)).toBeVisible();
   expect(
     screen.getByRole("link", { name: "Kalenderzuordnungen öffnen" }),
@@ -251,4 +257,64 @@ it("explains the actual unmapped sources and offers a direct settings link", asy
   expect(
     screen.getByText(/Kein verlässlich berechnetes freies Zeitbudget/),
   ).toBeVisible();
+});
+
+it("reloads context metadata after adding or selecting an employer without changing other mappings", async () => {
+  const privateContext = {
+    id: "private-synthetic",
+    name: "Synthetic private",
+    active: true,
+    revision: 1,
+    organizationId: "org-private",
+    instanceMatches: true,
+  };
+  const employer = {
+    id: "employer-synthetic",
+    name: "Synthetic new employer",
+    active: true,
+    revision: 1,
+    organizationId: null,
+    instanceMatches: true,
+  };
+  let fresh = false;
+  const fetcher = vi.fn(async () =>
+    Response.json({
+      ...settings,
+      enabled: true,
+      hasToken: true,
+      contexts: fresh ? [privateContext, employer] : [privateContext],
+      organizations: [{ id: "org-private", name: "Synthetic organization" }],
+    }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const { rerender } = render(
+    <TermiHubConnection
+      onChange={async () => {}}
+      contextId="private-synthetic"
+      mode="mapping"
+    />,
+  );
+  expect(
+    await screen.findByLabelText("Synthetic private · Arbeitsorganisation"),
+  ).toHaveValue("org-private");
+  fresh = true;
+  rerender(
+    <TermiHubConnection
+      onChange={async () => {}}
+      contextId="employer-synthetic"
+      mode="mapping"
+    />,
+  );
+  expect(
+    await screen.findByLabelText(
+      "Synthetic new employer · Arbeitsorganisation",
+    ),
+  ).toBeVisible();
+  expect(
+    screen.getByLabelText("Synthetic private · Arbeitsorganisation"),
+  ).toHaveValue("org-private");
+  expect(
+    screen.getByLabelText("Synthetic private · Arbeitsorganisation"),
+  ).not.toBeVisible();
+  expect(fetcher).toHaveBeenCalledTimes(2);
 });

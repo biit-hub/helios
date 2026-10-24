@@ -46,3 +46,9 @@ In „Verbindungen & Probleme“ bedeutet „Geprüft“ weiterhin offen. Nur ei
 Lokale Speicherung: verschlüsselte Credentials, Kontextnamen/Farben/Referenzen, Projektkatalog, abgeleitete Task-Snapshots/Fingerprints/Aktualität und reduzierte Probleme. Todoist führt weiterhin Aufgabeninhalt, Priorität, Datum, Deadline, Hierarchie, Abschnitte und Kommentare. Kommentare werden in E2 nur auf Anforderung zum Browser geliefert; keine vollständige Kommentarhistorie in PostgreSQL.
 
 E9.2: Aktuelle Aufgaben und historische/extern ungeklärte Nachweise sind getrennt. Historische Daten bleiben erhalten, ohne daraus aktuelle Aufgaben oder Schreibbefugnis abzuleiten. Kanban-Abschnitte werden pro ausdrücklich zugeordnetem Projekt in diesen Einstellungen geprüft und nur fehlende Namen bewusst ergänzt.
+
+## E9.3 – Neue Einstellungsnavigation
+
+Verbindung unter Einstellungen → Verbindungen einrichten. Ein Step-up-Fehler öffnet die bestehende Sicherheitsbestätigung als Dialog und erhält den Token. Passwort und einen neuen TOTP-Code bestätigen, Dialog schliessen, die erhaltene Aktion bewusst erneut auslösen. Keine automatische zweite Mutation.
+
+Projekt und Kanban unter Kontexte & Projekte → Privat bzw. Arbeitgeber verwalten. «Arbeitgeber hinzufügen» befindet sich im Arbeitgeber-Tab; eine Neuerstellung aktiviert keinen anderen Arbeitskontext automatisch. TermiHub-Zuordnungen sind darunter erreichbar; andere Zuordnungen bleiben erhalten. Alle sechs Kontextfarben werden mit Farbvorschau angeboten.
