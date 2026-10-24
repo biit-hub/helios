@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
 
-test("E9.3 approved shell, contextual scopes, employer dialog, six color previews and keyboard help", async ({
+test("E9.3 approved shell, contextual scopes, employer dialog, six color previews", async ({
   page,
   baseURL,
 }, info) => {
@@ -50,18 +50,9 @@ test("E9.3 approved shell, contextual scopes, employer dialog, six color preview
   await expect(
     dialog.getByRole("img", { name: "Farbvorschau: Meerblau" }),
   ).toBeVisible();
-  const help = dialog.getByRole("button", {
-    name: "Information zu Kontextfarbe",
-  });
-  if (info.project.name === "mobile") await help.tap();
-  else {
-    await help.focus();
-    await help.press("Enter");
-  }
-  await expect(dialog.getByRole("tooltip")).toBeVisible();
-  await help.press("Escape");
-  await expect(dialog.getByRole("tooltip")).toBeHidden();
-  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Information zu Kontextfarbe" }),
+  ).toHaveCount(0);
   await dialog.getByRole("button", { name: "Schliessen", exact: true }).click();
   await expect(
     dialog.getByText("Ungespeicherte Eingaben verwerfen?", { exact: true }),

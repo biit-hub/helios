@@ -68,3 +68,7 @@ Der separat visuell freigegebene E9.3-Prototyp konkretisiert V2. Seine acht Lief
 - `/problems` ist eine neue geschützte Präsentationsroute. Sie verwendet bestehende Problem- und Operationsdaten; kein weiteres Journal. Sicherheit bleibt in den Einstellungen, die bisherige Sicherheits-URL funktioniert weiter.
 
 Abweichungen und Abnahmegrenzen: [E9.3-Verifikation](../development/e9.3-verification.md).
+
+## E9.4 – Gezielter Feinschliff
+
+Keine neue Gestaltung: umrandete Karten, warme Palette, feste Seitenleiste und zweispaltige Einstellungen bleiben. Rechts steht das heutige Zurich-Datum als dd.mm.yyyy; der ausgewählte Plantag bleibt eine eigene Steuerung. Die redundante Kontextzeile entfällt. Nur die Farbhilfe wird entfernt; Farbvorschau und gemeinsame Labelabstände bleiben. Fortschritt verwendet eine kurze Suchliste mit begrenzter Höhe, Listensemantik und sichtbarem Tastaturfokus. Gleichnamige Quellen erhalten unterscheidbare Namen, IDs stehen in technischen Details. Die Tagesauswahl hat zwei klar gestaltete Aktionen mit gemeinsamer Mindesthöhe und 12px Abstand. Feldnachweise und Unknown-Warnungen bleiben sichtbar. [Prüfbericht](../development/e9.4-verification.md).

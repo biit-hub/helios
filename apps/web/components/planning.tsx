@@ -16,10 +16,16 @@ async function api(path: string, body?: unknown, signal?: AbortSignal) {
   });
   const d = await r.json();
   if (!r.ok)
-    throw new Error(d.error?.message ?? "Die Anfrage ist fehlgeschlagen.");
+    throw new Error(
+      messages[d.error?.code ?? ""] ??
+        d.error?.message ??
+        "Die Anfrage ist fehlgeschlagen.",
+    );
   return d;
 }
 const messages: Record<string, string> = {
+  SOURCE_STALE:
+    "Der Aufgabenstand ist noch nicht verlässlich aktuell. Den laufenden Abruf abschliessen oder die Aufgaben erfolgreich aktualisieren, bevor du eine Tagesvorschau erstellst.",
   SECTION_MISSING:
     "Der Abschnitt «In Arbeit» fehlt. Bitte in Todoist bewusst einrichten und danach erneut prüfen.",
   SECTION_AMBIGUOUS:
@@ -144,9 +150,6 @@ export function PlanningPanel({
       {data && (
         <>
           <div className="panel-heading">
-            <p className="eyebrow">
-              {data.day} · {data.timezone}
-            </p>
             <label>
               Plantag ansehen
               <input
@@ -160,8 +163,7 @@ export function PlanningPanel({
             </label>
           </div>
           <p className="help">
-            {plan ? states[plan.status] : "Noch kein Tagesplan"} ·{" "}
-            {context.name}
+            {plan ? states[plan.status] : "Noch kein Tagesplan"}
           </p>
           {!context.configured && (
             <section className="card">
@@ -176,16 +178,23 @@ export function PlanningPanel({
                 Aktualisiere zuerst die Aufgaben dieses Kontexts. Danach kannst
                 du eine kleine Auswahl prüfen.
               </p>
-              <Link href={"/tasks?context=" + context.id}>
-                Aufgaben aktualisieren
-              </Link>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void action("propose")}
-              >
-                Tagesvorschau erstellen
-              </button>
+              <div className="planning-actions">
+                <Link
+                  className="button secondary"
+                  href={"/tasks?context=" + context.id}
+                >
+                  Aufgaben aktualisieren
+                </Link>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void action("propose")}
+                >
+                  {busy
+                    ? "Tagesvorschau wird erstellt …"
+                    : "Tagesvorschau erstellen"}
+                </button>
+              </div>
             </section>
           )}
           {plan?.status === "confirmed" && (

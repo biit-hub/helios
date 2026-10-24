@@ -50,8 +50,8 @@ export function createTaskWriter(
         signal: AbortSignal.timeout(5000),
         cache: "no-store",
       });
-    } catch {
-      throw new WorkFault("OUTCOME_UNKNOWN", 409);
+    } catch (error) {
+      throw new TaskWriteUnknown(writeFailureKind(error));
     }
     if (r.status === 429) {
       const delay = Number(r.headers.get("retry-after"));
@@ -62,13 +62,14 @@ export function createTaskWriter(
     }
     if (!r.ok) {
       await r.body?.cancel();
+      if (r.status >= 500) throw new TaskWriteUnknown("server", r.status);
       throw new WorkFault(
-        r.status >= 500
-          ? "OUTCOME_UNKNOWN"
+        r.status === 401
+          ? "TODOIST_AUTH"
           : r.status === 403
             ? "TODOIST_PERMISSION"
             : "TODOIST_REJECTED",
-        r.status >= 500 ? 409 : 422,
+        422,
       );
     }
     if (r.status === 204) return null;
@@ -81,12 +82,13 @@ export function createTaskWriter(
           const part = await stream.read();
           if (part.done) break;
           size += part.value.length;
-          if (size > 8 * 1024 * 1024)
-            throw new WorkFault("OUTCOME_UNKNOWN", 409);
+          if (size > 8 * 1024 * 1024) throw new TaskWriteUnknown("response");
           chunks.push(part.value);
         }
-    } catch {
-      throw new WorkFault("OUTCOME_UNKNOWN", 409);
+    } catch (error) {
+      throw error instanceof TaskWriteUnknown
+        ? error
+        : new TaskWriteUnknown(writeFailureKind(error));
     } finally {
       await stream?.cancel();
     }
@@ -94,9 +96,26 @@ export function createTaskWriter(
     try {
       return text ? (JSON.parse(text) as Record<string, unknown>) : null;
     } catch {
-      throw new WorkFault("OUTCOME_UNKNOWN", 409);
+      throw new TaskWriteUnknown("response");
     }
   };
+}
+export class TaskWriteUnknown extends WorkFault {
+  constructor(
+    public reason: "timeout" | "network" | "server" | "response",
+    public httpStatus?: number,
+  ) {
+    super("OUTCOME_UNKNOWN", 409);
+  }
+}
+function writeFailureKind(error: unknown) {
+  const name =
+    typeof error === "object" && error !== null && "name" in error
+      ? error.name
+      : undefined;
+  return name === "TimeoutError" || name === "AbortError"
+    ? ("timeout" as const)
+    : ("network" as const);
 }
 export class TaskRateLimit extends WorkFault {
   constructor(public seconds: number) {
@@ -131,7 +150,7 @@ export function matchesFields(
       continue;
     }
     if (key === "due_date") {
-      if (task.due?.date.slice(0, 10) !== value) return false;
+      if (task.due?.date !== value || task.due?.datetime) return false;
       continue;
     }
     if (key === "due_datetime") {
@@ -146,6 +165,11 @@ export function matchesFields(
     }
     if (key === "duration") {
       if ((task.duration?.amount ?? null) !== value) return false;
+      if (
+        value !== null &&
+        task.duration?.unit !== (desired.duration_unit ?? "minute")
+      )
+        return false;
       continue;
     }
     const actual = task[key as "content"];

@@ -571,3 +571,49 @@ it("authenticates before validating malformed plan requests", async () => {
     plans().handle("propose", headers(""), {}),
   ).rejects.toMatchObject({ code: "AUTH_FAILED", status: 401 });
 });
+
+it("does not propose a reliable day selection while a Todoist refresh is unfinished", async () => {
+  const c = await prepare();
+  const view = await plans().snapshot(headers(), c.id);
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const { createWorkService } = await import("@helios/backend");
+  const blocking = createWorkService(
+    db,
+    config,
+    createTodoistReader(async (input, init) => {
+      if (new URL(String(input)).pathname.endsWith("/tasks")) {
+        entered();
+        await gate;
+      }
+      return f.fetcher(input, init);
+    }),
+  );
+  const refreshing = blocking.handle("tasks-refresh", headers(), {
+    contextId: c.id,
+  });
+  await started;
+  try {
+    await expect(
+      plans().handle("propose", headers(), {
+        contextId: c.id,
+        day: view.day,
+        revision: 0,
+      }),
+    ).rejects.toMatchObject({ code: "SOURCE_STALE" });
+  } finally {
+    release();
+    await refreshing;
+  }
+  await plans().handle("propose", headers(), {
+    contextId: c.id,
+    day: view.day,
+    revision: 0,
+  });
+  expect((await plans().snapshot(headers(), c.id)).plan?.status).toBe("draft");
+});

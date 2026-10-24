@@ -46,3 +46,11 @@ Aufgabenzeile per Klick, Enter oder Leertaste aufklappen. Details ansehen und Ko
 Weitere Filter & Sortierung verändert nur die Lesesicht. Planungsdatum und Deadline werden getrennt gefiltert. Standard ist die native Geschwisterreihenfolge soweit Positionsdaten gelesen wurden; Abschnitte behalten ihre geladene Folge. Ohne native Positionsdaten bleibt die geladene Folge erhalten. Für aktuelle Positionsdaten Todoist bewusst aktualisieren. Kein Reorder-Endpunkt wird dafür aufgerufen.
 
 «Probleme» in der Hauptnavigation zeigt dieselben Problem-/Journalstände. Geprüft ist nicht behoben. Ein Unknown-Ergebnis weder löschen noch automatisch wiederholen. BUG-003 bleibt ein separater offener Testbefund.
+
+## E9.4 – Datum, Dauer und Feldnachweise
+
+Datums-/Uhrzeitfelder verwenden die konfigurierte Planungszeitzone, nicht die zufällige Browserzone. Nicht existierende oder doppelte lokale DST-Uhrzeiten werden abgewiesen. Bei Erfolg schliesst der Dialog und aktualisiert die Aufgabenanzeige ohne F5. Eine beibehaltene Uhrzeit wird nicht als erfolgreiche reine Datumsänderung bestätigt.
+
+Bei beantworteten, aber abweichenden Werten nennt der Operationsnachweis die bestätigten und nicht bestätigten Felder. Die Gesamtänderung bleibt ungeklärt. Technische Details enthalten Operation, Request-ID, Kommando und Code. Zeitüberschreitung, Netzwerk-/Serverfehler und eine unlesbare Antwort sind unterscheidbar; kein automatischer Retry. Alte Unknown-Einträge werden nicht rückwirkend bereinigt.
+
+Das separate Free-Testkonto speichert im Live-Vertrag die angeforderte Dauer trotz HTTP 200 nicht. Kein lokaler Ersatz und keine gesicherte Tarifdiagnose allein aus einer beliebigen Fehlermeldung. Native Dauer bleibt verbindlich; positive Fälle laufen synthetisch. Berechtigungspflichtige Dauer-/Deadline-Liveabnahmen bleiben offen. [Sichere manuelle Nachprüfung](../development/e9.4-verification.md#manuelle-nachprüfung-und-offene-abnahmen).

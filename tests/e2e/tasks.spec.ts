@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
 import type { TaskOperationView } from "@helios/contracts";
 import { projects } from "../fixtures/todoist";
+test.use({ timezoneId: "America/New_York" });
+
 test("E4 verified create/edit refresh without F5; comments, waiting, labels, close and history", async ({
   page,
   baseURL,
@@ -122,6 +124,8 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await dialog
     .getByLabel("Geplantes Datum", { exact: true })
     .fill("2026-10-20");
+  await dialog.getByLabel(/^Geplante Uhrzeit/).fill("14:00");
+  await dialog.getByLabel("Dauer in Minuten", { exact: true }).fill("45");
   await dialog.getByLabel("Echte Deadline", { exact: true }).fill("2026-10-23");
   await dialog
     .getByRole("button", { name: "Änderungen bewusst bestätigen", exact: true })
@@ -150,6 +154,10 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await expect(
     dialog.getByLabel("Echte Deadline", { exact: true }),
   ).toHaveValue("2026-10-23");
+  await expect(dialog.getByLabel(/^Geplante Uhrzeit/)).toHaveValue("14:00");
+  await expect(
+    dialog.getByLabel("Dauer in Minuten", { exact: true }),
+  ).toHaveValue("45");
   await dialog
     .getByLabel("Kommentar", { exact: true })
     .fill("Synthetischer Kommentar E4");

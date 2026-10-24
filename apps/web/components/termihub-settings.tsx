@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { TermiHubSettings } from "@helios/contracts";
 import { routineRequest as api } from "./routine-http";
+import { optionNames } from "./option-names";
 import { useNavigationLock } from "./navigation-lock";
 const at = (v: string | null) =>
   v ? new Date(v).toLocaleString("de-CH") : "Noch nicht abgerufen";
@@ -115,6 +116,7 @@ export function TermiHubConnection({
         )}
       </section>
     );
+  const organizationNames = optionNames(data.organizations, "Organisation");
   const i = data,
     pause = !!i.nextAllowedAt && Date.parse(i.nextAllowedAt) > now;
   const calendars = [
@@ -347,7 +349,7 @@ export function TermiHubConnection({
                         (o) => o.id === c.organizationId,
                       ) && (
                         <option value={c.organizationId}>
-                          Bestehende Referenz {c.organizationId} ·{" "}
+                          Bestehende Zuordnung ·{" "}
                           {c.instanceMatches
                             ? "erhalten"
                             : "erneute Verifikation erforderlich"}
@@ -355,7 +357,7 @@ export function TermiHubConnection({
                       )}
                     {i.organizations.map((o) => (
                       <option key={o.id} value={o.id}>
-                        {o.name} · {o.id}
+                        {organizationNames.get(o.id)}
                       </option>
                     ))}
                   </select>
@@ -383,7 +385,7 @@ export function TermiHubConnection({
               const m = i.mappings.find((v) => v.calendarId === c.id);
               return (
                 <label key={c.id}>
-                  {c.name} · {c.id} · {c.type}
+                  {c.name} · {c.type}
                   {!c.available || !c.enabled ? " · nicht verfügbar" : ""}
                   {m && !m.verified ? " · unbestätigt" : ""}
                   <select
@@ -421,6 +423,32 @@ export function TermiHubConnection({
           {error}
         </p>
       )}
+      <details className="technical-details">
+        <summary>Technische Quellenreferenzen</summary>
+        <ul>
+          {i.organizations.map((o) => (
+            <li key={o.id}>
+              {organizationNames.get(o.id)}: {o.id}
+            </li>
+          ))}
+          {i.contexts
+            .filter(
+              (c) =>
+                c.organizationId &&
+                !i.organizations.some((o) => o.id === c.organizationId),
+            )
+            .map((c) => (
+              <li key={c.id}>
+                {c.name}: bestehende Organisationsreferenz {c.organizationId}
+              </li>
+            ))}
+          {calendars.map((c) => (
+            <li key={c.id}>
+              {c.name}: {c.id}
+            </li>
+          ))}
+        </ul>
+      </details>
       {notice && <output>{notice}</output>}
     </section>
   );

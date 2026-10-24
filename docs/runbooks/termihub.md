@@ -30,3 +30,7 @@ Snapshotbereinigung entfernt nach 30 Tagen ausschliesslich abgelaufene abgeleite
 Zugangsdaten und bewusste Leseabrufe unter Einstellungen → Verbindungen. Kontextbezogene Arbeitsorganisationen unter Kontexte & Projekte; allgemeine Quellenzuordnung zusätzlich unter Arbeitszeiten & Kalender. Ausgeblendete Organisationsfelder bleiben im vorhandenen Mappingformular mit ihren bisherigen Werten erhalten. Gemeinsam genutzte und ausgeschlossene Kalenderquellen gelten weiterhin kontextübergreifend.
 
 In Fokus und Tagesplan ist die Kalenderorientierung zunächst kompakt. Zum Prüfen der Quellen, Zeitzonen und früheren Orientierung aufklappen. Fehlende Aktualität oder Zuordnung liefert weiterhin kein verlässliches freies Budget. Ein geänderter Kalenderbasis-Hinweis und Lese-/Mutationsfehler bleiben sichtbar; es erfolgt keine automatische Neuplanung.
+
+## E9.4 – Quellenbezeichnungen
+
+Organisations- und Kalenderkennungen entfallen aus Standardbeschriftungen. Technische Quellenreferenzen bleiben ausdrücklich aufklappbar. Vorhandene unverifizierte Referenzen bleiben erhalten; Anzeigeänderungen ordnen keine Quelle neu zu und ändern weder Integrationsvertrag noch Kalenderdaten.

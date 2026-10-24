@@ -1,9 +1,11 @@
+import { tasks as nativeTasks } from "../fixtures/todoist";
 import { it, expect } from "vitest";
 import {
   patchWaiting,
   readWaiting,
 } from "../../packages/backend/src/tasks/waiting";
 import {
+  matchesFields,
   fieldPatch,
   createTaskWriter,
 } from "../../packages/backend/src/tasks/todoist";
@@ -142,3 +144,70 @@ it("does not confuse an unchanged recurring rule with a successful rule edit", a
     matchesFields(task, { due_string: "every week starting 2026-11-02" }),
   ).toBe(false);
 });
+
+it("does not confirm a minute duration when Todoist returned the same amount in days", () => {
+  expect(
+    matchesFields(
+      { ...nativeTasks[0]!, duration: { amount: 45, unit: "day" } },
+      { duration: 45, duration_unit: "minute" },
+    ),
+  ).toBe(false);
+});
+it("does not confirm date-only replacement while the previous time is still present", () => {
+  expect(
+    matchesFields(
+      {
+        ...nativeTasks[0]!,
+        due: { date: "2026-10-27T13:00:00Z", timezone: "Europe/Zurich" },
+      },
+      { due_date: "2026-10-27" },
+    ),
+  ).toBe(false);
+});
+
+it.each(["timeout", "network", "server", "response"])(
+  "distinguishes an uncertain %s without a second request",
+  async (reason) => {
+    let calls = 0;
+    const writer = createTaskWriter(async () => {
+      calls++;
+      if (reason === "timeout")
+        throw new DOMException("Synthetic timeout", "TimeoutError");
+      if (reason === "network") throw new TypeError("Synthetic network");
+      return reason === "server"
+        ? new Response("Synthetic", { status: 503 })
+        : new Response("invalid-json", { status: 200 });
+    });
+    await expect(
+      writer(
+        "synthetic",
+        "POST",
+        "tasks",
+        { content: "Synthetic" },
+        crypto.randomUUID(),
+      ),
+    ).rejects.toMatchObject({ code: "OUTCOME_UNKNOWN", reason });
+    expect(calls).toBe(1);
+  },
+);
+it.each([
+  [400, "TODOIST_REJECTED"],
+  [401, "TODOIST_AUTH"],
+  [403, "TODOIST_PERMISSION"],
+])(
+  "keeps definitive HTTP %s distinct from unknown outcomes",
+  async (status, code) => {
+    const writer = createTaskWriter(
+      async () => new Response("Synthetic rejected", { status }),
+    );
+    await expect(
+      writer(
+        "synthetic",
+        "POST",
+        "tasks",
+        { content: "Synthetic" },
+        crypto.randomUUID(),
+      ),
+    ).rejects.toMatchObject({ code });
+  },
+);

@@ -20,6 +20,17 @@ export function loadWorkConfig(env: NodeJS.ProcessEnv = process.env) {
       throw new Error("Todoist fixture origin is test-loopback only");
     origin = u.toString();
   }
-  return { ...config, INTEGRATION_KEY: key, TODOIST_ORIGIN: origin };
+  const PLAN_TIMEZONE = env.PLAN_TIMEZONE ?? "Europe/Zurich";
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: PLAN_TIMEZONE });
+  } catch {
+    throw new Error("Invalid planning timezone");
+  }
+  return {
+    ...config,
+    INTEGRATION_KEY: key,
+    TODOIST_ORIGIN: origin,
+    PLAN_TIMEZONE,
+  };
 }
 export type WorkConfig = ReturnType<typeof loadWorkConfig>;

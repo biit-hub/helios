@@ -118,6 +118,7 @@ export type ContextView = {
   lastSyncAt: string | null;
 };
 export type WorkSnapshot = {
+  timezone?: string;
   contexts: ContextView[];
   integration: {
     revision: number;

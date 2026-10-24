@@ -8,7 +8,7 @@ E3 ergänzt [Tagesplanung und Fokus](docs/runbooks/planning.md) mit nachvollzieh
 
 E4 ergänzt [Aufgabenverwaltung](docs/runbooks/tasks.md): Formularerfassung (ohne Projektwahl im nativen Eingang), Suche/Statusfilter, bewusste Bearbeitung, native Moves, Kommentare, Wartedetails, Abschluss und Löschung. Alle externen Änderungen verwenden dasselbe persistente Journal und den Worker aus E3. Wiederholungen werden instanzbezogen abgeschlossen; unbekannte Ergebnisse werden nicht blind wiederholt. Die manuelle E3-Abnahme bleibt ausdrücklich verschoben und offen.
 
-Geplant: lesendes TermiHub, Lernen, mobile PWA und Push. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
+Geplant: Lernen, mobile PWA und Push. Die lesende TermiHub-Kalenderintegration ist seit E9 vorhanden. Der E2-Reader bleibt GET-only; E3 verschiebt geeignete Aufgaben erst nach bewusster Planbestätigung nach In Arbeit; persönliche Verbindungen richtet der Betreiber selbst ein. Öffentlicher HTTPS-Betrieb benötigt weiterhin eine separate Sicherheitsabnahme.
 
 Für die aktuelle Entwicklung genügen lokale verschlüsselte Backups und isolierte Restore-Proben gemäss [Backup-Runbook](docs/runbooks/backup-restore.md). Eine NAS-Anbindung ist keine E3-Voraussetzung. Für die spätere Produktion sind automatische verschlüsselte Sicherungen auf einem Synology-NAS vorgesehen; Zielpfad und Zugang werden erst bei der Produktivinstallation konfiguriert.
 
@@ -137,3 +137,7 @@ Die Hauptnavigation steht kompakt neben der Marke. Eine linke Seitenleiste bünd
 Einstellungen: links das Kapitel wählen, rechts Privat oder Arbeitgeber bearbeiten. Unter Arbeitgeber lassen sich weitere Arbeitgeber hinzufügen. Alle sechs Kontextfarben besitzen eine sichtbare Vorschau. Verbindungen werden separat eingerichtet, Todoist-Projekt, Kanban und TermiHub-Zuordnung bleiben beim Kontext erreichbar. Sensible Änderungen fordern die bestehende Passwort-/TOTP-Bestätigung im Dialog an; danach die erhaltene Aktion bewusst erneut auslösen. Unbekannte externe Ergebnisse werden nicht automatisch wiederholt.
 
 [Übernahme und Prüfstand](docs/development/e9.3-verification.md), [manueller Design-Nachtest](docs/runbooks/e9.3-design-review.md). BUG-003 und die abschliessende menschliche Funktions-/Designabnahme bleiben offen. Kein stabiles Release und keine Produktivfreigabe.
+
+## E9.4 – Stabilisierung und gezielter Feinschliff
+
+Der bestätigte E9.3-Stil bleibt erhalten. Einmalige Fortschrittsaktionen werden nach dem Öffnen aus der URL konsumiert; Kontextwechsel und Reload öffnen keine Dialoge von selbst. Die Aufgabenwahl ist durchsuchbar. Headerdatum, Farbfelder, verständliche Zuordnungsnamen und Tagesauswahl-Aktionen sind gezielt überarbeitet. Das bestehende Journal zeigt feldgenaue Nachweise und Übertragungsfehler, ohne Unknown-Operationen zu wiederholen. Im separaten Free-Testkonto wird Dauer trotz HTTP 200 nicht gespeichert; positive berechtigungspflichtige Dauer-/Deadline-Liveabnahmen und die menschliche Fachabnahme bleiben offen. [Ursachen, Prüfstand und manuelle Nachprüfung](docs/development/e9.4-verification.md). Kein Release oder E10.

@@ -606,3 +606,96 @@ it.each(["create", "change", "remove"])(
     expect(f.state.tasks[0]!.deadline).toEqual({ date: "2026-10-22" });
   },
 );
+
+it("records field-level evidence for an acknowledged but ignored duration and never replays it", async () => {
+  const c = await prepare();
+  const baseWriter = createTaskWriter(f.fetcher);
+  const ignoring = async (...args: Parameters<typeof baseWriter>) => {
+    const body = { ...args[3] };
+    delete body.duration;
+    delete body.duration_unit;
+    return baseWriter(args[0], args[1], args[2], body, args[4]);
+  };
+  const run = () =>
+    createPlanExecutor(
+      db,
+      config,
+      createTodoistReader(f.fetcher),
+      createTodoistMover(f.fetcher),
+      ignoring,
+    ).runNext();
+  const op = await change(c, "update", {
+    fields: { due: "2026-10-27T13:00:00Z", duration: 45 },
+  });
+  await run();
+  const row = await result(op.operationId);
+  expect(row.status).toBe("unknown");
+  expect(row.code).toBe("TODOIST_FIELDS_UNCONFIRMED");
+  expect(row.result?.verification).toMatchObject({
+    matched: ["due_datetime"],
+    unmatched: ["duration"],
+    acknowledged: true,
+  });
+  expect(row.result?.pending).toBeTruthy();
+  expect(f.state.tasks[0]!.due?.datetime ?? f.state.tasks[0]!.due?.date).toBe(
+    "2026-10-27T13:00:00Z",
+  );
+  const calls = f.control.calls.length;
+  await tasks().handle("resume", headers(), { operationId: op.operationId });
+  await run();
+  expect(f.control.calls).toHaveLength(calls);
+  expect((await result(op.operationId)).status).toBe("unknown");
+});
+
+it.each([
+  { name: "date creation", fields: { due: "2026-10-27" } },
+  { name: "winter time", fields: { due: "2026-10-27T13:00:00Z" } },
+  { name: "summer time", fields: { due: "2027-07-20T12:00:00Z" } },
+  { name: "duration only", fields: { duration: 45 } },
+  {
+    name: "combined date and duration",
+    fields: { due: "2026-10-27T13:00:00Z", duration: 45 },
+  },
+  { name: "date only replacing time", fields: { due: "2026-10-28" } },
+  { name: "duration change", fields: { duration: 60 } },
+  { name: "duration removal", fields: { duration: null } },
+  { name: "date removal", fields: { due: null } },
+])(
+  "verifies scheduling fields: $name without touching the deadline",
+  async ({ fields }) => {
+    const c = await prepare();
+    Object.assign(f.state.tasks[0]!, {
+      due: { date: "2026-10-26T13:00:00Z", is_recurring: false },
+      duration: { amount: 30, unit: "minute" },
+      deadline: { date: "2026-12-15" },
+    });
+    const op = await change(c, "update", { fields });
+    await executor().runNext();
+    const row = await result(op.operationId);
+    expect(row.status).toBe("succeeded");
+    expect(row.result?.verification).toMatchObject({ unmatched: [] });
+    const inspected = await tasks().inspect(headers(), c.id, "synthetic-root");
+    expect(inspected.task.deadline).toEqual({ date: "2026-12-15" });
+    if ("duration" in fields)
+      expect(inspected.task.duration?.amount ?? null).toBe(fields.duration);
+    if ("due" in fields)
+      expect(
+        inspected.task.due?.datetime ?? inspected.task.due?.date ?? null,
+      ).toBe(fields.due);
+  },
+);
+it("reconciles an applied scheduling change after a lost response without a second write", async () => {
+  const c = await prepare();
+  f.control.fail = "applied";
+  const op = await change(c, "update", {
+    fields: { due: "2026-10-27T13:00:00Z", duration: 45 },
+  });
+  await executor().runNext();
+  expect((await result(op.operationId)).status).toBe("unknown");
+  f.control.fail = "";
+  const sent = f.control.calls.length;
+  await tasks().handle("resume", headers(), { operationId: op.operationId });
+  await executor().runNext();
+  expect((await result(op.operationId)).status).toBe("succeeded");
+  expect(f.control.calls).toHaveLength(sent);
+});
