@@ -6,10 +6,7 @@ test("E9.3 approved shell, contextual scopes, employer dialog, six color preview
   page,
   baseURL,
 }, info) => {
-  test.skip(
-    info.project.name !== "desktop",
-    "One synthetic scenario includes all three responsive widths.",
-  );
+  // Both browser projects run this scenario: keyboard on desktop and real touch input on mobile.
   const { errors } = await bootstrapWorkSettings(page, baseURL);
   const nav = page.getByRole("navigation", { name: "Hauptnavigation" });
   await expect(nav.locator("a")).toHaveText([
@@ -56,8 +53,11 @@ test("E9.3 approved shell, contextual scopes, employer dialog, six color preview
   const help = dialog.getByRole("button", {
     name: "Information zu Kontextfarbe",
   });
-  await help.focus();
-  await help.press("Enter");
+  if (info.project.name === "mobile") await help.tap();
+  else {
+    await help.focus();
+    await help.press("Enter");
+  }
   await expect(dialog.getByRole("tooltip")).toBeVisible();
   await help.press("Escape");
   await expect(dialog.getByRole("tooltip")).toBeHidden();
@@ -79,7 +79,7 @@ test("E9.3 approved shell, contextual scopes, employer dialog, six color preview
   await expect(
     page.getByRole("combobox", { name: "Arbeitgeber", exact: true }),
   ).toContainText("E9.3 synthetischer Arbeitgeber");
-  const folder = "private/e9-3/implemented";
+  const folder = "private/e9-3/implemented/" + info.project.name;
   mkdirSync(folder, { recursive: true });
   for (const width of [1440, 1024, 390]) {
     await page.setViewportSize({ width, height: 900 });

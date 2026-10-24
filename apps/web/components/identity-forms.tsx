@@ -497,7 +497,7 @@ export function SecurityForm({
             </label>
             <button disabled={busy}>Sicherheitsaktionen bestätigen</button>
           </form>
-          {message && <p role="status">{message}</p>}
+          {message && <output>{message}</output>}
           {error && <p role="alert">{error}</p>}
         </UiDialog>
       )}

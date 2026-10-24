@@ -82,6 +82,29 @@ export function Workbench({
     [now, setNow] = useState(() => Date.now()),
     [refreshId, setRefreshId] = useState(0);
   const current = snapshot?.contexts.find((c) => c.id === selected);
+  const pageTitle = {
+    problems: "Probleme",
+    settings: "Einstellungen",
+    morning: "Morgenroutine",
+    epics: "Epics und Ziele",
+    focus: "Dein Fokus",
+    plan: "Dein Tagesplan",
+    mobile: "Deine Kontexte",
+    tasks: "Aufgaben",
+  };
+  const view =
+    (problems && "problems") ||
+    (settings && "settings") ||
+    (routine && "morning") ||
+    (epics && "epics") ||
+    planning ||
+    (mobile && "mobile") ||
+    "tasks";
+  const settingsContextId =
+    settingTab === "private"
+      ? snapshot?.contexts.find((c) => c.kind === "private")?.id
+      : settingEmployer ||
+        snapshot?.contexts.find((c) => c.kind !== "private")?.id;
   useEffect(() => {
     if (!settings) return;
     const followHash = () => {
@@ -363,23 +386,7 @@ export function Workbench({
         </aside>
         <main id="main-content" tabIndex={-1}>
           <div className="ux-page-heading">
-            <h1>
-              {problems
-                ? "Probleme"
-                : settings
-                  ? "Einstellungen"
-                  : routine
-                    ? "Morgenroutine"
-                    : epics
-                      ? "Epics und Ziele"
-                      : planning === "focus"
-                        ? "Dein Fokus"
-                        : planning === "plan"
-                          ? "Dein Tagesplan"
-                          : mobile
-                            ? "Deine Kontexte"
-                            : "Aufgaben"}
-            </h1>
+            <h1>{pageTitle[view]}</h1>
             {contextual && current && (
               <p className="context-caption" data-theme={current.theme}>
                 <span className="context-dot" />
@@ -461,7 +468,7 @@ export function Workbench({
                     </div>
                     {settingTab === "employer" && (
                       <label>
-                        Arbeitgeber
+                        <span>Arbeitgeber</span>
                         <select
                           value={
                             settingEmployer ||
@@ -575,14 +582,7 @@ export function Workbench({
                   <TermiHubConnection
                     onChange={load}
                     contextId={
-                      chapter === "contexts"
-                        ? settingTab === "private"
-                          ? snapshot.contexts.find((c) => c.kind === "private")
-                              ?.id
-                          : settingEmployer ||
-                            snapshot.contexts.find((c) => c.kind !== "private")
-                              ?.id
-                        : undefined
+                      chapter === "contexts" ? settingsContextId : undefined
                     }
                     mode={chapter === "connections" ? "connection" : "mapping"}
                     onStepUp={() => setStepUpOpen(true)}
@@ -959,12 +959,16 @@ function ContextEditor({
                 </option>
               ))}
             </select>
-            <span
+            <svg
+              viewBox="0 0 38 38"
               role="img"
               aria-label={"Farbvorschau: " + themes[data.theme]}
               data-theme={data.theme}
               className="ux-color-swatch"
-            />
+            >
+              <title>{"Farbvorschau: " + themes[data.theme]}</title>
+              <rect width="38" height="38" rx="8" fill="var(--accent)" />
+            </svg>
           </div>
         </label>
         <label>
@@ -1034,6 +1038,13 @@ function ContextEditor({
     </article>
   );
 }
+function taskStateLabel(task: TaskView) {
+  if (task.state === "unknown")
+    return "Externer Zustand unbekannt · letzter gespeicherter Stand";
+  if (task.state === "completed") return "Von Todoist als erledigt gemeldet";
+  if (task.state === "deleted") return "Von Todoist als gelöscht gemeldet";
+  return task.sectionName ?? "Ohne Abschnitt";
+}
 function TaskCard({
   task,
   contextId,
@@ -1067,13 +1078,7 @@ function TaskCard({
         <span className="pill">Priorität {5 - t.priority}</span>
       </div>
       <p className="help">
-        {task.state === "unknown"
-          ? "Externer Zustand unbekannt · letzter gespeicherter Stand"
-          : task.state === "completed"
-            ? "Von Todoist als erledigt gemeldet"
-            : task.state === "deleted"
-              ? "Von Todoist als gelöscht gemeldet"
-              : (task.sectionName ?? "Ohne Abschnitt")}
+        {taskStateLabel(task)}
         {task.sectionName
           ? ""
           : t.section_id
