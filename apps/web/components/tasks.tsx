@@ -657,6 +657,7 @@ export function TaskEditor({
   const [documentEpoch, setDocumentEpoch] = useState(0);
   const [requestUncertain, setRequestUncertain] = useState(false);
   const [aiTouched, setAiTouched] = useState(false);
+  const [instanceChanged, setInstanceChanged] = useState(false);
   const formId = useId();
   const formValues = {
     title,
@@ -724,6 +725,7 @@ export function TaskEditor({
         throw new Error(
           "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
         );
+      setInstanceChanged(false);
       setInspection(data);
       const dates = taskDateInputs(t.due, snapshot.timezone);
       const values = {
@@ -818,6 +820,7 @@ export function TaskEditor({
   const pending =
     busy ||
     requestUncertain ||
+    instanceChanged ||
     documentState.pending ||
     (!!operation &&
       ["queued", "running", "unknown", "partial"].includes(operation.status));
@@ -1035,6 +1038,15 @@ export function TaskEditor({
       );
       const t = data.task,
         dates = taskDateInputs(t.due, snapshot.timezone);
+      if (
+        expectedInstanceKey &&
+        entryKey({ taskId: t.id, source: t }) !== expectedInstanceKey
+      ) {
+        setInstanceChanged(true);
+        throw new Error(
+          "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
+        );
+      }
       const next = {
         title: t.content,
         description: t.description,
@@ -1138,7 +1150,11 @@ export function TaskEditor({
           <h2>{taskId ? "Aufgabe bearbeiten" : "Eine neue Aufgabe"}</h2>
         </div>
         <div className="task-editor-scroll">
-          <div className="ai-mode-switch">
+          <fieldset
+            className="ai-mode-switch"
+            disabled={pending}
+            aria-label="Bearbeitungsmodus"
+          >
             <button
               type="button"
               aria-pressed={aiMode === "form"}
@@ -1167,7 +1183,7 @@ export function TaskEditor({
                 </button>
               </>
             )}
-          </div>
+          </fieldset>
           {!taskId && (
             <div hidden={aiMode !== "capture"}>
               <AiDraftPanel

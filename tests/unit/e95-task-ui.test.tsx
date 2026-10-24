@@ -1,3 +1,4 @@
+import { entryKey } from "@helios/contracts";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { TaskEditor } from "../../apps/web/components/tasks";
@@ -26,7 +27,11 @@ vi.mock("../../apps/web/components/ai-drafts", () => ({
     ) : null,
 }));
 vi.mock("../../apps/web/components/task-document", () => ({
-  TaskDocument: () => null,
+  TaskDocument: ({ onVerified }: { onVerified?: () => void }) => (
+    <button type="button" onClick={onVerified}>
+      Dokumentnachweis nachlesen
+    </button>
+  ),
 }));
 const context = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -347,6 +352,12 @@ it.each(["unknown", "partial"])(
     expect(calls).toHaveLength(1);
     expect(close).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Fortschritt dokumentieren" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Aufgabenklärung" }),
+    ).toBeDisabled();
     expect(screen.getByLabelText("Titel", { exact: true })).toHaveValue(
       "Nicht verlieren",
     );
@@ -535,4 +546,54 @@ it("retains the existing discard protection for unfinished AI input inside the t
     "Originalwortlaut behalten",
   );
   expect(calls).toHaveLength(0);
+});
+
+it("does not adopt another recurrence instance when refreshing after a document operation from review", async () => {
+  const source: TaskInspection = {
+    ...inspection,
+    task: {
+      ...inspection.task,
+      due: { date: "2026-10-25", is_recurring: true, string: "every week" },
+    },
+  };
+  const next: TaskInspection = {
+    ...source,
+    basis: "c".repeat(64),
+    task: {
+      ...source.task,
+      due: { date: "2026-11-01", is_recurring: true, string: "every week" },
+    },
+  };
+  let reads = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (path: string) =>
+      Response.json(
+        path.startsWith("/api/tasks?contextId=")
+          ? reads++ === 0
+            ? source
+            : next
+          : { labels: [] },
+      ),
+    ),
+  );
+  render(
+    <TaskEditor
+      snapshot={snapshot}
+      context={context}
+      taskId={source.task.id}
+      expectedInstanceKey={entryKey({
+        taskId: source.task.id,
+        source: source.task,
+      })}
+      close={vi.fn()}
+    />,
+  );
+  await screen.findByDisplayValue(source.task.content);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Dokumentnachweis nachlesen" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(/Aufgabeninstanz/);
+  expect(screen.getByLabelText("Geplantes Datum")).toHaveValue("2026-10-25");
+  expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
 });
