@@ -656,6 +656,7 @@ export function TaskEditor({
   });
   const [documentEpoch, setDocumentEpoch] = useState(0);
   const [requestUncertain, setRequestUncertain] = useState(false);
+  const [aiTouched, setAiTouched] = useState(false);
   const formId = useId();
   const formValues = {
     title,
@@ -844,7 +845,7 @@ export function TaskEditor({
         section ||
         parent
       );
-  const dirty = formDirty || documentState.dirty;
+  const dirty = formDirty || documentState.dirty || aiTouched;
   useNavigationLock(pending || dirty);
 
   function requestClose() {
@@ -885,6 +886,14 @@ export function TaskEditor({
       return;
     }
     if (submitLock.current || pending) return;
+    if (
+      ["create", "update"].includes(action) &&
+      aiTouched &&
+      !window.confirm(
+        "Nur die Grundinformationen speichern? Ungespeicherte KI-Eingaben werden dabei verworfen; gespeicherte KI-Entwürfe und nachgewiesene Änderungen bleiben erhalten.",
+      )
+    )
+      return;
     submitLock.current = true;
     setError("");
     setBusy(true);
@@ -1087,6 +1096,10 @@ export function TaskEditor({
         className="task-dialog card task-editor"
         ref={dialogRoot}
         tabIndex={-1}
+        onChangeCapture={(event) => {
+          if ((event.target as HTMLElement).closest(".ai-panel"))
+            setAiTouched(true);
+        }}
         onKeyDown={(e) => {
           if ((e.target as HTMLElement).closest("dialog")) return;
           if (e.key === "Escape") {
@@ -1512,16 +1525,18 @@ export function TaskEditor({
             <Icon name="close" />
             Abbrechen
           </button>
-          {aiMode === "form" && (
+          {
             <button
               type="submit"
               form={formId}
-              disabled={pending || (!!taskId && !inspection)}
+              disabled={
+                aiMode !== "form" || pending || (!!taskId && !inspection)
+              }
             >
               <Icon name="save" />
               {taskId ? "Speichern" : "Aufgabe erstellen"}
             </button>
-          )}
+          }
           {taskId &&
             (["close", "delete", "move", "wait", "comment"] as const).map(
               (kind) => (
@@ -1532,6 +1547,7 @@ export function TaskEditor({
                     kind === "delete" ? "secondary task-delete" : "secondary"
                   }
                   disabled={
+                    aiMode !== "form" ||
                     pending ||
                     !inspection ||
                     (kind === "close" && !!inspection.task.checked)

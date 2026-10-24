@@ -192,6 +192,10 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
     .locator("summary")
     .filter({ hasText: /^Technische Details$/ })
     .click();
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toMatch(/Ungespeicherte Eingaben/);
+    await dialog.accept();
+  });
   await editor
     .getByRole("button", {
       name: "Aktuelle Quelle neu laden und Entwurf ersetzen",

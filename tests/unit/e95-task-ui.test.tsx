@@ -15,7 +15,15 @@ import type {
 } from "@helios/contracts";
 import { tasks } from "../fixtures/todoist";
 vi.mock("../../apps/web/components/ai-drafts", () => ({
-  AiDraftPanel: () => null,
+  AiDraftPanel: ({ active }: { active: boolean }) =>
+    active ? (
+      <div className="ai-panel">
+        <label>
+          Unfertige KI-Eingabe
+          <textarea />
+        </label>
+      </div>
+    ) : null,
 }));
 vi.mock("../../apps/web/components/task-document", () => ({
   TaskDocument: () => null,
@@ -507,4 +515,24 @@ it("does not offer known non-private project targets for a native fun task", asy
   });
   expect(dialog.querySelector('option[value="synthetic-work"]')).toBeNull();
   expect(dialog.querySelector('option[value="synthetic-inbox"]')).toBeNull();
+});
+
+it("retains the existing discard protection for unfinished AI input inside the task editor", async () => {
+  const calls = provision(),
+    close = await editor(),
+    confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Fortschritt dokumentieren" }),
+  );
+  fireEvent.change(screen.getByLabelText("Unfertige KI-Eingabe"), {
+    target: { value: "Originalwortlaut behalten" },
+  });
+  expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Abbrechen" }));
+  expect(confirm).toHaveBeenCalledWith("Entwurf verwerfen?");
+  expect(close).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("Unfertige KI-Eingabe")).toHaveValue(
+    "Originalwortlaut behalten",
+  );
+  expect(calls).toHaveLength(0);
 });
