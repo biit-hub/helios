@@ -930,11 +930,13 @@ function ContextEditor({
           />
         </label>
         <label>
-          Kontextfarbe
-          <InfoTip label="Kontextfarbe">
-            Die Farbe kennzeichnet diesen Kontext. Allgemeine Ansichten bleiben
-            warm-orange.
-          </InfoTip>
+          <span className="ux-field-caption">
+            <span>Kontextfarbe</span>
+            <InfoTip label="Kontextfarbe">
+              Die Farbe kennzeichnet diesen Kontext. Allgemeine Ansichten
+              bleiben warm-orange.
+            </InfoTip>
+          </span>
           <div className="ux-color-picker">
             <select
               aria-label="Kontextfarbe"

@@ -81,6 +81,7 @@ test("persistent contextual daily plans, hierarchy-safe confirmation, focus and 
       { exact: true },
     ),
   ).toBeVisible({ timeout: 30000 });
+  await page.locator(".operation-panel details > summary").click();
   await expect(
     page.getByText(
       "Lokal ausgewählt · Hierarchie und Todoist-Abschnitt erhalten.",

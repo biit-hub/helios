@@ -806,3 +806,33 @@
     width: auto;
   }
 }
+.ux-workspace input:is([type="checkbox"], [type="radio"]) {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  flex: none;
+}
+.ux-workspace .context-editor label.check {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.ux-workspace .ux-field-caption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ux-settings-content #contexts-settings > label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.ux-workspace label:has(> input:is([type="checkbox"], [type="radio"])) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+}
