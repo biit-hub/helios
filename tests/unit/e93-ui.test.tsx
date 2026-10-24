@@ -178,3 +178,25 @@ it("keeps general settings free of context pills and creates an employer using t
     "22222222-2222-4222-8222-222222222222",
   );
 });
+
+it("does not emit an empty explicit context while general-page metadata is still loading", async () => {
+  const { WorkbenchNavigation } =
+    await import("../../apps/web/components/workbench-navigation");
+  render(<WorkbenchNavigation view="settings" contextId="" busy={false} />);
+  expect(screen.getByRole("link", { name: "Fokus" })).toHaveAttribute(
+    "href",
+    "/",
+  );
+  expect(screen.getByRole("link", { name: "Aufgaben" })).toHaveAttribute(
+    "href",
+    "/tasks",
+  );
+  expect(screen.getByRole("link", { name: "Epics" })).toHaveAttribute(
+    "href",
+    "/epics",
+  );
+  expect(screen.getByRole("link", { name: "Tagesplan" })).toHaveAttribute(
+    "href",
+    "/plan",
+  );
+});

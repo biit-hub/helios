@@ -15,11 +15,13 @@ export function WorkbenchNavigation({
   contextId,
   busy,
 }: Readonly<{ view: View; contextId: string; busy: boolean }>) {
+  const contextPath = (path: string) =>
+    contextId ? path + "?context=" + encodeURIComponent(contextId) : path;
   const links = [
-    { id: "focus", label: "Fokus", path: "/?context=" + contextId },
-    { id: "plan", label: "Tagesplan", path: "/plan?context=" + contextId },
-    { id: "tasks", label: "Aufgaben", path: "/tasks?context=" + contextId },
-    { id: "epics", label: "Epics", path: "/epics?context=" + contextId },
+    { id: "focus", label: "Fokus", path: contextPath("/") },
+    { id: "plan", label: "Tagesplan", path: contextPath("/plan") },
+    { id: "tasks", label: "Aufgaben", path: contextPath("/tasks") },
+    { id: "epics", label: "Epics", path: contextPath("/epics") },
     { id: "morning", label: "Morgenroutine", path: "/morning" },
     { id: "problems", label: "Probleme", path: "/problems" },
     { id: "settings", label: "Einstellungen", path: "/settings/contexts" },
