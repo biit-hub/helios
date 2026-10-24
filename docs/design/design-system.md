@@ -6,7 +6,7 @@ E9.1 verwendet die lokal verifizierte Sites-V2-Referenz (Version 2, Quellcommit 
 
 - `packages/ui/src/index.tsx`: gemeinsame Marke mit CSS-Sonnenkugel, Kicker und Tagline.
 - `packages/ui/src/icon.tsx`: kleine gemeinsame SVG-Linienicons; rein dekorativ mit `aria-hidden`, Beschriftungen stehen daneben.
-- `apps/web/components/workbench-navigation.tsx`: bestehende Hauptnavigation und lokale Einstellungsanker. Keine neuen Fachrouten.
+- `apps/web/components/workbench-navigation.tsx`: kompakte Hauptnavigation und Einstellungs-Kapitelwahl; E9.3 ergänzt die geschützte Präsentationsroute /problems mit vorhandenen Daten.
 - `apps/web/app/design-system.css`: gemeinsame semantische Tokens und V2-Komposition über den bestehenden Featurestilen. `work.css` bleibt für featureeigene Zustände/Drag-Feedback zuständig, `identity.css` für Authformulare.
 - Fachkomponenten behalten ihre State-/Request-/Bestätigungslogik. Layoutwrapper in Agenda und Routine gliedern vorhandene Abschnitte.
 

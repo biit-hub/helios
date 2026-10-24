@@ -296,17 +296,7 @@ export function Workbench({
             <WorkbenchNavigation
               busy={busy || navigationLocked}
               contextId={selected}
-              view={
-                problems
-                  ? "problems"
-                  : routine
-                    ? "morning"
-                    : settings
-                      ? "settings"
-                      : epics
-                        ? "epics"
-                        : (planning ?? "tasks")
-              }
+              view={view === "mobile" ? "tasks" : view}
             />
           )}
         </header>

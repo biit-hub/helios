@@ -62,7 +62,7 @@ export function TermiHubConnection({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [contextId]);
   useEffect(() => {
     if (!data?.syncing) return;
     const timer = setInterval(
