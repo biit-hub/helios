@@ -26,7 +26,9 @@ export function taskDateInputs(
 ) {
   const source = due?.datetime ?? due?.date ?? "";
   if (!source) return { date: "", time: "" };
-  if (/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(source))
+  const hasOffset =
+    source.endsWith("Z") || /^[+-]\d{2}:\d{2}$/.test(source.slice(-6));
+  if (source.includes("T") && hasOffset)
     return parts(new Date(source), timezone);
   return {
     date: source.slice(0, 10),
@@ -68,7 +70,7 @@ export function dateLabel(day: string) {
 }
 export function taskDateLabel(due: TodoistTask["due"], timezone = defaultZone) {
   const value = taskDateInputs(due, timezone);
-  return value.date
-    ? dateLabel(value.date) + (value.time ? " · " + value.time : "")
-    : "Nicht gesetzt";
+  if (!value.date) return "Nicht gesetzt";
+  const label = dateLabel(value.date);
+  return value.time ? label + " · " + value.time : label;
 }

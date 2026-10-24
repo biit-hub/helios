@@ -79,18 +79,27 @@ it("formats today's Zurich calendar date independently from a selected planning 
   expect(headerDate(new Date("2026-10-25T23:30:00Z"))).toBe("26.10.2026");
 });
 it.each([
-  ["2026-10-27", "14:00", "2026-10-27T13:00:00.000Z"],
-  ["2027-07-20", "14:00", "2027-07-20T12:00:00.000Z"],
+  ["2026-10-27", "14:00", "2026-10-27T13:00:00.000Z", "+01:00"],
+  ["2027-07-20", "14:00", "2027-07-20T12:00:00.000Z", "+02:00"],
 ])(
   "round-trips %s at %s in Zurich independently of browser timezone",
-  async (date, time, utc) => {
+  async (date, time, utc, offset) => {
     const { taskDateTime, taskDateInputs } =
       await import("../../apps/web/components/task-dates");
     expect(taskDateTime(date, time, "Europe/Zurich")).toBe(utc);
+    expect(
+      taskDateInputs({ date: utc.replace("Z", "+00:00") }, "Europe/Zurich"),
+    ).toEqual({ date, time });
     expect(taskDateInputs({ date: utc }, "Europe/Zurich")).toEqual({
       date,
       time,
     });
+    expect(
+      taskDateInputs(
+        { date: date + "T" + time + ":00" + offset },
+        "Europe/Zurich",
+      ),
+    ).toEqual({ date, time });
   },
 );
 it.each([
