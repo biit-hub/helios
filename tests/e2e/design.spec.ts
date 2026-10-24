@@ -101,7 +101,7 @@ test("E9.1 synthetic desktop design evidence: settings, tasks, dialogs, plan, fo
   await capture(page, "tasks");
   await page.locator(".task-entry > summary").first().click();
   await page
-    .getByRole("button", { name: /^Aufgabe öffnen und bearbeiten:/ })
+    .getByRole("button", { name: "Bearbeiten", exact: true })
     .first()
     .click();
   await expect(

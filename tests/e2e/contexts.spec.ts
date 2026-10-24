@@ -85,7 +85,7 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
   ).toBeVisible();
   await expect(page.getByText("23.10.2026", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("20.10.2026 · 10:00 · Europe/Zurich", { exact: true }),
+    page.getByText("10:00 · Europe/Zurich", { exact: true }),
   ).toBeVisible();
   const child = page.locator(".task-card").filter({
     has: page.getByRole("heading", { name: "Verbindung nachschlagen" }),
@@ -99,11 +99,13 @@ test("context settings, six themes, real guarded reads, reload, empty and connec
     has: page.getByRole("heading", { name: "Ausflug vorbereiten" }),
   });
 
-  await expect(
-    parent.getByRole("button", { name: "Kommentare lesen" }),
-  ).toBeEnabled({ timeout: 20000 });
-  await parent.getByRole("button", { name: "Kommentare lesen" }).click();
-  await expect(parent.getByText("Synthetischer Fortschritt.")).toBeVisible();
+  await parent
+    .locator("summary")
+    .filter({ hasText: /^Kommentare$/ })
+    .click();
+  await expect(parent.getByText("Synthetischer Fortschritt.")).toBeVisible({
+    timeout: 20000,
+  });
   await page.getByRole("button", { name: "Atelier Nord", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Bereit für den ersten Abruf." }),

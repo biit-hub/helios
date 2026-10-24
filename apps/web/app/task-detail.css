@@ -1,0 +1,370 @@
+/* E9.5: task detail, editor and existing document controls only. */
+.workspace .task-property-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 165px), 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.task-property-grid > div {
+  min-width: 0;
+  border: 1px solid var(--border, #dfd3c3);
+  border-radius: 9px;
+  background: #fcf8f0;
+  padding: 9px 11px;
+}
+.task-property-grid dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #655b4f;
+  margin-bottom: 3px;
+}
+.task-property-grid dd {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.task-description-section {
+  margin: 14px 0;
+}
+.task-description-section h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.task-markdown {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.task-markdown p {
+  margin: 4px 0;
+  white-space: pre-wrap;
+}
+.task-markdown .task-markdown-heading {
+  font-weight: 700;
+  margin-top: 10px;
+}
+.task-markdown .task-markdown-item {
+  padding-left: 10px;
+}
+.workspace .task-accordion,
+.workspace .task-editor-scroll details {
+  margin: 10px 0;
+  border: 1px solid var(--border, #dfd3c3);
+  border-radius: 10px;
+  background: #fffdfa;
+  overflow: clip;
+}
+.workspace .task-accordion > summary,
+.workspace .task-editor-scroll details > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  min-height: 44px;
+  box-sizing: border-box;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.task-accordion > summary::-webkit-details-marker,
+.task-editor-scroll details > summary::-webkit-details-marker {
+  display: none;
+}
+.task-editor-scroll details:not(.task-accordion) > summary::after {
+  content: "⌄";
+  font-size: 20px;
+}
+.task-editor-scroll details[open]:not(.task-accordion) > summary::after {
+  transform: rotate(180deg);
+}
+.task-accordion > summary .ui-icon {
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.task-accordion[open] > summary .ui-icon {
+  transform: rotate(180deg);
+}
+.task-accordion > summary:hover {
+  background: #faf0df;
+}
+.task-accordion > summary:focus-visible {
+  outline: 2px solid #a15013;
+  outline-offset: -3px;
+}
+.task-accordion[open] > summary {
+  border-bottom: 1px solid var(--border, #dfd3c3);
+}
+.task-accordion-body {
+  padding: 12px;
+  min-width: 0;
+}
+.task-accordion-body > :first-child {
+  margin-top: 0;
+}
+.task-card-actions,
+.task-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 8px;
+}
+.workspace .task-card-actions button,
+.workspace .task-editor-toolbar button,
+.task-action-buttons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  min-height: 40px;
+  padding: 9px 12px;
+}
+.workspace button.task-delete,
+.task-action-form button.task-delete {
+  color: #fff;
+  background: #962b2b;
+  border: 1px solid #962b2b;
+}
+.workspace button.task-delete:hover:not(:disabled),
+.task-action-form button.task-delete:hover:not(:disabled) {
+  color: #fff;
+  background: #7b2020;
+}
+.workspace .task-dialog.task-editor {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  width: min(900px, 100%);
+  max-width: 900px;
+  max-height: calc(100dvh - 32px);
+}
+.workspace .task-editor > .panel-heading {
+  flex: none;
+  margin: 0;
+  padding: 18px 20px 12px;
+}
+.workspace .task-editor > .panel-heading h2 {
+  font-size: 21px;
+}
+.task-editor-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 20px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.workspace .task-editor-scroll .task-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 10px 14px;
+  margin: 10px 0;
+  align-items: start;
+}
+.workspace .task-editor-scroll .task-fields label {
+  min-width: 0;
+  margin: 0;
+}
+.workspace .task-editor-scroll label {
+  font-size: 13px;
+  margin: 10px 0;
+}
+.workspace .task-editor-scroll input,
+.workspace .task-editor-scroll select,
+.workspace .task-editor-scroll textarea {
+  padding: 9px 11px;
+  min-width: 0;
+}
+.workspace .task-editor-scroll textarea {
+  min-height: 84px;
+}
+.workspace .task-editor > .task-editor-toolbar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border, #dfd3c3);
+  background: #fff8ec;
+  padding: 12px 16px;
+}
+.workspace .task-editor-toolbar button:focus-visible,
+.task-action-buttons button:focus-visible {
+  outline: 2px solid #3c4d59;
+  outline-offset: 2px;
+}
+.workspace .task-editor-scroll .task-document {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.workspace .task-editor-scroll fieldset {
+  margin: 0;
+}
+.workspace .task-fun-switch {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  min-height: 40px;
+  cursor: pointer;
+}
+.workspace .task-fun-switch input[role="switch"] {
+  position: absolute;
+  left: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.task-switch-track {
+  width: 44px;
+  height: 26px;
+  flex: none;
+  border-radius: 20px;
+  background: #a49d92;
+  display: inline-block;
+  padding: 3px;
+  box-sizing: border-box;
+}
+.task-switch-track::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px #0003;
+  transition: transform 0.15s;
+}
+.task-fun-switch input:checked + .task-switch-track {
+  background: #a15013;
+}
+.task-fun-switch input:checked + .task-switch-track::before {
+  transform: translateX(18px);
+}
+.task-fun-switch input:focus-visible + .task-switch-track {
+  outline: 2px solid #a15013;
+  outline-offset: 3px;
+}
+.task-fun-switch input:disabled + .task-switch-track {
+  opacity: 0.5;
+}
+.checklist-add {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+.checklist-add label {
+  flex: 1;
+  min-width: 0;
+}
+.checklist-add button {
+  flex: none;
+  min-width: 40px;
+  min-height: 40px;
+}
+.task-draft-warning,
+.task-danger-notice {
+  border: 1px solid #d9ada0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff4ed;
+}
+.task-action-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}
+.task-action-form .check-label {
+  flex-direction: row;
+  align-items: start;
+}
+.task-action-form .check-label input {
+  width: 18px;
+  min-width: 18px;
+  margin-top: 2px;
+}
+.task-action-form input,
+.task-action-form select,
+.task-action-form textarea {
+  box-sizing: border-box;
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #d9ccbc;
+  border-radius: 9px;
+  color: #293d4c;
+  background: #fffefb;
+}
+.task-action-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+.task-action-form .task-hierarchy-notice {
+  font-size: 13px;
+}
+.task-editor-scroll pre,
+.task-action-form pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-editor-scroll dd,
+.task-editor-scroll a,
+.task-action-form {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .workspace .task-dialog-backdrop {
+    padding: 8px;
+  }
+  .workspace .task-dialog.task-editor {
+    max-height: calc(100dvh - 16px);
+  }
+  .task-editor-scroll {
+    padding: 10px 12px 16px;
+  }
+  .workspace .task-editor > .task-editor-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px;
+    gap: 6px;
+  }
+  .workspace .task-editor-toolbar button {
+    font-size: 11px;
+    padding: 8px 5px;
+  }
+  .task-card-actions button {
+    flex: 1 1 145px;
+  }
+  .checklist-row {
+    flex-wrap: wrap;
+  }
+  .checklist-row input:not([type="checkbox"]) {
+    flex: 1 1 calc(100% - 60px);
+    min-width: 0;
+  }
+}
+
+.workspace .task-entry > summary {
+  list-style: none;
+}
+.task-entry > summary::-webkit-details-marker {
+  display: none;
+}
+.task-entry-chevron {
+  position: absolute;
+  right: 16px;
+  top: 18px;
+}
+.task-entry[open] > summary .task-entry-chevron {
+  transform: rotate(180deg);
+}

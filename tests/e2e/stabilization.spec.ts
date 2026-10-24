@@ -1,3 +1,4 @@
+import { openTaskEditor } from "../fixtures/task-detail";
 import { test, expect } from "@playwright/test";
 import type { WorkSnapshot } from "@helios/contracts";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
@@ -118,9 +119,9 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", {
-      name: /Aufgabe öffnen und bearbeiten: Synthetische frühere/,
-    }),
+    page
+      .locator(".historical-tasks")
+      .getByRole("button", { name: "Bearbeiten", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.locator(".historical-tasks").getByRole("button", {
@@ -131,8 +132,8 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
   await expect(refresh).toBeEnabled({ timeout: 20000 });
   await refresh.click();
   await expect(
-    page.getByRole("button", {
-      name: "Aufgabe öffnen und bearbeiten: Synthetische private Quelle",
+    page.getByRole("heading", {
+      name: "Synthetische private Quelle",
       exact: true,
     }),
   ).toBeVisible();
@@ -145,24 +146,14 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
   });
   const second = await secondContext.newPage();
   await second.goto(baseURL + "/tasks?context=" + privateContext.id);
-  await second
-    .getByRole("button", {
-      name: "Aufgabe öffnen und bearbeiten: Synthetische private Quelle",
-      exact: true,
-    })
-    .click();
+  await openTaskEditor(second, "Synthetische private Quelle");
   const secondEditor = second.getByRole("dialog", {
     name: "Aufgabe bearbeiten",
   });
   await expect(secondEditor.getByLabel("Titel", { exact: true })).toHaveValue(
     "Synthetische private Quelle",
   );
-  await page
-    .getByRole("button", {
-      name: "Aufgabe öffnen und bearbeiten: Synthetische private Quelle",
-      exact: true,
-    })
-    .click();
+  await openTaskEditor(page, "Synthetische private Quelle");
   const editor = page.getByRole("dialog", { name: "Aufgabe bearbeiten" });
   await editor
     .getByLabel("Titel", { exact: true })
@@ -175,9 +166,7 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
     await hold;
     await route.continue();
   });
-  await editor
-    .getByRole("button", { name: "Änderungen bewusst bestätigen", exact: true })
-    .click();
+  await editor.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Atelier Test", exact: true }),
   ).toBeDisabled();
@@ -196,7 +185,7 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
     .getByLabel("Titel", { exact: true })
     .fill("Synthetische konkurrierende Änderung");
   await secondEditor
-    .getByRole("button", { name: "Änderungen bewusst bestätigen", exact: true })
+    .getByRole("button", { name: "Speichern", exact: true })
     .click();
   await expect(secondEditor.getByRole("alert")).toContainText(
     /geändert|Quelle|zwischenzeitlich/,

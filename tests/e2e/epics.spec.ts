@@ -38,10 +38,21 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   ).toBeVisible();
   await page.getByRole("button", { name: "Epic öffnen", exact: true }).click();
   const doc = page.locator(".task-document");
-  await doc.locator("summary").first().click();
+  await doc
+    .locator("summary")
+    .filter({ hasText: /^Ziel$/ })
+    .click();
+  await doc
+    .locator("summary")
+    .filter({ hasText: /^Dokumentenlinks$/ })
+    .click();
   await expect(
     doc.getByRole("textbox", { name: "Ziel", exact: true }),
   ).toHaveValue("Handbuch veröffentlichen", { timeout: 20000 });
+  await doc
+    .locator("summary")
+    .filter({ hasText: /^Hierarchie und Fortschritt$/ })
+    .click();
   await expect(
     doc.getByRole("link", { name: "Synthetische Quellen", exact: true }),
   ).toBeVisible();
@@ -60,8 +71,15 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
     { timeout: 25000 },
   );
   await doc
+    .locator("summary")
+    .filter({ hasText: /^Checkliste \(/ })
+    .click();
+  await doc
     .getByLabel("Checklistenpunkt 1", { exact: true })
     .fill("Quellen gründlich sammeln");
+  await doc
+    .getByLabel("Neuer Checklistenpunkt", { exact: true })
+    .fill("Gliederung prüfen");
   await doc
     .getByRole("button", { name: "Checklistenpunkt hinzufügen", exact: true })
     .click();
@@ -102,7 +120,10 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   await page.screenshot({ path: "private/e8-epics.png", fullPage: true });
   await page.reload();
   await page.getByRole("button", { name: "Epic öffnen", exact: true }).click();
-  await page.locator(".task-document summary").first().click();
+  await page
+    .locator(".task-document summary")
+    .filter({ hasText: /^Ziel$/ })
+    .click();
   await expect(
     page
       .locator(".task-document")
@@ -118,25 +139,34 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
     name: "Aufgabe bearbeiten",
     exact: true,
   });
-  await dialog.locator(".ux-editor-actions > summary").click();
+  await dialog
+    .getByRole("button", { name: "Aufgabe abschliessen", exact: true })
+    .click();
+  const completion = page.getByRole("dialog", {
+    name: "Aufgabe abschliessen",
+    exact: true,
+  });
   await expect(
-    dialog.getByRole("heading", {
+    completion.getByRole("heading", {
       name: "Epic manuell abschliessen",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
-    dialog.getByRole("button", { name: "Aufgabe abschliessen", exact: true }),
+    completion.getByRole("button", {
+      name: "Abschluss bestätigen",
+      exact: true,
+    }),
   ).toBeDisabled();
-  await dialog
+  await completion
     .getByLabel(/Alle angezeigten offenen Teilbäume bewusst trennen/)
     .check();
-  await dialog
+  await completion
     .getByLabel(/Ich bestätige die angezeigte Hierarchiewirkung/)
     .check();
-  await dialog.getByLabel(/Ich bestätige ausdrücklich den Abschluss/).check();
-  await dialog
-    .getByRole("button", { name: "Aufgabe abschliessen", exact: true })
+
+  await completion
+    .getByRole("button", { name: "Abschluss bestätigen", exact: true })
     .click();
   await expect(dialog).toBeHidden({ timeout: 25000 });
   await expect(
