@@ -153,7 +153,7 @@ it("keeps ambiguous HTTP admission frozen until its stored event is read", async
     target: { value: "Kürzer bitte" },
   });
   fireEvent.click(
-    screen.getByRole("button", { name: "Nachbearbeitung einreihen" }),
+    screen.getByRole("button", { name: "Nachbearbeitung einreichen" }),
   );
   await screen.findByRole("button", { name: "Gespeicherten Stand prüfen" });
   fireEvent.click(

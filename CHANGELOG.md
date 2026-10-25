@@ -1,5 +1,13 @@
 # Changelog
 
+## UX-034 / UX-035 / F-001 UX-Runde A (menschliche Abnahme offen)
+
+- Originale Helios-Sphärenanimation in gemeinsamen Ladebuttons, mit Reduced Motion, verborgenem Dokument und sauberem RAF-Cleanup.
+- Gemeinsame native React-Primitives für Buttons, Felder, Switches/Checkboxen, Accordions, Karten, Dialoge und Status; bestehende warme Gestaltung und Sicherheitsabläufe erhalten.
+- Klar umrahmte versionierte KI-Ergebnisse, sicher lesbare Formatierung, getrennte Nachbearbeitung und beschriftete Status-Badges.
+- Kompakte abgeschlossene Aufträge ohne Ergebnisvorschau, vollständige Details erhalten; paginierte wörtliche Originalpromptsuche mit Status und Datumssortierung.
+- Keine Migration, neue Abhängigkeit oder Änderung an Worker, Modellkonfiguration und externer Schreibpipeline.
+
 ## F-001.2 – Lokale Verarbeitung und Ergebnisse (menschliche Abnahme offen)
 
 - Serieller lokaler Ollama-Worker, persistente Claims, bewusstes Recovery und nachvollziehbare Ausführungsversuche.

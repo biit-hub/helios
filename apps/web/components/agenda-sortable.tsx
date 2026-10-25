@@ -1,6 +1,7 @@
 "use client";
+import { Button, Icon } from "@helios/ui";
 import { useState, type ReactNode } from "react";
-import { Icon } from "@helios/ui";
+
 import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable, isSortable } from "@dnd-kit/react/sortable";
 import { entryKey, type PlanEntry, type AgendaArea } from "@helios/contracts";
@@ -92,7 +93,7 @@ function SortableEntry({
       }
       data-task-id={entry.taskId}
     >
-      <button
+      <Button
         ref={handleRef}
         type="button"
         className="secondary drag-handle"
@@ -100,7 +101,7 @@ function SortableEntry({
         disabled={disabled}
       >
         <Icon name="drag" />
-      </button>
+      </Button>
       <div className="agenda-entry-content">{children}</div>
     </li>
   );

@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton } from "@helios/ui";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TaskAccordion } from "./task-accordion";
 import { TaskMarkdown } from "./task-markdown";
@@ -71,14 +73,16 @@ export function TaskComments({
       {error && (
         <>
           <p role="alert">{error}</p>
-          <button
+          <ActionButton
+            busy={busy}
+            loadingText="Kommentar wird hinzugefügt …"
             type="button"
             className="secondary"
             disabled={busy || disabled}
             onClick={() => void read()}
           >
             Kommentare erneut laden
-          </button>
+          </ActionButton>
         </>
       )}
       {shownComments &&

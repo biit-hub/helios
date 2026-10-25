@@ -45,67 +45,6 @@
 .task-markdown .task-markdown-item {
   padding-left: 10px;
 }
-.workspace .task-accordion,
-.workspace .task-editor-scroll details {
-  margin: 10px 0;
-  border: 1px solid var(--border, #dfd3c3);
-  border-radius: 10px;
-  background: #fffdfa;
-  overflow: clip;
-}
-.workspace .task-accordion > summary,
-.workspace .task-editor-scroll details > summary {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  border-radius: 9px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  min-height: 44px;
-  box-sizing: border-box;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-}
-.task-accordion > summary::-webkit-details-marker,
-.task-editor-scroll details > summary::-webkit-details-marker {
-  display: none;
-}
-.task-editor-scroll details:not(.task-accordion) > summary::after {
-  content: "⌄";
-  font-size: 20px;
-}
-.task-editor-scroll details[open]:not(.task-accordion) > summary::after {
-  transform: rotate(180deg);
-}
-.task-accordion > summary .ui-icon {
-  flex-shrink: 0;
-  transition: transform 0.15s;
-}
-.task-accordion[open] > summary .ui-icon {
-  transform: rotate(180deg);
-}
-.task-accordion > summary:hover {
-  background: #faf0df;
-}
-.task-accordion > summary:focus-visible {
-  outline: 2px solid #a15013;
-  outline-offset: -3px;
-}
-.task-accordion[open] > summary {
-  border-bottom: 1px solid var(--border, #dfd3c3);
-}
-.task-accordion-body {
-  padding: 12px;
-  min-width: 0;
-}
-.task-accordion-body > :first-child {
-  margin-top: 0;
-}
 .task-card-actions,
 .task-action-buttons {
   display: flex;
@@ -124,17 +63,6 @@
   font-size: 12px;
   min-height: 40px;
   padding: 9px 12px;
-}
-.workspace button.task-delete,
-.task-action-form button.task-delete {
-  color: #fff;
-  background: #962b2b;
-  border: 1px solid #962b2b;
-}
-.workspace button.task-delete:hover:not(:disabled),
-.task-action-form button.task-delete:hover:not(:disabled) {
-  color: #fff;
-  background: #7b2020;
 }
 .workspace .task-dialog.task-editor {
   display: flex;
@@ -207,58 +135,6 @@
 }
 .workspace .task-editor-scroll fieldset {
   margin: 0;
-}
-.workspace .task-fun-switch {
-  position: relative;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  width: fit-content;
-  min-height: 40px;
-  cursor: pointer;
-}
-.workspace .task-fun-switch input[role="switch"] {
-  position: absolute;
-  left: 0;
-  width: 44px;
-  height: 26px;
-  margin: 0;
-  padding: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.task-switch-track {
-  width: 44px;
-  height: 26px;
-  flex: none;
-  border-radius: 20px;
-  background: #a49d92;
-  display: inline-block;
-  padding: 3px;
-  box-sizing: border-box;
-}
-.task-switch-track::before {
-  content: "";
-  display: block;
-  width: 20px;
-  height: 20px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 1px 3px #0003;
-  transition: transform 0.15s;
-}
-.task-fun-switch input:checked + .task-switch-track {
-  background: #a15013;
-}
-.task-fun-switch input:checked + .task-switch-track::before {
-  transform: translateX(18px);
-}
-.task-fun-switch input:focus-visible + .task-switch-track {
-  outline: 2px solid #a15013;
-  outline-offset: 3px;
-}
-.task-fun-switch input:disabled + .task-switch-track {
-  opacity: 0.5;
 }
 .checklist-add {
   display: flex;
@@ -374,10 +250,7 @@
 }
 
 /* E9.6: the visible accordion header is the entire hit area. */
-.workspace .task-accordion > summary:is(:hover, :focus-visible),
-.workspace .task-editor-scroll details > summary:is(:hover, :focus-visible) {
-  background: #faf0df;
-}
+
 .workspace .task-entry > .task-card-actions {
   padding-inline: 16px;
   box-sizing: border-box;

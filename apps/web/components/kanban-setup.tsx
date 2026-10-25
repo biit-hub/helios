@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Button } from "@helios/ui";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ContextView,
@@ -118,7 +120,7 @@ export function KanbanSetup({ context }: Readonly<{ context: ContextView }>) {
       aria-label={"Projektabschnitte für " + context.name}
     >
       <h4>Todoist-Projektabschnitte</h4>
-      <button
+      <Button
         type="button"
         disabled={busy || pending}
         onClick={() => {
@@ -134,7 +136,7 @@ export function KanbanSetup({ context }: Readonly<{ context: ContextView }>) {
         }}
       >
         Kanban-Abschnitte prüfen
-      </button>
+      </Button>
       {view && (
         <>
           <p className="help">
@@ -153,13 +155,15 @@ export function KanbanSetup({ context }: Readonly<{ context: ContextView }>) {
                 <strong>{view.missing.join(" · ")}</strong>. Bestehende
                 Abschnitte und Aufgaben bleiben unverändert.
               </p>
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy || pending || operation?.status === "succeeded"}
                 onClick={() => void run()}
               >
                 Fehlende Abschnitte bewusst anlegen
-              </button>
+              </ActionButton>
             </>
           ) : (
             <p>Vollständig eingerichtet.</p>
@@ -175,9 +179,15 @@ export function KanbanSetup({ context }: Readonly<{ context: ContextView }>) {
       )}
       {operation &&
         ["unknown", "partial", "failed"].includes(operation.status) && (
-          <button type="button" disabled={busy} onClick={() => void run(true)}>
+          <ActionButton
+            busy={busy}
+            loadingText="Vorgang wird verarbeitet …"
+            type="button"
+            disabled={busy}
+            onClick={() => void run(true)}
+          >
             Stand prüfen und denselben Auftrag fortsetzen
-          </button>
+          </ActionButton>
         )}
       {notice && <p role="status">{notice}</p>}
       {error && <p role="alert">{error}</p>}

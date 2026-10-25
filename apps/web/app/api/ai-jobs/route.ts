@@ -26,6 +26,7 @@ export async function GET(request: Request) {
           page: params.get("page") ?? 1,
           status: params.get("status") ?? undefined,
           oldest: params.get("sort") === "oldest",
+          search: params.get("q") ?? "",
         });
     return Response.json(result, { headers });
   } catch (e) {

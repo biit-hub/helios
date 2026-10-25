@@ -1,4 +1,14 @@
 "use client";
+import {
+  ActionButton,
+  Accordion,
+  Card,
+  Button,
+  FormField,
+  Select,
+  Checkbox,
+} from "@helios/ui";
+
 import { useRoutineResource } from "./routine-resource";
 import { useState } from "react";
 import type { RoutineView, WorkSnapshot, InboxCard } from "@helios/contracts";
@@ -26,17 +36,17 @@ export function RoutineInbox({
   );
   if (!resource.data)
     return (
-      <section className="card">
+      <Card as="section" className="card">
         <h2>Ein Gedanke nach dem anderen.</h2>
         {resource.error ? (
           <p role="alert">{resource.error}</p>
         ) : (
           <p role="status">Eingang wird gelesen …</p>
         )}
-        <button onClick={() => void resource.reload().catch(() => {})}>
+        <Button onClick={() => void resource.reload().catch(() => {})}>
           Eingang erneut laden
-        </button>
-      </section>
+        </Button>
+      </Card>
     );
   return (
     <InboxView
@@ -92,7 +102,7 @@ function InboxView({
     }
   }
   return (
-    <section className="card routine-step">
+    <Card as="section" className="card routine-step">
       <h2>Ein Gedanke nach dem anderen.</h2>
       <p>
         Du entscheidest, wohin die Aufgabe gehört. Es gibt keine KI-Auswertung
@@ -105,13 +115,15 @@ function InboxView({
         </p>
       )}
       {(error || readError) && <p role="alert">{error || readError}</p>}
-      <button
+      <ActionButton
+        busy={busy}
+        loadingText="Stand wird aktualisiert …"
         className="secondary"
         disabled={busy}
         onClick={() => void load().catch(() => {})}
       >
         Eingang erneut laden
-      </button>
+      </ActionButton>
       {!data && !error && <p role="status">Eingang wird gelesen …</p>}
       {data && !data.card && (
         <p>
@@ -128,18 +140,17 @@ function InboxView({
         >
           <h3>{data.card.task.content}</h3>
           {data.card.task.description && (
-            <details>
-              <summary>Vorhandene Beschreibung</summary>
+            <Accordion title="Vorhandene Beschreibung">
               <pre>{data.card.task.description}</pre>
-            </details>
+            </Accordion>
           )}
           <p>
             Geplant: {data.card.task.due?.date ?? "Nicht gesetzt"} · Deadline:{" "}
             {data.card.task.deadline?.date ?? "Nicht gesetzt"}
           </p>
-          <label>
+          <FormField>
             Projekt bewusst wählen
-            <select
+            <Select
               aria-label="Zielprojekt"
               value={project}
               onChange={(e) => {
@@ -155,28 +166,30 @@ function InboxView({
                     {p.name}
                   </option>
                 ))}
-            </select>
-          </label>
-          <label className="check-label">
-            <input
+            </Select>
+          </FormField>
+          <FormField className="check-label">
+            <Checkbox
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
             />
             Diese Projektzuordnung ausdrücklich bestätigen
-          </label>
+          </FormField>
           {(data.card.task.parent_id || data.card.children.length > 0) && (
-            <label className="check-label">
-              <input
+            <FormField className="check-label">
+              <Checkbox
                 type="checkbox"
                 checked={hierarchy}
                 onChange={(e) => setHierarchy(e.target.checked)}
               />
               Die Auswirkung auf Ober- und Unteraufgaben bewusst bestätigen
-            </label>
+            </FormField>
           )}
           <div className="routine-actions">
-            <button
+            <ActionButton
+              busy={busy}
+              loadingText="Aufgabe wird verschoben …"
               disabled={busy || !project || !confirmed}
               onClick={() =>
                 void send("inbox-move", {
@@ -186,26 +199,29 @@ function InboxView({
               }
             >
               Bewusst zuordnen
-            </button>
-            <button
+            </ActionButton>
+            <ActionButton
+              busy={busy}
+              loadingText="Vorgang wird verarbeitet …"
               className="secondary"
               disabled={busy}
               onClick={() => void send("inbox-defer")}
             >
               Für später liegen lassen
-            </button>
+            </ActionButton>
           </div>
-          <details>
-            <summary>Aufgabe löschen</summary>
-            <label className="check-label">
-              <input
+          <Accordion title="Aufgabe löschen">
+            <FormField className="check-label">
+              <Checkbox
                 type="checkbox"
                 checked={destructive}
                 onChange={(e) => setDestructive(e.target.checked)}
               />
               Diese Aufgabe bewusst dauerhaft löschen
-            </label>
-            <button
+            </FormField>
+            <ActionButton
+              busy={busy}
+              loadingText="Änderungen werden gespeichert …"
               disabled={busy || !destructive}
               onClick={() =>
                 void send("inbox-delete", {
@@ -215,12 +231,14 @@ function InboxView({
               }
             >
               Löschung bestätigen
-            </button>
-          </details>
+            </ActionButton>
+          </Accordion>
         </article>
       )}
       {data?.deferred && (
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Vorgang wird verarbeitet …"
           className="secondary"
           disabled={busy}
           onClick={() =>
@@ -230,11 +248,10 @@ function InboxView({
           }
         >
           Liegengelassene Einträge wieder anzeigen
-        </button>
+        </ActionButton>
       )}
       {data?.operations.length ? (
-        <details>
-          <summary>Ergebnisse deiner Eingangsaktionen</summary>
+        <Accordion title="Ergebnisse deiner Eingangsaktionen">
           {data.operations.map((op) => (
             <p key={op.id}>
               {op.status === "succeeded"
@@ -248,7 +265,9 @@ function InboxView({
                       : "Wird verarbeitet"}{" "}
               {op.code && " · " + op.code}
               {["unknown", "failed", "partial"].includes(op.status) && (
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Vorgang wird verarbeitet …"
                   disabled={busy}
                   onClick={() => {
                     setBusy(true);
@@ -262,12 +281,12 @@ function InboxView({
                   }}
                 >
                   Externe Wirkung prüfen und bewusst fortsetzen
-                </button>
+                </ActionButton>
               )}
             </p>
           ))}
-        </details>
+        </Accordion>
       ) : null}
-    </section>
+    </Card>
   );
 }

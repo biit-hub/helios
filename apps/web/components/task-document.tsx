@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@helios/ui";
 import { useEffect, useRef, type RefObject } from "react";
 import { announceTaskChange } from "./task-events";
 import { TaskAccordion } from "./task-accordion";
@@ -146,7 +147,7 @@ function DocumentBody({
               : "Aufgabe"}{" "}
             · {detail.inspection.task.checked ? "nativ abgeschlossen" : "offen"}
           </p>
-          <button
+          <Button
             type="button"
             disabled={pending}
             onClick={() => {
@@ -163,7 +164,7 @@ function DocumentBody({
             }}
           >
             Gespeicherte Quelle neu laden (Eingaben ersetzen)
-          </button>
+          </Button>
         </TaskAccordion>
       )}
       {detail.markdownError && (

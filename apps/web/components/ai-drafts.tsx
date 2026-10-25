@@ -1,4 +1,14 @@
 "use client";
+import {
+  ActionButton,
+  Accordion,
+  FormField,
+  Textarea,
+  Button,
+  Select,
+  Checkbox,
+} from "@helios/ui";
+
 import { useNavigationLock } from "./navigation-lock";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
@@ -381,16 +391,18 @@ export function AiDraftPanel({
       </ol>
       {step === 1 && (
         <>
-          <label>
+          <FormField>
             <span>{kindText[kind].input}</span>
-            <textarea
+            <Textarea
               maxLength={8000}
               disabled={busy || waiting}
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
-          </label>
-          <button
+          </FormField>
+          <ActionButton
+            busy={busy}
+            loadingText="Helios analysiert …"
             type="button"
             className="primary"
             disabled={
@@ -421,9 +433,9 @@ export function AiDraftPanel({
             }}
           >
             Vorschlag erstellen
-          </button>
+          </ActionButton>
           {!draft && input && (
-            <button
+            <Button
               type="button"
               disabled={busy || waiting}
               onClick={() => {
@@ -431,16 +443,15 @@ export function AiDraftPanel({
               }}
             >
               Eingabe verwerfen
-            </button>
+            </Button>
           )}
         </>
       )}
       {error && <p role="alert">{error}</p>}
       {rows.length > 0 && (
-        <details>
-          <summary>Gespeicherte Entwürfe wieder öffnen</summary>
+        <Accordion title="Gespeicherte Entwürfe wieder öffnen">
           {rows.map((d) => (
-            <button
+            <Button
               type="button"
               key={d.id}
               disabled={saving || busy}
@@ -455,9 +466,9 @@ export function AiDraftPanel({
             >
               {new Date(d.createdAt).toLocaleString("de-CH")} · {d.status} ·{" "}
               {d.input.slice(0, 60) || "Aufgabenanalyse"}
-            </button>
+            </Button>
           ))}
-        </details>
+        </Accordion>
       )}
       {draft && (
         <div className="ai-draft" aria-busy={waiting}>
@@ -489,8 +500,7 @@ export function AiDraftPanel({
             </p>
           )}
           {draft.output && (
-            <details open={step === 1}>
-              <summary>Klärung und Einschätzung</summary>
+            <Accordion open={step === 1} title="Klärung und Einschätzung">
               <p>
                 Klarheit:{" "}
                 {draft.confirmedClear
@@ -559,19 +569,21 @@ export function AiDraftPanel({
                 </p>
               )}
               <p>Unsicherheit: {draft.output.uncertainty}</p>
-            </details>
+            </Accordion>
           )}
           {step === 1 &&
             kind !== "capture" &&
             draft.taskId &&
             !draft.confirmedClear && (
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy || waiting}
                 onClick={() => void action("clear")}
               >
                 Ist klar
-              </button>
+              </ActionButton>
             )}
           {step === 2 && (
             <p>
@@ -586,16 +598,15 @@ export function AiDraftPanel({
                 disabled={!editable || p.status !== "pending" || saving || busy}
               >
                 <legend>{labels[p.kind]}</legend>
-                <details>
-                  <summary>Begründung und Quellenbeleg</summary>
+                <Accordion title="Begründung und Quellenbeleg">
                   <p>{p.reason}</p>
                   <blockquote>{p.evidence}</blockquote>
-                </details>
+                </Accordion>
                 {p.target && <p>Vorhandener Punkt: {p.target}</p>}
                 {p.kind === "check-complete" ? (
-                  <label>
+                  <FormField>
                     Vorhandenen Punkt wählen
-                    <select
+                    <Select
                       aria-label="Checklistenpunkt zum Abhaken"
                       value={p.target ?? ""}
                       onChange={(e) =>
@@ -612,20 +623,20 @@ export function AiDraftPanel({
                             {x.text}
                           </option>
                         ))}
-                    </select>
-                  </label>
+                    </Select>
+                  </FormField>
                 ) : (
-                  <label>
+                  <FormField>
                     Vorschlag bearbeiten
-                    <textarea
+                    <Textarea
                       aria-label={labels[p.kind] + " bearbeiten"}
                       value={p.edited}
                       onChange={(e) => update(p.id, { edited: e.target.value })}
                     />
-                  </label>
+                  </FormField>
                 )}
-                <label className="check-label">
-                  <input
+                <FormField className="check-label">
+                  <Checkbox
                     type="checkbox"
                     checked={p.selected}
                     onChange={(e) =>
@@ -636,8 +647,8 @@ export function AiDraftPanel({
                     }
                   />
                   Diese Änderung auswählen
-                </label>
-                <button
+                </FormField>
+                <Button
                   type="button"
                   onClick={() =>
                     update(p.id, { selected: false, rejected: !p.rejected })
@@ -646,7 +657,7 @@ export function AiDraftPanel({
                   {p.rejected
                     ? "Ablehnung zurücknehmen"
                     : "Diesen Vorschlag ablehnen"}
-                </button>
+                </Button>
                 <p>
                   {p.status === "verified"
                     ? "Extern nachgewiesen"
@@ -696,9 +707,9 @@ export function AiDraftPanel({
           )}
           {step === 2 && kind === "capture" && editable && (
             <>
-              <label>
+              <FormField>
                 Projekt bewusst wählen
-                <select
+                <Select
                   value={project}
                   onChange={(e) => {
                     setProject(e.target.value);
@@ -713,17 +724,17 @@ export function AiDraftPanel({
                         {p.name}
                       </option>
                     ))}
-                </select>
-              </label>
+                </Select>
+              </FormField>
               {project && (
-                <label className="check-label">
-                  <input
+                <FormField className="check-label">
+                  <Checkbox
                     type="checkbox"
                     checked={confirmProject}
                     onChange={(e) => setConfirmProject(e.target.checked)}
                   />
                   Dieses Projekt für die neue Aufgabe ausdrücklich bestätigen
-                </label>
+                </FormField>
               )}
               <p>
                 Ohne bestätigte Projektwahl wird im nativen Todoist-Eingang
@@ -734,18 +745,22 @@ export function AiDraftPanel({
           {editable &&
             values.length === 0 &&
             ["smart", "epic", "decomposition"].includes(kind) && (
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy}
                 onClick={() => void action("reject")}
               >
                 Einschätzung ablehnen
-              </button>
+              </ActionButton>
             )}
           {editable && (
             <>
               {step === 2 && (
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Änderungen werden gespeichert …"
                   type="button"
                   disabled={busy || saving || !dirty}
                   onClick={() => {
@@ -757,10 +772,10 @@ export function AiDraftPanel({
                   }}
                 >
                   Entwurfsentscheidungen speichern
-                </button>
+                </ActionButton>
               )}
               {step === 2 && (
-                <button
+                <Button
                   type="button"
                   className="primary"
                   disabled={busy || saving || !selected.length}
@@ -770,7 +785,7 @@ export function AiDraftPanel({
                   }}
                 >
                   Auswahl prüfen
-                </button>
+                </Button>
               )}
               {step === 3 && review !== reviewKey && !error && (
                 <p role="alert">
@@ -779,7 +794,9 @@ export function AiDraftPanel({
                 </p>
               )}
               {step === 3 && (
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Änderungen werden gespeichert …"
                   type="button"
                   className="primary"
                   disabled={
@@ -819,14 +836,14 @@ export function AiDraftPanel({
                   }}
                 >
                   Ausgewählte Änderungen bewusst speichern
-                </button>
+                </ActionButton>
               )}
             </>
           )}
           {!waiting && !saving && (
             <div className="ai-step-actions">
               {step !== 1 && (
-                <button
+                <Button
                   type="button"
                   disabled={busy}
                   onClick={() => {
@@ -835,16 +852,16 @@ export function AiDraftPanel({
                   }}
                 >
                   {step === 3 ? "Zurück zum Bearbeiten" : "Zurück zur Klärung"}
-                </button>
+                </Button>
               )}
               {step === 1 && values.length > 0 && (
-                <button
+                <Button
                   type="button"
                   disabled={busy}
                   onClick={() => setStep(2)}
                 >
                   Vorhandene Vorschläge bearbeiten
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -854,16 +871,20 @@ export function AiDraftPanel({
               (p) =>
                 p.operationId === draft.operationId && p.status === "failed",
             ) && (
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy}
                 onClick={() => void action("reopen")}
               >
                 Fehlgeschlagenen Schritt ohne externe Wirkung bearbeiten
-              </button>
+              </ActionButton>
             )}
           {draft.operationId && draft.status === "partial" && (
-            <button
+            <ActionButton
+              busy={busy}
+              loadingText="Vorgang wird verarbeitet …"
               type="button"
               disabled={busy}
               onClick={() => {
@@ -877,10 +898,12 @@ export function AiDraftPanel({
               }}
             >
               Externe Wirkung prüfen und bewusst fortsetzen
-            </button>
+            </ActionButton>
           )}
           {["failed", "cancelled"].includes(draft.status) && (
-            <button
+            <ActionButton
+              busy={busy}
+              loadingText="Helios analysiert …"
               type="button"
               disabled={busy}
               onClick={() => void action("retry")}
@@ -888,20 +911,21 @@ export function AiDraftPanel({
               {draft.output
                 ? "Entwurf wieder aufnehmen"
                 : "KI erneut versuchen"}
-            </button>
+            </ActionButton>
           )}
           {["queued", "running", "ready", "failed"].includes(draft.status) &&
             !draft.operationId && (
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy}
                 onClick={() => void action("cancel")}
               >
                 {step === 1 ? "Klärung beenden" : "KI-Entwurf abbrechen"}
-              </button>
+              </ActionButton>
             )}
-          <details>
-            <summary>Originaleingabe und Herkunft</summary>
+          <Accordion title="Originaleingabe und Herkunft">
             <pre>{draft.input}</pre>
             <p>
               Modell {draft.model}{" "}
@@ -911,9 +935,8 @@ export function AiDraftPanel({
               · Zeitzone {draft.timezone} · Prompt {draft.promptVersion} ·
               Schema {draft.schemaVersion}
             </p>
-          </details>
-          <details>
-            <summary>Technische Nachweise</summary>
+          </Accordion>
+          <Accordion title="Technische Nachweise">
             <p>
               Entwurfsrevision {draft.revision} · Quellenfingerabdruck{" "}
               {draft.sourceFingerprint}
@@ -927,9 +950,9 @@ export function AiDraftPanel({
                 {p.operationId ? " · Auftrag " + p.operationId : ""}
               </p>
             ))}
-          </details>
+          </Accordion>
           {conflict && (
-            <button
+            <Button
               type="button"
               onClick={() => {
                 const remote = rows.find((d) => d.id === draft.id);
@@ -937,7 +960,7 @@ export function AiDraftPanel({
               }}
             >
               Gespeicherten Entwurfsstand bewusst laden
-            </button>
+            </Button>
           )}
         </div>
       )}

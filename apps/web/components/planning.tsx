@@ -1,4 +1,13 @@
 "use client";
+import {
+  ActionButton,
+  Accordion,
+  FormField,
+  Input,
+  Card,
+  Checkbox,
+} from "@helios/ui";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useNavigationLock } from "./navigation-lock";
@@ -150,9 +159,9 @@ export function PlanningPanel({
       {data && (
         <>
           <div className="panel-heading">
-            <label>
+            <FormField>
               Plantag ansehen
-              <input
+              <Input
                 type="date"
                 value={day || data.day}
                 onChange={(e) => {
@@ -160,19 +169,19 @@ export function PlanningPanel({
                   setDay(e.target.value);
                 }}
               />
-            </label>
+            </FormField>
           </div>
           <p className="help">
             {plan ? states[plan.status] : "Noch kein Tagesplan"}
           </p>
           {!context.configured && (
-            <section className="card">
+            <Card as="section" className="card">
               <h2>Dein Kontext braucht noch ein Projekt.</h2>
               <Link href="/settings/contexts">Kontext einrichten</Link>
-            </section>
+            </Card>
           )}
           {context.configured && !plan && (
-            <section className="card">
+            <Card as="section" className="card">
               <h2>Deine Tagesauswahl</h2>
               <p>
                 Aktualisiere zuerst die Aufgaben dieses Kontexts. Danach kannst
@@ -185,7 +194,9 @@ export function PlanningPanel({
                 >
                   Aufgaben aktualisieren
                 </Link>
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Tagesvorschau wird erstellt …"
                   type="button"
                   disabled={busy}
                   onClick={() => void action("propose")}
@@ -193,9 +204,9 @@ export function PlanningPanel({
                   {busy
                     ? "Tagesvorschau wird erstellt …"
                     : "Tagesvorschau erstellen"}
-                </button>
+                </ActionButton>
               </div>
-            </section>
+            </Card>
           )}
           {plan?.status === "confirmed" && (
             <ConfirmedAgenda
@@ -220,7 +231,7 @@ export function PlanningPanel({
           {plan && (
             <>
               {plan.status !== "confirmed" && (
-                <section className="card">
+                <Card as="section" className="card">
                   <div className="panel-heading">
                     <h2>
                       {plan.status === "draft"
@@ -246,8 +257,8 @@ export function PlanningPanel({
                       <li key={entry.taskId} className="today-entry">
                         <div>
                           {plan.status === "draft" && (
-                            <label>
-                              <input
+                            <FormField>
+                              <Checkbox
                                 type="checkbox"
                                 checked={chosen.includes(entry.taskId)}
                                 onChange={(e) =>
@@ -259,7 +270,7 @@ export function PlanningPanel({
                                 }
                               />
                               Einplanen
-                            </label>
+                            </FormField>
                           )}
                           <h3>{entry.source.content}</h3>
                           {(mode === "plan" || plan.status === "draft") && (
@@ -281,24 +292,28 @@ export function PlanningPanel({
                         bleiben zum Schutz der Hierarchie in ihrem
                         Todoist-Abschnitt.
                       </p>
-                      <button
+                      <ActionButton
+                        busy={busy}
+                        loadingText="Änderungen werden gespeichert …"
                         type="button"
                         disabled={busy || chosen.length === 0}
                         onClick={() => void confirm()}
                       >
                         Auswahl bewusst bestätigen
-                      </button>
-                      <button
+                      </ActionButton>
+                      <ActionButton
+                        busy={busy}
+                        loadingText="Tagesvorschau wird erstellt …"
                         type="button"
                         className="secondary"
                         disabled={busy}
                         onClick={() => void action("propose")}
                       >
                         Vorschau neu prüfen
-                      </button>
+                      </ActionButton>
                     </>
                   )}
-                </section>
+                </Card>
               )}
               <Operation
                 data={data}
@@ -307,8 +322,7 @@ export function PlanningPanel({
                   void action("resume", { operationId: data.operation?.id })
                 }
               />
-              <details className="card">
-                <summary>Planrevisionen und Historie</summary>
+              <Accordion className="card" title="Planrevisionen und Historie">
                 <p>
                   Bestätigte Quellenstände bleiben erhalten. Hier erscheinen die
                   letzten 30 Revisionen dieses Tages; andere Tage sind oben
@@ -338,7 +352,7 @@ export function PlanningPanel({
                     </p>
                   </article>
                 ))}
-              </details>
+              </Accordion>
             </>
           )}
         </>
@@ -366,8 +380,7 @@ function Dates({ entry }: { readonly entry: PlanEntry }) {
 }
 function Reasons({ entry }: { readonly entry: PlanEntry }) {
   return (
-    <details>
-      <summary>Warum diese Aufgabe?</summary>
+    <Accordion title="Warum diese Aufgabe?">
       <ul>
         {entry.reasons.map((r) => (
           <li key={r}>{r}</li>
@@ -378,7 +391,7 @@ function Reasons({ entry }: { readonly entry: PlanEntry }) {
         Priorität, private fun-Kennzeichnung und bekannte Dauer. Kein
         dokumentierter Fortschritt wird erfunden.
       </p>
-    </details>
+    </Accordion>
   );
 }
 function Operation({
@@ -398,9 +411,13 @@ function Operation({
     return () => clearInterval(timer);
   }, [op?.retryAt]);
   if (!op) return null;
-  const Steps = op.status === "confirmed" ? "details" : "div";
+  const Steps = op.status === "confirmed" ? Accordion : "div";
   return (
-    <section className="card operation-panel" aria-label="Bestätigungsstand">
+    <Card
+      as="section"
+      className="card operation-panel"
+      aria-label="Bestätigungsstand"
+    >
       <h2>Bestätigungsstand</h2>
       {["queued", "running"].includes(op.status) && (
         <p role="status">
@@ -426,17 +443,18 @@ function Operation({
               {new Date(op.retryAt).toLocaleString("de-CH")}
             </p>
           )}
-          <button
+          <ActionButton
+            busy={busy}
+            loadingText="Vorgang wird verarbeitet …"
             type="button"
             disabled={busy || !!(op.retryAt && Date.parse(op.retryAt) > now)}
             onClick={resume}
           >
             Stand prüfen und bewusst fortsetzen
-          </button>
+          </ActionButton>
         </>
       )}
-      <Steps>
-        {op.status === "confirmed" && <summary>Einzelnachweise</summary>}
+      <Steps title={op.status === "confirmed" ? "Einzelnachweise" : undefined}>
         <ul>
           {op.steps.map((s) => (
             <li key={s.taskId}>
@@ -458,6 +476,6 @@ function Operation({
           ))}
         </ul>
       </Steps>
-    </section>
+    </Card>
   );
 }

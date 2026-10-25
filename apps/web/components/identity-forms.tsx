@@ -1,9 +1,20 @@
 "use client";
+import {
+  ActionButton,
+  Accordion,
+  Card,
+  FormField,
+  Input,
+  Checkbox,
+  Button,
+  Brand,
+} from "@helios/ui";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { UiDialog } from "./ui-help";
-import { Brand } from "@helios/ui";
+
 type Payload = {
   error?: { code: string; message: string };
   challenge?: boolean;
@@ -71,10 +82,10 @@ function Frame({
   embedded?: boolean;
 }) {
   return embedded ? (
-    <section className="card auth-card">
+    <Card as="section" className="card auth-card">
       <h2>{title}</h2>
       {children}
-    </section>
+    </Card>
   ) : (
     <div className="shell auth-shell">
       <header>
@@ -82,10 +93,10 @@ function Frame({
         <span className="stage">Dein sicherer Zugang</span>
       </header>
       <main>
-        <section className="card auth-card">
+        <Card as="section" className="card auth-card">
           <h1>{title}</h1>
           {children}
-        </section>
+        </Card>
       </main>
     </div>
   );
@@ -141,19 +152,19 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
       <form onSubmit={submit}>
         {stage === "password" ? (
           <>
-            <label>
+            <FormField>
               Benutzername
-              <input
+              <Input
                 autoComplete="username"
                 required
                 maxLength={30}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
-            </label>
-            <label>
+            </FormField>
+            <FormField>
               Passwort
-              <input
+              <Input
                 type="password"
                 autoComplete="current-password"
                 required
@@ -161,24 +172,24 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
-            <label className="check">
-              <input
+            </FormField>
+            <FormField className="check">
+              <Checkbox
                 type="checkbox"
                 checked={trusted}
                 onChange={(e) => setTrusted(e.target.checked)}
               />
               Diesem Gerät vertrauen
-            </label>
+            </FormField>
             <p className="help">
               Bis zu 30 Tage. Auf anderen Geräten endet die Sitzung spätestens
               nach 12 Stunden oder 30 Minuten Inaktivität.
             </p>
           </>
         ) : (
-          <label>
+          <FormField>
             {stage === "totp" ? "Authenticator-Code" : "Recovery-Code"}
-            <input
+            <Input
               autoComplete={stage === "totp" ? "one-time-code" : "off"}
               inputMode={stage === "totp" ? "numeric" : "text"}
               required
@@ -186,15 +197,15 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
-          </label>
+          </FormField>
         )}
         <Status error={error} busy={busy} />
-        <button disabled={busy}>
+        <Button disabled={busy}>
           {stage === "password" ? "Weiter" : "Sicher anmelden"}
-        </button>
+        </Button>
       </form>
       {stage !== "password" && (
-        <button
+        <Button
           className="secondary"
           disabled={busy}
           onClick={() => {
@@ -206,10 +217,10 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
           {stage === "totp"
             ? "Authenticator verloren? Recovery-Code verwenden"
             : "Authenticator-Code verwenden"}
-        </button>
+        </Button>
       )}
       {stage !== "password" && (
-        <button
+        <Button
           className="secondary"
           disabled={busy}
           onClick={() => {
@@ -219,7 +230,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
           }}
         >
           Neu anmelden
-        </button>
+        </Button>
       )}
       <Link className="setup-link" href="/setup">
         Konto mit lokalem Setupnachweis einrichten
@@ -282,20 +293,20 @@ export function SetupForm({ recovering = false }: { recovering?: boolean }) {
                 : "Der Setupnachweis wird ausschliesslich über das lokale Verwaltungs-CLI erzeugt und ist zehn Minuten gültig."}
             </p>
             {!recovering && (
-              <label>
+              <FormField>
                 Setupnachweis
-                <input
+                <Input
                   autoComplete="off"
                   required
                   maxLength={64}
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
                 />
-              </label>
+              </FormField>
             )}
-            <label>
+            <FormField>
               Dein Passwort
-              <input
+              <Input
                 type="password"
                 autoComplete="current-password"
                 required
@@ -303,7 +314,7 @@ export function SetupForm({ recovering = false }: { recovering?: boolean }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
+            </FormField>
           </>
         ) : stage === "totp" ? (
           <>
@@ -320,16 +331,15 @@ export function SetupForm({ recovering = false }: { recovering?: boolean }) {
                 alt="QR-Code für den Helios-Authenticator"
               />
             )}
-            <details>
-              <summary>Manuell einrichten</summary>
+            <Accordion title="Manuell einrichten">
               <p className="secret-text">
                 {uri ? new URL(uri).searchParams.get("secret") : ""}
               </p>
               <p>Typ: TOTP · 6 Stellen · 30 Sekunden</p>
-            </details>
-            <label>
+            </Accordion>
+            <FormField>
               Authenticator-Code
-              <input
+              <Input
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 required
@@ -338,7 +348,7 @@ export function SetupForm({ recovering = false }: { recovering?: boolean }) {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
-            </label>
+            </FormField>
           </>
         ) : (
           <>
@@ -353,25 +363,25 @@ export function SetupForm({ recovering = false }: { recovering?: boolean }) {
                 <li key={c}>{c}</li>
               ))}
             </ul>
-            <label className="check">
-              <input
+            <FormField className="check">
+              <Checkbox
                 type="checkbox"
                 required
                 checked={saved}
                 onChange={(e) => setSaved(e.target.checked)}
               />
               Ich habe die Recovery-Codes sicher gespeichert.
-            </label>
+            </FormField>
           </>
         )}
         <Status error={error} busy={busy} />
-        <button disabled={busy || (stage === "codes" && !saved)}>
+        <Button disabled={busy || (stage === "codes" && !saved)}>
           {stage === "start"
             ? "Authenticator einrichten"
             : stage === "totp"
               ? "Code bestätigen"
               : "Konto aktivieren"}
-        </button>
+        </Button>
       </form>
       <p className="help">
         Bei Unterbruch: mit derselben Einrichtungssitzung erneut öffnen und neu
@@ -385,7 +395,7 @@ export function Logout() {
   const [error, setError] = useState("");
   return (
     <>
-      <button
+      <Button
         className="secondary"
         onClick={() =>
           void request("logout")
@@ -396,7 +406,7 @@ export function Logout() {
         }
       >
         Abmelden
-      </button>
+      </Button>
       {error && <p role="alert">{error}</p>}
     </>
   );
@@ -458,9 +468,9 @@ export function SecurityForm({
         Sensible Änderungen benötigen eine Bestätigung mit Passwort und einem
         neuen Authenticator-Code.
       </p>
-      <button type="button" onClick={() => setConfirmationOpen(true)}>
+      <Button type="button" onClick={() => setConfirmationOpen(true)}>
         Bestätigung öffnen
-      </button>
+      </Button>
       {confirmationOpen && (
         <UiDialog
           title="Sicherheitsaktionen bestätigen"
@@ -473,9 +483,9 @@ export function SecurityForm({
               void run("step-up", { password, code });
             }}
           >
-            <label>
+            <FormField>
               Aktuelles Passwort
-              <input
+              <Input
                 type="password"
                 autoComplete="current-password"
                 required
@@ -483,10 +493,10 @@ export function SecurityForm({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
-            <label>
+            </FormField>
+            <FormField>
               Neuer Authenticator-Code
-              <input
+              <Input
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 required
@@ -494,8 +504,8 @@ export function SecurityForm({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
-            </label>
-            <button disabled={busy}>Sicherheitsaktionen bestätigen</button>
+            </FormField>
+            <Button disabled={busy}>Sicherheitsaktionen bestätigen</Button>
           </form>
           {message && <output>{message}</output>}
           {error && <p role="alert">{error}</p>}
@@ -505,9 +515,9 @@ export function SecurityForm({
       {message && <p role="status">{message}</p>}
       <section>
         <h2>Passwort ändern</h2>
-        <label>
+        <FormField>
           Neues Passwort
-          <input
+          <Input
             type="password"
             autoComplete="new-password"
             minLength={12}
@@ -515,13 +525,15 @@ export function SecurityForm({
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
-        </label>
-        <button
+        </FormField>
+        <ActionButton
+          busy={busy}
+          loadingText="Anmeldung wird geprüft …"
           disabled={busy || !confirmed || newPassword.length < 12 || !password}
           onClick={() => void run("password", { password, newPassword })}
         >
           Passwort ändern und neu anmelden
-        </button>
+        </ActionButton>
       </section>
       <section>
         <h2>Authenticator und Recovery</h2>
@@ -530,19 +542,23 @@ export function SecurityForm({
           abgeschlossenen Neueinrichtung. Neue Recovery-Codes ersetzen die
           bisherigen.
         </p>
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Vorgang wird verarbeitet …"
           disabled={busy || !confirmed || !password}
           onClick={() => void run("rotate-totp", { password })}
         >
           Authenticator neu einrichten
-        </button>
-        <button
+        </ActionButton>
+        <ActionButton
+          busy={busy}
+          loadingText="Vorgang wird verarbeitet …"
           className="secondary"
           disabled={busy || !confirmed || !password}
           onClick={() => void run("rotate-recovery", { password })}
         >
           Recovery-Codes erneuern
-        </button>
+        </ActionButton>
         {codes.length > 0 && (
           <div>
             <ul className="recovery-codes">
@@ -550,9 +566,9 @@ export function SecurityForm({
                 <li key={c}>{c}</li>
               ))}
             </ul>
-            <button onClick={() => setCodes([])}>
+            <Button onClick={() => setCodes([])}>
               Codes sicher gespeichert – Anzeige schliessen
-            </button>
+            </Button>
           </div>
         )}
       </section>
@@ -570,23 +586,27 @@ export function SecurityForm({
                 {new Date(s.expiresAt).toLocaleString("de-CH")}
               </p>
               {!s.current && (
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Vorgang wird verarbeitet …"
                   className="secondary"
                   disabled={busy || !confirmed}
                   onClick={() => void run("revoke", { id: s.id })}
                 >
                   Sitzung widerrufen
-                </button>
+                </ActionButton>
               )}
             </li>
           ))}
         </ul>
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Vorgang wird verarbeitet …"
           disabled={busy || !confirmed}
           onClick={() => void run("revoke-others", {})}
         >
           Alle anderen Sitzungen widerrufen
-        </button>
+        </ActionButton>
       </section>
       <nav>
         <Link href="/">Zur Anwendung</Link> ·{" "}

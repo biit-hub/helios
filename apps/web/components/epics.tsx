@@ -1,5 +1,6 @@
 "use client";
-import { Icon } from "@helios/ui";
+import { ActionButton, Button, Card, Icon } from "@helios/ui";
+
 import { useEffect, useState } from "react";
 import type {
   ContextView,
@@ -42,7 +43,9 @@ export function Epics({
   return (
     <section>
       <div className="ux-epic-toolbar">
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Vorgang wird verarbeitet …"
           type="button"
           disabled={busy}
           aria-label="Epics aus Todoist aktualisieren"
@@ -59,7 +62,7 @@ export function Epics({
           }}
         >
           <Icon name="refresh" />
-        </button>
+        </ActionButton>
       </div>
       {error && <p role="alert">{error}</p>}
       {(!rows || busy) && <output>Epics werden geladen …</output>}
@@ -71,7 +74,7 @@ export function Epics({
       )}
       <div className="epic-grid">
         {rows?.map((row) => (
-          <article className="card" key={row.task.id}>
+          <Card as="article" className="card" key={row.task.id}>
             <p>{epicStatus(row)}</p>
             <h3>{row.task.content}</h3>
             <p>
@@ -79,7 +82,7 @@ export function Epics({
                 ? "Zielabschnitt mehrdeutig"
                 : row.goal || "Ziel fehlt – SMART-Hilfe verfügbar"}
             </p>
-            <button
+            <Button
               type="button"
               onClick={() => {
                 setSelected(row.task.id);
@@ -87,13 +90,13 @@ export function Epics({
               }}
             >
               Epic öffnen
-            </button>
-          </article>
+            </Button>
+          </Card>
         ))}
       </div>
       {selected && (
-        <section className="card">
-          <button
+        <Card as="section" className="card">
+          <Button
             type="button"
             onClick={() => {
               setSelected(null);
@@ -101,16 +104,16 @@ export function Epics({
             }}
           >
             Epic-Details schliessen
-          </button>
+          </Button>
           <TaskDocument
             key={selected}
             context={context}
             taskId={selected}
             snapshot={snapshot}
           />
-          <button type="button" onClick={() => setEditing(true)}>
+          <Button type="button" onClick={() => setEditing(true)}>
             Aufgabenformular und manuelle Aktionen öffnen
-          </button>
+          </Button>
           {editing && (
             <TaskEditor
               context={context}
@@ -119,7 +122,7 @@ export function Epics({
               close={() => setEditing(false)}
             />
           )}
-        </section>
+        </Card>
       )}
       <TaskOperations contextId={context.id} />
     </section>

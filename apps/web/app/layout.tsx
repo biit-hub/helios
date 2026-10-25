@@ -5,6 +5,7 @@ import "./identity.css";
 import "./design-system.css";
 import "./ux-redesign.css";
 import "./task-detail.css";
+import "./ui-primitives.css";
 export const metadata: Metadata = {
   title: "Helios – Ein ruhiger Start",
   description: "Eine bewusste Tagesauswahl und ein ruhiger nächster Schritt.",

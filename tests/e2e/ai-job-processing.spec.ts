@@ -5,7 +5,7 @@ async function setting(page: Page, name: "Text" | "Datei" | "Recherche") {
   const form = page
     .locator(".ai-job-setting")
     .filter({ has: page.getByRole("heading", { name, exact: true }) });
-  await form.getByRole("checkbox", { name: "Ausgabe aktivieren" }).check();
+  await form.getByRole("switch", { name: "Ausgabe aktivieren" }).check();
   await form
     .getByRole("combobox", { name: "Lokales Modell für " + name })
     .selectOption("synthetic-local");
@@ -100,7 +100,7 @@ test("F-001.2 questions, automatic continuation, immutable refinement, conscious
     .getByRole("textbox", { name: "Nachbearbeitung anfordern" })
     .fill("Bitte synthetisch nachbearbeiten");
   await detail
-    .getByRole("button", { name: "Nachbearbeitung einreihen", exact: true })
+    .getByRole("button", { name: "Nachbearbeitung einreichen", exact: true })
     .click();
   await expect(
     detail.getByText("Synthetisch nachbearbeitetes Ergebnis", { exact: true }),

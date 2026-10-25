@@ -1,5 +1,6 @@
 "use client";
-import { Icon } from "@helios/ui";
+import { FormField, Button, Input, Icon } from "@helios/ui";
+
 import { useEffect, useId, useState } from "react";
 export function LabelPicker({
   value,
@@ -53,22 +54,22 @@ export function LabelPicker({
   }
   return (
     <div className="label-picker">
-      <label htmlFor={id}>Labels suchen</label>
+      <FormField htmlFor={id}>Labels suchen</FormField>
       <div className="label-chips" aria-label="Ausgewählte Labels">
         {value.map((name) => (
           <span className="label-chip" key={name}>
             {name}
-            <button
+            <Button
               type="button"
               aria-label={"Label entfernen: " + name}
               onClick={() => onChange(value.filter((v) => v !== name))}
             >
               <Icon name="close" />
-            </button>
+            </Button>
           </span>
         ))}
       </div>
-      <input
+      <Input
         id={id}
         role="combobox"
         aria-autocomplete="list"
@@ -121,7 +122,7 @@ export function LabelPicker({
         >
           {options.map((name, n) => (
             <li key={name}>
-              <button
+              <Button
                 id={id + "-option-" + n}
                 type="button"
                 role="option"
@@ -136,7 +137,7 @@ export function LabelPicker({
               >
                 {value.includes(name) && <Icon name="check" />}
                 {name}
-              </button>
+              </Button>
             </li>
           ))}
           {!options.length && (
@@ -155,7 +156,7 @@ export function LabelPicker({
           "Nur vorhandene Labels auswählen. Neue Labels werden hier nicht angelegt."}
       </p>
       {error && (
-        <button
+        <Button
           type="button"
           onClick={() => {
             setLoading(true);
@@ -163,7 +164,7 @@ export function LabelPicker({
           }}
         >
           Labels erneut laden
-        </button>
+        </Button>
       )}
     </div>
   );

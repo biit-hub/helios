@@ -1,34 +1,16 @@
 "use client";
-import type { ReactNode } from "react";
-import { Icon } from "@helios/ui";
-
+import { Accordion, type AccordionProps } from "@helios/ui";
 export function TaskAccordion({
+  className,
   title,
-  children,
-  onOpen,
-  onOpenStateChange,
-  className = "",
-}: Readonly<{
-  title: ReactNode;
-  children: ReactNode;
-  onOpen?: () => void;
-  onOpenStateChange?: (open: boolean) => void;
-  className?: string;
-}>) {
+  ...props
+}: Readonly<AccordionProps>) {
   return (
-    <details
-      className={"task-accordion " + className}
-      onToggle={(e) => {
-        if (e.target !== e.currentTarget) return;
-        onOpenStateChange?.(e.currentTarget.open);
-        if (e.currentTarget.open) onOpen?.();
-      }}
-    >
-      <summary>
-        <span>{title}</span>
-        <Icon name="chevron" />
-      </summary>
-      <div className="task-accordion-body">{children}</div>
-    </details>
+    <Accordion
+      {...props}
+      className={"task-accordion " + (className ?? "")}
+      bodyClassName="task-accordion-body"
+      title={<span>{title}</span>}
+    />
   );
 }

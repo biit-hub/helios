@@ -1,5 +1,17 @@
 "use client";
-import { Icon } from "@helios/ui";
+import { UiDialog } from "./ui-help";
+import {
+  ActionButton,
+  Accordion,
+  Button,
+  Card,
+  FormField,
+  Input,
+  Checkbox,
+  Select,
+  Icon,
+} from "@helios/ui";
+
 import {
   createContext,
   useContext,
@@ -140,9 +152,9 @@ export function ConfirmedAgenda({
       {data.editable === false && (
         <p>Historischer oder nicht mehr zugeordneter Plan · nur lesbar.</p>
       )}
-      <button type="button" className="secondary" onClick={reload}>
+      <Button type="button" className="secondary" onClick={reload}>
         Aktuellen Plan laden
-      </button>
+      </Button>
       <div
         className={
           mode === "focus"
@@ -151,7 +163,7 @@ export function ConfirmedAgenda({
         }
       >
         {mode === "focus" && focus && (
-          <section className="card focus-hero">
+          <Card as="section" className="card focus-hero">
             <p className="eyebrow">DEIN NÄCHSTER SCHRITT</p>
             <h2>{focus.source.content}</h2>
             <div className="button-row">
@@ -169,13 +181,12 @@ export function ConfirmedAgenda({
                 Fortschritt notieren
               </Link>
             </div>
-            <details>
-              <summary>Aufgabendetails</summary>
+            <Accordion title="Aufgabendetails">
               {focus.source.description && (
                 <p className="focus-description">{focus.source.description}</p>
               )}
               <EntryDetails entry={focus} />
-            </details>
+            </Accordion>
             <Link
               href={
                 "/tasks?context=" +
@@ -186,7 +197,7 @@ export function ConfirmedAgenda({
             >
               Bearbeiten
             </Link>
-          </section>
+          </Card>
         )}
         {!focus && main.length > 0 && (
           <p className="status-notice">
@@ -195,13 +206,15 @@ export function ConfirmedAgenda({
             Fokus wählen. Die Reihenfolge bleibt erhalten.
           </p>
         )}
-        <section className="card" aria-label="Hauptauswahl">
+        <Card as="section" className="card" aria-label="Hauptauswahl">
           <div className="panel-heading">
             <h2>Heute im Blick</h2>
             <span className="pill">Bewusst bestätigt</span>
           </div>
-          <details className="agenda-help">
-            <summary>Reihenfolge und Tastaturbedienung</summary>
+          <Accordion
+            className="agenda-help"
+            title="Reihenfolge und Tastaturbedienung"
+          >
             <p className="help">
               Ziehgriff: mit Maus oder Touch ziehen; per Tastatur mit Leertaste
               aufnehmen, Pfeilen verschieben und mit Leertaste ablegen.
@@ -213,7 +226,7 @@ export function ConfirmedAgenda({
                 zuerst bewusst eine andere Hauptaufgabe als Fokus.
               </p>
             )}
-          </details>
+          </Accordion>
           {!main.length && (
             <p>
               Hier ist gerade Platz. Du kannst bewusst eine passende Aufgabe
@@ -236,7 +249,9 @@ export function ConfirmedAgenda({
                 )}
                 {mode === "plan" && <EntryDetails entry={entry} />}
                 <div className="agenda-actions">
-                  <button
+                  <ActionButton
+                    busy={busy}
+                    loadingText="Vorgang wird verarbeitet …"
                     type="button"
                     className="secondary"
                     disabled={
@@ -257,7 +272,7 @@ export function ConfirmedAgenda({
                     {plan.focusTaskId === entry.taskId && available(entry)
                       ? "Im Fokus"
                       : "Als Fokus wählen"}
-                  </button>
+                  </ActionButton>
                   <ArrowButtons
                     title={entry.source.content}
                     index={index}
@@ -265,7 +280,9 @@ export function ConfirmedAgenda({
                     disabled={busy}
                     move={(to) => void reorder("main", index, to)}
                   />
-                  <button
+                  <ActionButton
+                    busy={busy}
+                    loadingText="Vorgang wird verarbeitet …"
                     type="button"
                     className="secondary"
                     disabled={
@@ -281,7 +298,7 @@ export function ConfirmedAgenda({
                     }
                   >
                     In die Reserve
-                  </button>
+                  </ActionButton>
                 </div>
               </>
             )}
@@ -289,8 +306,12 @@ export function ConfirmedAgenda({
           <Link className="button-link" href={link}>
             Weitere Aufgabe bewusst aufnehmen
           </Link>
-        </section>
-        <section className="card reserve-stack" aria-label="Zyklische Reserve">
+        </Card>
+        <Card
+          as="section"
+          className="card reserve-stack"
+          aria-label="Zyklische Reserve"
+        >
           <p className="eyebrow">WENN DU MAGST</p>
           <h2>Deine Reserve</h2>
           {state.paused ? (
@@ -298,28 +319,32 @@ export function ConfirmedAgenda({
               <p>
                 Die Reserve macht Pause. Du kannst sie bewusst wieder aufnehmen.
               </p>
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy}
                 onClick={() => void action("reserve-pause", { paused: false })}
               >
                 Reserve wieder aufnehmen
-              </button>
+              </ActionButton>
             </>
           ) : current ? (
             <article className="reserve-card">
               <h3>{current.source.content}</h3>
               <EntryDetails entry={current} />
-              <label>
+              <FormField>
                 Grund fürs Überspringen (optional)
-                <input
+                <Input
                   value={reason}
                   maxLength={1000}
                   onChange={(e) => setReason(e.target.value)}
                 />
-              </label>
+              </FormField>
               <div className="agenda-actions">
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Vorgang wird verarbeitet …"
                   type="button"
                   className="secondary"
                   disabled={busy || pendingIds.has(entryKey(current))}
@@ -331,22 +356,24 @@ export function ConfirmedAgenda({
                   }
                 >
                   Reservekarte überspringen
-                </button>
-                <button
+                </ActionButton>
+                <Button
                   type="button"
                   disabled={busy || pendingIds.has(entryKey(current))}
                   onClick={() => setClosing(current)}
                 >
                   Reserveaufgabe abschliessen
-                </button>
-                <button
+                </Button>
+                <ActionButton
+                  busy={busy}
+                  loadingText="Vorgang wird verarbeitet …"
                   type="button"
                   className="secondary"
                   disabled={busy}
                   onClick={() => void action("reserve-pause", { paused: true })}
                 >
                   Reserve pausieren
-                </button>
+                </ActionButton>
               </div>
             </article>
           ) : reserve.length ? (
@@ -359,8 +386,10 @@ export function ConfirmedAgenda({
             <p>Für jetzt ist deine Reserve leer. Es muss nichts dazukommen.</p>
           )}
           {mode === "plan" && reserve.length > 0 && (
-            <details className="reserve-manage">
-              <summary>Reserve bewusst ordnen und verwalten</summary>
+            <Accordion
+              className="reserve-manage"
+              title="Reserve bewusst ordnen und verwalten"
+            >
               <p className="help">
                 Diese Verwaltung ist vom reduzierten Fokusbereich getrennt.
                 Verschieben ändert keinen Todoist-Abschnitt.
@@ -385,7 +414,9 @@ export function ConfirmedAgenda({
                         disabled={busy}
                         move={(to) => void reorder("reserve", index, to)}
                       />
-                      <button
+                      <ActionButton
+                        busy={busy}
+                        loadingText="Vorgang wird verarbeitet …"
                         type="button"
                         className="secondary"
                         disabled={busy || pendingIds.has(entryKey(entry))}
@@ -397,17 +428,17 @@ export function ConfirmedAgenda({
                         }
                       >
                         In die Hauptauswahl
-                      </button>
+                      </ActionButton>
                     </div>
                   </>
                 )}
               </SortableArea>
-            </details>
+            </Accordion>
           )}
-        </section>
+        </Card>
       </div>
       {data.agendaOperations?.map((op) => (
-        <section className="card" key={op.id}>
+        <Card as="section" className="card" key={op.id}>
           <h3>Bewusste Planänderung</h3>
           <p>
             {["queued", "running"].includes(op.status)
@@ -418,7 +449,7 @@ export function ConfirmedAgenda({
           </p>
           {op.code && <p className="help">{op.code}</p>}
           {["unknown", "failed", "partial"].includes(op.status) && (
-            <button
+            <Button
               type="button"
               disabled={busy}
               onClick={() => {
@@ -430,12 +461,12 @@ export function ConfirmedAgenda({
               }}
             >
               Stand prüfen und bewusst fortsetzen
-            </button>
+            </Button>
           )}
           <Link href={"/tasks?context=" + context.id}>
             Operationsjournal öffnen
           </Link>
-        </section>
+        </Card>
       ))}
       {closing && (
         <ReserveClose
@@ -473,7 +504,7 @@ function ArrowButtons({
 }) {
   return (
     <>
-      <button
+      <Button
         type="button"
         className="secondary"
         aria-label={title + " nach oben"}
@@ -481,8 +512,8 @@ function ArrowButtons({
         onClick={() => move(index - 1)}
       >
         <Icon name="up" />
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         className="secondary"
         aria-label={title + " nach unten"}
@@ -490,7 +521,7 @@ function ArrowButtons({
         onClick={() => move(index + 1)}
       >
         <Icon name="down" />
-      </button>
+      </Button>
     </>
   );
 }
@@ -511,14 +542,13 @@ function EntryDetails({ entry }: { readonly entry: PlanEntry }) {
           <dd>{entry.source.deadline?.date ?? "Nicht festgelegt"}</dd>
         </div>
       </dl>
-      <details>
-        <summary>Warum diese Aufgabe?</summary>
+      <Accordion title="Warum diese Aufgabe?">
         <ul>
           {entry.reasons.map((reason) => (
             <li key={reason}>{reason}</li>
           ))}
         </ul>
-      </details>
+      </Accordion>
     </>
   );
 }
@@ -539,14 +569,11 @@ function ReserveClose({
     hierarchy: boolean,
   ) => Promise<void>;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
   const [inspection, setInspection] = useState<TaskInspection | null>(null),
     [error, setError] = useState(""),
     [destructive, setDestructive] = useState(false),
     [hierarchy, setHierarchy] = useState(false);
   useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    ref.current?.showModal();
     let alive = true;
     api(
       "/api/tasks?contextId=" +
@@ -562,23 +589,18 @@ function ReserveClose({
       });
     return () => {
       alive = false;
-      opener?.focus();
     };
   }, [context.id, entry.taskId]);
   const affected =
     !!inspection?.task.parent_id || !!inspection?.children.length;
   return (
-    <dialog
-      ref={ref}
-      className="task-dialog"
-      aria-labelledby="reserve-close-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        close();
-      }}
+    <UiDialog
+      title="Reserveaufgabe bewusst abschliessen"
+      busy={busy}
+      close={close}
+      showCloseButton={false}
     >
-      <div className="task-dialog-body">
-        <h2 id="reserve-close-title">Reserveaufgabe bewusst abschliessen</h2>
+      <div className="ui-dialog-content">
         <p>{entry.source.content}</p>
         {error && <p role="alert">{error}</p>}
         {!inspection && <p>Aktueller Todoist-Stand wird geprüft …</p>}
@@ -600,44 +622,46 @@ function ReserveClose({
                     <li key={child.id}>{child.content}</li>
                   ))}
                 </ul>
-                <label className="check-label">
-                  <input
+                <FormField className="check-label">
+                  <Checkbox
                     type="checkbox"
                     checked={hierarchy}
                     onChange={(e) => setHierarchy(e.target.checked)}
                   />
                   Ich bestätige die angezeigte Hierarchiewirkung ausdrücklich.
-                </label>
+                </FormField>
               </>
             )}
-            <label className="check-label">
-              <input
+            <FormField className="check-label">
+              <Checkbox
                 type="checkbox"
                 checked={destructive}
                 onChange={(e) => setDestructive(e.target.checked)}
               />
               Ich bestätige den nativen Abschluss dieser Reserveaufgabe
               ausdrücklich.
-            </label>
-            <button
+            </FormField>
+            <ActionButton
+              busy={busy}
+              loadingText="Änderungen werden gespeichert …"
               type="button"
               disabled={busy || !destructive || (affected && !hierarchy)}
               onClick={() => void submit(inspection, destructive, hierarchy)}
             >
               Abschluss bewusst bestätigen
-            </button>
+            </ActionButton>
           </>
         )}
-        <button
+        <Button
           type="button"
           className="secondary"
           disabled={busy}
           onClick={close}
         >
           Abbrechen
-        </button>
+        </Button>
       </div>
-    </dialog>
+    </UiDialog>
   );
 }
 type AdmissionContextValue = {
@@ -722,17 +746,19 @@ export function AddToPlan({
   const operation = view.agendaOperations?.find((item) => item.id === op);
   return (
     <div className="add-to-plan">
-      <label>
+      <FormField>
         Ziel der bewussten Aufnahme
-        <select
+        <Select
           value={area}
           onChange={(e) => setArea(e.target.value as AgendaArea)}
         >
           <option value="main">Hauptauswahl</option>
           <option value="reserve">Reserve</option>
-        </select>
-      </label>
-      <button
+        </Select>
+      </FormField>
+      <ActionButton
+        busy={busy}
+        loadingText="Vorgang wird verarbeitet …"
         type="button"
         className="secondary"
         disabled={busy || included || pending}
@@ -772,7 +798,7 @@ export function AddToPlan({
           : pending
             ? "Aufnahme wird nachgewiesen …"
             : "Bewusst in den Tagesplan aufnehmen"}
-      </button>
+      </ActionButton>
       {error && <p role="alert">{error}</p>}
       {operation &&
         ["failed", "partial", "unknown"].includes(operation.status) && (

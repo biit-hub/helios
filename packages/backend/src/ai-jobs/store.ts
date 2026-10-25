@@ -218,10 +218,14 @@ export async function listJobs(
   page: number,
   status: AiJobStatus | undefined,
   oldest: boolean,
+  search = "",
 ): Promise<AiJobList> {
   const condition = and(
     eq(aiJobs.userId, userId),
     status ? eq(aiJobs.status, status) : undefined,
+    search
+      ? sql`strpos(lower(${aiJobs.originalPrompt}), lower(${search})) > 0`
+      : undefined,
   );
   const [total] = await db.select({ n: count() }).from(aiJobs).where(condition);
   const rows = await db

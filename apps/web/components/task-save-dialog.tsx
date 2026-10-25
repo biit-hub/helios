@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Button, Icon } from "@helios/ui";
+
 import type {
   DocumentChange,
   TaskOperationView,
@@ -7,7 +9,6 @@ import type {
 import { UiDialog } from "./ui-help";
 import { TaskAccordion } from "./task-accordion";
 import { TaskOperationEvidence } from "./task-operation-evidence";
-import { Icon } from "@helios/ui";
 
 const fieldNames: Record<string, string> = {
   content: "Titel",
@@ -98,17 +99,19 @@ export function TaskSaveDialog({
       {error && <p role="alert">{error}</p>}
       {operation && <TaskOperationEvidence operation={operation} />}
       {checkJournal && (
-        <button
+        <ActionButton
+          busy={processing}
+          loadingText="Vorgang wird verarbeitet …"
           type="button"
           className="secondary"
           disabled={processing}
           onClick={checkJournal}
         >
           Schreibauftrag im Journal prüfen
-        </button>
+        </ActionButton>
       )}
       <div className="task-action-buttons">
-        <button
+        <Button
           type="button"
           className="secondary"
           disabled={processing}
@@ -116,11 +119,17 @@ export function TaskSaveDialog({
         >
           <Icon name="close" />
           Zurück zur Aufgabe
-        </button>
-        <button type="button" disabled={pending} onClick={confirm}>
+        </Button>
+        <ActionButton
+          busy={processing}
+          loadingText="Änderungen werden gespeichert …"
+          type="button"
+          disabled={pending}
+          onClick={confirm}
+        >
           <Icon name="save" />
           {processing ? "Wird nachgewiesen …" : "Änderungen speichern"}
-        </button>
+        </ActionButton>
       </div>
     </UiDialog>
   );

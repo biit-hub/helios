@@ -306,7 +306,7 @@ it("lets the user disable an unavailable configured model without clearing its c
   });
   render(<AiJobSettingsPanel />);
   const checkbox = (
-    await screen.findAllByRole("checkbox", { name: "Ausgabe aktivieren" })
+    await screen.findAllByRole("switch", { name: "Ausgabe aktivieren" })
   )[0]!;
   fireEvent.click(checkbox);
   const form = checkbox.closest("form")!;

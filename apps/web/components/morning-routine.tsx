@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Button, Card, FormField, Checkbox } from "@helios/ui";
+
 import { CalendarContextPanel } from "./calendar-context";
 import { useRoutineResource } from "./routine-resource";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -101,7 +103,7 @@ export function MorningRoutine({
       {error && (
         <p role="alert" className="form-error">
           {error}{" "}
-          <button
+          <Button
             className="secondary"
             onClick={() =>
               void refresh()
@@ -110,23 +112,25 @@ export function MorningRoutine({
             }
           >
             Gespeicherten Stand neu laden
-          </button>
+          </Button>
         </p>
       )}
       {!data && !error && (
         <p role="status">Dein gespeicherter Stand wird geladen …</p>
       )}
       {data && !d && (
-        <section className="card">
+        <Card as="section" className="card">
           <h2>Du entscheidest, wann du beginnst.</h2>
           <p>Die Routine ist für heute noch nicht gestartet.</p>
-          <button
+          <ActionButton
+            busy={busy}
+            loadingText="Vorgang wird verarbeitet …"
             disabled={busy}
             onClick={() => void act("start").catch(() => {})}
           >
             Morgenroutine starten
-          </button>
-        </section>
+          </ActionButton>
+        </Card>
       )}
       {d && (
         <>
@@ -142,7 +146,7 @@ export function MorningRoutine({
               aria-label="Schritte der Morgenroutine"
             >
               {(["inbox", "contexts"] as RoutineStep[]).map((step) => (
-                <button
+                <Button
                   key={step}
                   className="secondary"
                   aria-current={d.cursor.step === step ? "step" : undefined}
@@ -150,7 +154,7 @@ export function MorningRoutine({
                   onClick={() => void move("navigate", step).catch(() => {})}
                 >
                   {names[step]} · {states[d.steps[step as "inbox"]]}
-                </button>
+                </Button>
               ))}
               {d.contexts
                 .filter((c) => c.selected)
@@ -167,7 +171,7 @@ export function MorningRoutine({
                     </strong>
                     {(["review", "enrichment", "planning"] as const).map(
                       (step) => (
-                        <button
+                        <Button
                           key={step}
                           className="secondary"
                           disabled={busy}
@@ -184,12 +188,12 @@ export function MorningRoutine({
                           }
                         >
                           {names[step]} · {states[r.steps[step]]}
-                        </button>
+                        </Button>
                       ),
                     )}
                   </section>
                 ))}
-              <button
+              <Button
                 className="secondary"
                 disabled={busy}
                 onClick={() =>
@@ -197,7 +201,7 @@ export function MorningRoutine({
                 }
               >
                 {names.problems} · {states[d.steps.problems]}
-              </button>
+              </Button>
             </nav>
             <div className="routine-content">
               {d.cursor.step === "inbox" && (
@@ -267,7 +271,7 @@ export function MorningRoutine({
                 </>
               )}
               <div className="routine-controls">
-                <button
+                <Button
                   className="secondary"
                   disabled={busy}
                   onClick={() =>
@@ -277,8 +281,8 @@ export function MorningRoutine({
                   }
                 >
                   Diesen Schritt überspringen · offen lassen
-                </button>
-                <button
+                </Button>
+                <Button
                   disabled={busy}
                   onClick={() =>
                     void move(
@@ -289,7 +293,7 @@ export function MorningRoutine({
                   }
                 >
                   Diesen Schritt bewusst abschliessen und weiter
-                </button>
+                </Button>
                 <Link href="/">Für jetzt pausieren</Link>
               </div>
             </div>
@@ -319,7 +323,7 @@ function RoutineContexts({
     routine.contexts.filter((c) => c.selected).map((c) => c.contextId);
   const dirty = !!draft;
   return (
-    <section className="card routine-step">
+    <Card as="section" className="card routine-step">
       <h2>Für welche Kontexte möchtest du planen?</h2>
       <p>
         Privat und Arbeitgeber bleiben frei wählbar. TermiHub ist dafür keine
@@ -329,8 +333,8 @@ function RoutineContexts({
       <CalendarContextPanel />
       <div className="routine-contexts">
         {snapshot.contexts.map((c) => (
-          <label key={c.id} data-theme={c.theme} className="context-pill">
-            <input
+          <FormField key={c.id} data-theme={c.theme} className="context-pill">
+            <Checkbox
               type="checkbox"
               checked={ids.includes(c.id)}
               disabled={!c.active || busy}
@@ -345,10 +349,12 @@ function RoutineContexts({
             />
             {c.name}
             {!c.active ? " · inaktiv" : ""}
-          </label>
+          </FormField>
         ))}
       </div>
-      <button
+      <ActionButton
+        busy={busy}
+        loadingText="Änderungen werden gespeichert …"
         disabled={busy}
         onClick={() => {
           setBusy(true);
@@ -369,9 +375,9 @@ function RoutineContexts({
         }}
       >
         Kontextauswahl speichern
-      </button>
+      </ActionButton>
       {dirty && routine.revision !== draft?.revision && (
-        <button
+        <Button
           className="secondary"
           onClick={() => {
             setDraft(null);
@@ -379,9 +385,9 @@ function RoutineContexts({
           }}
         >
           Gespeicherte Auswahl bewusst laden
-        </button>
+        </Button>
       )}
-    </section>
+    </Card>
   );
 }
 function RoutineEnrichment({
@@ -409,16 +415,16 @@ function RoutineEnrichment({
     load = resource.reload;
   const [editing, setEditing] = useState<string | null>(null);
   return (
-    <section className="card routine-step">
+    <Card as="section" className="card routine-step">
       <h2>Was möchtest du noch klären?</h2>
       <p>
         Nur dein aktiver verwalteter Kontext wird berücksichtigt. Es gibt keine
         Pflichtquote.
       </p>
       {error && <p role="alert">{error}</p>}
-      <button className="secondary" onClick={() => void load().catch(() => {})}>
+      <Button className="secondary" onClick={() => void load().catch(() => {})}>
         Klärungsbedarf aktualisieren
-      </button>
+      </Button>
       {!items.length && !error && (
         <p>
           Momentan liegt kein bekannter Klärungsbedarf vor. Du kannst
@@ -429,9 +435,9 @@ function RoutineEnrichment({
         <article className="routine-review-card" key={item.taskId}>
           <h3>{item.title}</h3>
           <p>{item.reasons.join(" · ")}</p>
-          <button onClick={() => setEditing(item.taskId)}>
+          <Button onClick={() => setEditing(item.taskId)}>
             Aufgabe gemeinsam klären
-          </button>
+          </Button>
         </article>
       ))}
       {editing && (
@@ -448,7 +454,7 @@ function RoutineEnrichment({
           }}
         />
       )}
-    </section>
+    </Card>
   );
 }
 function RoutinePlanning({ context }: { context: ContextView }) {
@@ -462,7 +468,9 @@ function RoutinePlanning({ context }: { context: ContextView }) {
         einen unbestätigten Vorschlag dieses Kontextes.
       </p>
       {error && <p role="alert">{error}</p>}
-      <button
+      <ActionButton
+        busy={busy}
+        loadingText="Tagesvorschau wird erstellt …"
         disabled={busy || !context.active}
         onClick={() => {
           setBusy(true);
@@ -485,7 +493,7 @@ function RoutinePlanning({ context }: { context: ContextView }) {
         }}
       >
         Aktuelle Tagesvorschau nach dem Review vorbereiten
-      </button>
+      </ActionButton>
       <PlanningPanel
         key={context.id + ":" + version}
         context={context}

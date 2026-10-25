@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Accordion, FormField, Textarea } from "@helios/ui";
+
 import type { DocumentModel } from "./use-task-document";
 import { TaskAccordion } from "./task-accordion";
 import { useState } from "react";
@@ -109,15 +111,17 @@ export function EpicEnrichment({
           ) : (
             <p>Noch kein abgeleitetes Verständnis gespeichert.</p>
           )}
-          <label>
+          <FormField>
             <span>Deine verbindliche Korrektur</span>
-            <textarea
+            <Textarea
               maxLength={4000}
               value={correction}
               onChange={(e) => setCorrection(e.target.value)}
             />
-          </label>
-          <button
+          </FormField>
+          <ActionButton
+            busy={pending && !model.requestUncertain}
+            loadingText="Änderungen werden gespeichert …"
             type="button"
             disabled={pending}
             onClick={() => {
@@ -144,14 +148,14 @@ export function EpicEnrichment({
             }}
           >
             Korrektur lokal speichern
-          </button>
+          </ActionButton>
           {!detail.inspection.task.checked && (
-            <details
+            <Accordion
               onToggle={(e) => {
                 if (e.currentTarget.open) setUnderstandingOpen(true);
               }}
+              title="Epic-Verständnis analysieren oder korrigieren"
             >
-              <summary>Epic-Verständnis analysieren oder korrigieren</summary>
               {understandingOpen && (
                 <AiDraftPanel
                   kind="epic"
@@ -160,7 +164,7 @@ export function EpicEnrichment({
                   snapshot={snapshot}
                 />
               )}
-            </details>
+            </Accordion>
           )}
         </>
       )}

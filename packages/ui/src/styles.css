@@ -253,3 +253,60 @@ footer {
   border-radius: 0.75rem;
   padding: 0.75rem;
 }
+/* Existing F-001 layout, composed from the shared primitives and spacing tokens. */
+.ai-job-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--ui-content-gap);
+}
+.ai-job-filters > label {
+  flex: 1 1 150px;
+}
+.ai-job-filters > label:first-child {
+  flex-basis: 260px;
+}
+.ui-card.ai-job-card-closed {
+  background: #f0eee8;
+  border-color: #d1cec8;
+}
+.ai-job-card-closed h3,
+.ai-job-card-closed p {
+  color: #5d6470;
+}
+.ui-card.ai-job-result-card {
+  padding: 0;
+  border-color: #c8b28d;
+}
+.workspace .ui-card.ai-job-result-card > .ui-accordion {
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+.ai-job-result-card .ai-job-text {
+  line-height: 1.65;
+}
+.ai-job-followup form,
+.ai-job-followup label {
+  display: grid;
+  gap: var(--ui-content-gap);
+}
+.ai-job-followup .actions {
+  margin: 0;
+}
+.ai-job-followup textarea {
+  width: 100%;
+  min-height: 110px;
+}
+.ai-job-main-actions {
+  padding-top: var(--ui-content-gap);
+  margin-top: var(--ui-content-gap);
+  border-top: 1px solid var(--border);
+}
+.ai-job-result-content {
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+.ai-job-result-content .task-markdown > :first-child {
+  margin-top: 0;
+}

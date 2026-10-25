@@ -1,0 +1,396 @@
+/* UX-034/035: shared primitives; loaded after the historical E9 styles. */
+:root {
+  --ui-radius: 10px;
+  --ui-control-radius: 11px;
+  --ui-control-height: 42px;
+  --ui-content-gap: 12px;
+  --ui-control-gap: 8px;
+  --ui-inset: 16px;
+  --ui-hover: #faf0df;
+  --ui-focus: #9c4f18;
+  --ui-loading-surface: #f4dfbf;
+  --ui-loading-ink: #733b16;
+  --ui-danger: #8d3026;
+  --ui-danger-surface: #fff0ec;
+  --ui-success: #315b3a;
+  --ui-success-surface: #eaf2e4;
+  --ui-info: #285a73;
+  --ui-info-surface: #e8f1f6;
+  --ui-warning: #78520d;
+  --ui-warning-surface: #fff0ce;
+}
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-control-gap);
+  min-height: var(--ui-control-height);
+  border-radius: var(--ui-control-radius);
+  font: inherit;
+  line-height: 1.35;
+}
+.ui-button-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-control-gap);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ui-button-loader {
+  display: inline-flex;
+  flex: 0 0 24px;
+}
+.ui-button-loader canvas {
+  max-width: none;
+}
+.workspace .ui-button[aria-busy="true"],
+.ui-button[aria-busy="true"] {
+  background: var(--ui-loading-surface);
+  color: var(--ui-loading-ink);
+  border: 1px solid #b58046;
+  opacity: 1;
+  cursor: progress;
+}
+.workspace button.ui-button-danger,
+.ui-button-danger {
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
+  color: white;
+}
+.workspace button.ui-button-danger:hover:not(:disabled) {
+  background: #72241c;
+}
+.ui-button-icon {
+  padding: 8px;
+  min-width: var(--ui-control-height);
+}
+.ui-button:disabled:not([aria-busy="true"]) {
+  cursor: not-allowed;
+}
+.ui-input:not([type="checkbox"]):not([type="radio"]),
+.ui-textarea,
+.ui-select {
+  min-width: 0;
+  max-width: 100%;
+  border-radius: var(--ui-control-radius);
+  border: 1px solid var(--border);
+  padding: 9px 11px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.ui-input:not([type="checkbox"]):not([type="radio"]),
+.ui-select {
+  min-height: var(--ui-control-height);
+}
+.ui-textarea {
+  width: 100%;
+  line-height: 1.5;
+  resize: vertical;
+}
+.ui-form-field {
+  min-width: 0;
+}
+.ui-checkbox {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.ui-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.ui-switch > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.ui-switch-track {
+  display: block;
+  width: 40px;
+  height: 24px;
+  flex: 0 0 40px;
+  border: 1px solid #a39078;
+  border-radius: 999px;
+  background: #d9d2c7;
+}
+.ui-switch-track::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 2px;
+  border-radius: 50%;
+  background: #fffef9;
+  box-shadow: 0 1px 3px #24303d33;
+  transition: transform 150ms;
+}
+.ui-switch > input:checked + .ui-switch-track {
+  background: #9c4f18;
+  border-color: #9c4f18;
+}
+.ui-switch > input:checked + .ui-switch-track::before {
+  transform: translateX(16px);
+}
+.ui-switch > input:focus-visible + .ui-switch-track {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+.ui-switch:has(input:disabled) {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+.ui-switch > input:disabled + .ui-switch-track {
+  opacity: 0.65;
+}
+.ui-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--ui-radius);
+  background: var(--surface);
+  padding: var(--ui-inset);
+}
+.workspace .ui-accordion,
+.ui-accordion {
+  min-width: 0;
+  margin: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--ui-radius);
+  background: var(--surface);
+  overflow: clip;
+}
+.workspace .ui-accordion > summary,
+.ui-accordion > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  gap: var(--ui-content-gap);
+  padding: 12px;
+  margin: 0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  box-sizing: border-box;
+}
+.ui-accordion > summary > span {
+  min-width: 0;
+}
+.ui-accordion > summary::-webkit-details-marker {
+  display: none;
+}
+.workspace .ui-accordion > summary::after {
+  content: none;
+}
+.ui-accordion > summary:is(:hover, :focus-visible) {
+  background: var(--ui-hover);
+}
+.ui-accordion > summary:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: -3px;
+}
+.ui-accordion[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+.ui-accordion > summary .ui-accordion-chevron {
+  flex-shrink: 0;
+  transition: transform 150ms;
+}
+.ui-accordion[open] > summary .ui-accordion-chevron {
+  transform: rotate(180deg);
+}
+.ui-accordion-body {
+  min-width: 0;
+  padding: 12px;
+}
+.ui-accordion-body > :first-child {
+  margin-top: 0;
+}
+.ui-accordion-body > :last-child {
+  margin-bottom: 0;
+}
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.ui-badge-neutral,
+.ui-badge-muted {
+  color: #5d6470;
+  background: #f0eee8;
+}
+.ui-badge-info {
+  color: var(--ui-info);
+  background: var(--ui-info-surface);
+}
+.ui-badge-success {
+  color: var(--ui-success);
+  background: var(--ui-success-surface);
+}
+.ui-badge-warning {
+  color: var(--ui-warning);
+  background: var(--ui-warning-surface);
+}
+.ui-badge-danger {
+  color: var(--ui-danger);
+  background: var(--ui-danger-surface);
+}
+.ui-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--ui-radius);
+  line-height: 1.5;
+}
+.ui-status > span:first-child:has(canvas) {
+  flex: none;
+}
+.ui-dialog-surface {
+  min-width: 0;
+}
+.ui-dialog-content {
+  min-width: 0;
+}
+.ui-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.ui-dialog-content fieldset {
+  min-width: 0;
+}
+:is(
+  .ui-button,
+  .ui-input,
+  .ui-select,
+  .ui-textarea,
+  .ui-checkbox
+):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-switch-track::before,
+  .ui-accordion-chevron {
+    transition: none;
+  }
+}
+@media (max-width: 600px) {
+  .ui-dialog-actions > .ui-button {
+    flex: 1 1 auto;
+  }
+  .ui-accordion-body {
+    padding: 10px;
+  }
+}
+.ui-form-field:not(.check):not(.check-label):not(.task-fun-switch):not(
+    :has(> .ui-checkbox)
+  ) {
+  display: grid;
+  gap: 6px;
+}
+.ui-form-field:is(.check, .check-label) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workspace .ui-badge-neutral,
+.workspace .ui-badge-muted {
+  color: #5d6470;
+  background: #f0eee8;
+}
+.workspace .ui-badge-info {
+  color: var(--ui-info);
+  background: var(--ui-info-surface);
+}
+.workspace .ui-badge-success {
+  color: var(--ui-success);
+  background: var(--ui-success-surface);
+}
+.workspace .ui-badge-warning {
+  color: var(--ui-warning);
+  background: var(--ui-warning-surface);
+}
+.workspace .ui-badge-danger {
+  color: var(--ui-danger);
+  background: var(--ui-danger-surface);
+}
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.workspace label.ui-switch {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: fit-content;
+  margin: 4px 0;
+}
+.workspace label.ui-switch > input[role="switch"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0;
+}
+.workspace label.ui-switch > .ui-switch-track {
+  display: block;
+  width: 40px;
+  height: 24px;
+  min-width: 40px;
+  min-height: 24px;
+  padding: 0;
+  margin: 0;
+  border-radius: 999px;
+  flex: 0 0 40px;
+}
+.label-chips:empty {
+  display: none;
+}
+
+.workspace button.ui-button-danger[aria-busy="true"] {
+  background: var(--ui-loading-surface);
+  color: var(--ui-loading-ink);
+  border-color: #b58046;
+}
+
+label.ui-form-field:has(> .ui-checkbox) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ui-control-gap);
+}

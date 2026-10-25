@@ -1,4 +1,15 @@
 "use client";
+import {
+  ActionButton,
+  FormField,
+  Input,
+  Textarea,
+  Checkbox,
+  Button,
+  Select,
+  Icon,
+} from "@helios/ui";
+
 import { useEffect, useRef, useState } from "react";
 import type {
   TaskInspection,
@@ -6,7 +17,7 @@ import type {
   WorkSnapshot,
 } from "@helios/contracts";
 import { UiDialog } from "./ui-help";
-import { Icon } from "@helios/ui";
+
 import { TaskOperationEvidence } from "./task-operation-evidence";
 import { optionNames } from "./option-names";
 export type TaskAction = "close" | "delete" | "move" | "wait" | "comment";
@@ -26,6 +37,13 @@ export const actionTitles = {
   move: "Verschieben",
   wait: "Warten",
   comment: "Kommentar hinzufügen",
+};
+const actionLoadingText: Record<TaskAction, string> = {
+  close: "Abschluss wird nachgewiesen …",
+  delete: "Löschung wird nachgewiesen …",
+  move: "Aufgabe wird verschoben …",
+  wait: "Wartestatus wird gespeichert …",
+  comment: "Kommentar wird hinzugefügt …",
 };
 type TaskActionProps = Readonly<{
   action: TaskAction;
@@ -132,35 +150,35 @@ export function TaskActionDialog({
         )}
         {action === "wait" && (
           <>
-            <label>
+            <FormField>
               <span>Wartet auf</span>
-              <input
+              <Input
                 required
                 maxLength={300}
                 value={fields.who}
                 disabled={pending}
                 onChange={(e) => change("who", e.target.value)}
               />
-            </label>
-            <label>
+            </FormField>
+            <FormField>
               <span>Gegenstand</span>
-              <input
+              <Input
                 required
                 maxLength={1000}
                 value={fields.subject}
                 disabled={pending}
                 onChange={(e) => change("subject", e.target.value)}
               />
-            </label>
-            <label>
+            </FormField>
+            <FormField>
               <span>Nächste Prüfung</span>
-              <input
+              <Input
                 type="date"
                 value={fields.followUp}
                 disabled={pending}
                 onChange={(e) => change("followUp", e.target.value)}
               />
-            </label>
+            </FormField>
             <p>
               Die Wartedetails werden im vorhandenen
               Todoist-Beschreibungsabschnitt gespeichert; die Aufgabe wechselt
@@ -169,16 +187,16 @@ export function TaskActionDialog({
           </>
         )}
         {action === "comment" && (
-          <label>
+          <FormField>
             <span>Kommentar</span>
-            <textarea
+            <Textarea
               required
               maxLength={12000}
               value={fields.comment}
               disabled={pending}
               onChange={(e) => change("comment", e.target.value)}
             />
-          </label>
+          </FormField>
         )}
         {affectsHierarchy && (
           <HierarchyNotice
@@ -192,8 +210,8 @@ export function TaskActionDialog({
           />
         )}
         {dirty && (
-          <label className="check-label task-draft-warning">
-            <input
+          <FormField className="check-label task-draft-warning">
+            <Checkbox
               type="checkbox"
               checked={discard}
               disabled={pending}
@@ -203,12 +221,12 @@ export function TaskActionDialog({
               Ungespeicherte Änderungen am Aufgabenentwurf werden bei dieser
               Aktion nicht übernommen. Ich möchte trotzdem fortfahren.
             </span>
-          </label>
+          </FormField>
         )}
         {error && <p role="alert">{error}</p>}
         {operation && <TaskOperationEvidence operation={operation} />}
         <div className="task-action-buttons">
-          <button
+          <Button
             type="button"
             className="secondary"
             disabled={processing}
@@ -216,15 +234,17 @@ export function TaskActionDialog({
           >
             <Icon name="close" />
             Abbrechen
-          </button>
-          <button
+          </Button>
+          <ActionButton
+            busy={processing}
+            loadingText={actionLoadingText[action]}
             type="submit"
             className={action === "delete" ? "task-delete" : ""}
             disabled={pending || !valid}
           >
             <Icon name={actionIcons[action]} />
             {processing ? "Wird nachgewiesen …" : confirmationTitles[action]}
-          </button>
+          </ActionButton>
         </div>
       </form>
     </UiDialog>
@@ -329,9 +349,9 @@ function MoveFields({
         Unteraufgabe von ihrer Oberaufgabe. Kinder einer Oberaufgabe werden
         mitverschoben.
       </p>
-      <label>
+      <FormField>
         <span>Zielart</span>
-        <select
+        <Select
           value={targetKind}
           disabled={pending}
           onChange={(e) => {
@@ -344,12 +364,12 @@ function MoveFields({
           <option value="section">Abschnitt</option>
           <option value="project">Projekt</option>
           <option value="parent">Oberaufgabe</option>
-        </select>
-      </label>
+        </Select>
+      </FormField>
       {targetKind === "project" && (
-        <label>
+        <FormField>
           <span>Zielprojekt</span>
-          <select
+          <Select
             required
             value={fields.project}
             disabled={pending}
@@ -363,13 +383,13 @@ function MoveFields({
                   {names.get(p.id)}
                 </option>
               ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
       )}
       {targetKind === "section" && (
-        <label>
+        <FormField>
           <span>Zielabschnitt</span>
-          <select
+          <Select
             required
             value={fields.section}
             disabled={pending}
@@ -388,13 +408,13 @@ function MoveFields({
                   {s.name}
                 </option>
               ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
       )}
       {targetKind === "parent" && (
-        <label>
+        <FormField>
           <span>Neue Oberaufgabe</span>
-          <select
+          <Select
             required
             value={fields.parent}
             disabled={pending}
@@ -408,8 +428,8 @@ function MoveFields({
                   {p.content}
                 </option>
               ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
       )}
       {targetsError && <p role="alert">{targetsError}</p>}
     </>
@@ -483,8 +503,8 @@ function HierarchyNotice({
             abgeschlossen werden. Teilerfolge oder unbekannte Ergebnisse stoppen
             den Abschluss.
           </p>
-          <label className="check-label">
-            <input
+          <FormField className="check-label">
+            <Checkbox
               type="checkbox"
               checked={epicDetach}
               disabled={pending}
@@ -494,11 +514,11 @@ function HierarchyNotice({
               Alle angezeigten offenen Teilbäume bewusst trennen und
               anschliessend Epic abschliessen
             </span>
-          </label>
+          </FormField>
         </>
       )}
-      <label className="check-label">
-        <input
+      <FormField className="check-label">
+        <Checkbox
           type="checkbox"
           checked={hierarchy}
           disabled={pending}
@@ -508,7 +528,7 @@ function HierarchyNotice({
           Ich bestätige die angezeigte Hierarchiewirkung:{" "}
           {hierarchyEffect(action, epic)}
         </span>
-      </label>
+      </FormField>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Icon } from "@helios/ui";
+import { Button, Icon } from "@helios/ui";
+import { useId, useState, type ReactNode } from "react";
+
 export function InfoTip({
   label,
   children,
@@ -17,7 +18,7 @@ export function InfoTip({
         if (event.pointerType === "mouse") setOpen(false);
       }}
     >
-      <button
+      <Button
         type="button"
         aria-label={"Information zu " + label}
         aria-expanded={open}
@@ -34,59 +35,11 @@ export function InfoTip({
         }}
       >
         <Icon name="info" />
-      </button>
+      </Button>
       <span id={id} role="tooltip" hidden={!open}>
         {children}
       </span>
     </span>
   );
 }
-export function UiDialog({
-  title,
-  children,
-  close,
-  busy = false,
-  showCloseButton = true,
-}: Readonly<{
-  title: string;
-  children: ReactNode;
-  close: () => void;
-  busy?: boolean;
-  showCloseButton?: boolean;
-}>) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const dialog = ref.current!;
-    if (dialog.showModal) dialog.showModal();
-    else dialog.setAttribute("open", "");
-    return () => previous?.focus();
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className="ux-dialog card"
-      aria-label={title}
-      aria-busy={busy}
-      onCancel={(e) => {
-        e.preventDefault();
-        if (!busy) close();
-      }}
-    >
-      <div className="panel-heading">
-        <h2>{title}</h2>
-        {showCloseButton && (
-          <button
-            type="button"
-            className="secondary"
-            disabled={busy}
-            onClick={close}
-          >
-            Schliessen
-          </button>
-        )}
-      </div>
-      {children}
-    </dialog>
-  );
-}
+export { Dialog as UiDialog } from "@helios/ui";

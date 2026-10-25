@@ -1,6 +1,7 @@
 "use client";
+import { FormField, Textarea, Button, Checkbox, Input, Icon } from "@helios/ui";
 import { TaskAccordion } from "./task-accordion";
-import { Icon } from "@helios/ui";
+
 import type { DocumentModel } from "./use-task-document";
 
 export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
@@ -26,9 +27,9 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
         }
       >
         <TaskAccordion title="Ziel">
-          <label>
+          <FormField>
             <span>Ziel</span>
-            <textarea
+            <Textarea
               value={goal}
               maxLength={6000}
               onChange={(e) => {
@@ -36,24 +37,24 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
                 setPreview(null);
               }}
             />
-          </label>
+          </FormField>
           {!detail.goal && detail.inspection.task.labels.includes("epic") && (
             <p>
               Diesem Epic fehlt noch ein Ziel. Du kannst es selbst formulieren
               oder SMART-Hilfe nutzen.
             </p>
           )}
-          <button
+          <Button
             type="button"
             onClick={() => void propose({ kind: "goal", value: goal })}
           >
             Zieländerung prüfen
-          </button>
+          </Button>
         </TaskAccordion>
         <TaskAccordion title={"Checkliste (" + items.length + ")"}>
           {items.map((item, i) => (
             <div className="checklist-row" key={item.id}>
-              <input
+              <Checkbox
                 type="checkbox"
                 aria-label={"Punkt " + (i + 1) + " erledigt"}
                 checked={item.checked}
@@ -66,7 +67,7 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
                   setPreview(null);
                 }}
               />
-              <input
+              <Input
                 aria-label={"Checklistenpunkt " + (i + 1)}
                 value={item.text}
                 maxLength={500}
@@ -79,23 +80,23 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
                   setPreview(null);
                 }}
               />
-              <button
+              <Button
                 type="button"
                 aria-label={"Punkt " + (i + 1) + " nach oben"}
                 disabled={i === 0}
                 onClick={() => move(i, -1)}
               >
                 <Icon name="up" />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 aria-label={"Punkt " + (i + 1) + " nach unten"}
                 disabled={i === items.length - 1}
                 onClick={() => move(i, 1)}
               >
                 <Icon name="down" />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 aria-label={"Punkt " + (i + 1) + " löschen"}
                 onClick={() => {
@@ -104,13 +105,13 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
                 }}
               >
                 Entfernen
-              </button>
+              </Button>
             </div>
           ))}
           <div className="checklist-add">
-            <label>
+            <FormField>
               <span>Neuer Checklistenpunkt</span>
-              <input
+              <Input
                 value={newItem}
                 maxLength={500}
                 onChange={(e) => setNewItem(e.target.value)}
@@ -132,8 +133,8 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
                   }
                 }}
               />
-            </label>
-            <button
+            </FormField>
+            <Button
               type="button"
               aria-label="Checklistenpunkt hinzufügen"
               disabled={!newItem.trim() || items.length >= 100}
@@ -151,19 +152,19 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
               }}
             >
               <Icon name="plus" />
-            </button>
+            </Button>
           </div>
           <p className="help">
             Checklistenpunkte sind keine Todoist-Unteraufgaben. Änderungen
             werden erst nach Vorschau und Bestätigung gespeichert.
           </p>
-          <button
+          <Button
             type="button"
             disabled={items.some((i) => !i.text.trim())}
             onClick={() => void propose({ kind: "checklist", items })}
           >
             Checklistenänderung prüfen
-          </button>
+          </Button>
         </TaskAccordion>
       </fieldset>
     </>
