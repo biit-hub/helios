@@ -1,5 +1,9 @@
 import { it, expect } from "vitest";
-import { createTaskService, createPlanExecutor } from "@helios/backend";
+import {
+  createTaskService,
+  createPlanExecutor,
+  createEpicService,
+} from "@helios/backend";
 import { createTodoistReader } from "../../packages/backend/src/work/todoist";
 import { createTodoistMover } from "../../packages/backend/src/planning/todoist";
 import { createTaskWriter } from "../../packages/backend/src/tasks/todoist";
@@ -97,6 +101,22 @@ it("previews without writes then persists one idempotent journal command for the
   expect(f.state.tasks[0]!.due).toEqual(inspection.task.due);
   expect(f.state.tasks[0]!.deadline).toEqual(inspection.task.deadline);
   expect(f.state.tasks[0]!.labels).toEqual(inspection.task.labels);
+  const reopened = await createEpicService(
+    h.db,
+    h.config,
+    createTodoistReader(f.fetcher),
+    { enabled: false, base: null, model: "synthetic-local", timeout: 5000 },
+  ).detail(h.headers(), input.contextId, input.taskId);
+  expect(reopened.markdownError).toBeNull();
+  expect(reopened.goal).toBe("Neu");
+  expect(reopened.checklist).toEqual([
+    { text: "Bestehend", checked: true },
+    { text: "Zusätzlich", checked: false },
+  ]);
+  expect(reopened.inspection.links).toContainEqual({
+    label: "Dokument",
+    url: "https://example.com/document",
+  });
   expect((await result(op.operationId)).input?.documents).toEqual(
     input.documents,
   );

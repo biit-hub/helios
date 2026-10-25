@@ -150,6 +150,7 @@ test("E9.6 saves core fields, goal, pending checklist text and a link together a
     .filter({ has: page.getByText("Kommentare", { exact: true }) })
     .first();
   const head = comment.locator(":scope > summary");
+  await head.scrollIntoViewIfNeeded();
   const bounds = await head.boundingBox(),
     outer = await comment.boundingBox();
   expect(bounds!.width).toBeGreaterThanOrEqual(outer!.width - 3);
@@ -168,6 +169,11 @@ test("E9.6 saves core fields, goal, pending checklist text and a link together a
     });
   }
   await expect(comment).toHaveAttribute("open", "");
+  await head.focus();
+  await head.press("Enter");
+  await expect(comment).not.toHaveAttribute("open");
+  await head.press("Enter");
+  await expect(comment).toHaveAttribute("open", "");
   const action = await row
       .getByRole("button", { name: "Bearbeiten", exact: true })
       .boundingBox(),
@@ -177,6 +183,29 @@ test("E9.6 saves core fields, goal, pending checklist text and a link together a
   await expect(
     editor.getByRole("textbox", { name: "Beschreibung", exact: true }),
   ).toHaveValue(/Originalnotiz bewusst ergänzt/);
+  const reopened = editor.getByRole("region", {
+    name: "Ziel, Checkliste und Dokumentenlinks",
+  });
+  await reopened
+    .locator("summary")
+    .filter({ hasText: /^Ziel$/ })
+    .click();
+  await expect(
+    reopened.getByRole("textbox", { name: "Ziel", exact: true }),
+  ).toHaveValue("Ein gemeinsam bestätigtes Ziel");
+  await reopened
+    .locator("summary")
+    .filter({ hasText: /^Checkliste \(2\)$/ })
+    .click();
+  await expect(
+    reopened.getByLabel("Checklistenpunkt 1", { exact: true }),
+  ).toHaveValue("Bestehend");
+  await expect(
+    reopened.getByLabel("Checklistenpunkt 2", { exact: true }),
+  ).toHaveValue("Zentral speichern ohne Extra-Plus");
+  await expect(
+    reopened.getByText("Checkliste (0)", { exact: true }),
+  ).toHaveCount(0);
   for (const width of info.project.name === "desktop" ? [1024, 390] : [390]) {
     await page.setViewportSize({ width, height: 844 });
     const smart = editor.locator(".task-accordion").filter({

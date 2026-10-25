@@ -2,10 +2,44 @@ import { expect, it } from "vitest";
 import { prepareTaskSave } from "../../packages/backend/src/tasks/save";
 import { taskCommand } from "@helios/contracts";
 import { tasks } from "../fixtures/todoist";
+import {
+  readGoal,
+  patchDocument,
+} from "../../packages/backend/src/tasks/document";
+import { readChecklist } from "../../packages/backend/src/ai/checklist";
 
 const text =
   "Notizen bleiben.\n\n## Ziel\nAltes Ziel\n\n## Checkliste\n* [X] Erhalten\n\n## Referenzen\n[Quelle](https://example.com/original)";
 const task = { ...tasks[0]!, description: text };
+it.each(["Ziel", "Checkliste"])(
+  "keeps a new link outside a trailing %s section and remains editable",
+  (section) => {
+    const source =
+      section === "Ziel"
+        ? "## Ziel\nBestehendes Ziel"
+        : "## Ziel\nBestehendes Ziel\n\n## Checkliste\n* [X] Bestehend";
+    const updated = patchDocument(source, {
+      kind: "link-add",
+      label: "Dokument",
+      url: "https://example.com/source",
+    });
+    expect(updated.startsWith(source)).toBe(true);
+    expect(updated).toContain("## Dokumentenlinks\n[Dokument]");
+    expect(readGoal(updated)).toBe("Bestehendes Ziel");
+    expect(
+      readChecklist(updated).map(({ text, checked }) => ({ text, checked })),
+    ).toEqual(section === "Ziel" ? [] : [{ text: "Bestehend", checked: true }]);
+    const combined = prepareTaskSave({ ...task, description: source }, {}, [
+      { kind: "goal", value: "Neu" },
+      { kind: "checklist", items: [{ text: "Punkt", checked: false }] },
+      { kind: "link-add", label: "Zweite", url: "https://example.com/second" },
+    ]);
+    expect(readGoal(combined.description!)).toBe("Neu");
+    expect(
+      readChecklist(combined.description!).map(({ text }) => text),
+    ).toEqual(["Punkt"]);
+  },
+);
 it("derives one combined native patch and preserves unrelated Markdown, links, checkbox style and other fields", () => {
   const fields = prepareTaskSave(
     task,

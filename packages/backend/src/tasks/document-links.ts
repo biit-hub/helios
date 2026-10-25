@@ -44,6 +44,17 @@ export function descriptionLinks(description: string) {
 function escapeLabel(text: string) {
   return text.replace(/[\\[\]]/g, "\\$&");
 }
+function appendLink(text: string, link: string) {
+  if (!text) return link;
+  const lastHeading = fromMarkdown(text)
+    .children.filter((node) => node.type === "heading" && node.depth <= 2)
+    .at(-1);
+  const protectedTail =
+    !!lastHeading && ["Ziel", "Checkliste"].includes(nodeText(lastHeading));
+  const newline = text.includes("\r\n") ? "\r\n" : "\n";
+  const heading = protectedTail ? "## Dokumentenlinks" + newline : "";
+  return text + newline + newline + heading + link;
+}
 export function patchLink(
   text: string,
   change: Extract<DocumentChange, { kind: "link-add" | "link-edit" }>,
@@ -56,7 +67,7 @@ export function patchLink(
     "](<" +
     change.url.replaceAll(">", "%3E").replaceAll("<", "%3C") +
     ">)";
-  if (change.kind === "link-add") return text + (text ? "\n\n" : "") + link;
+  if (change.kind === "link-add") return appendLink(text, link);
   else {
     const target = change.target,
       root = fromMarkdown(text),

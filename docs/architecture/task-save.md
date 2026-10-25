@@ -10,6 +10,8 @@ Nach menschlicher Bestätigung wird ein gewöhnliches E4-`update` mit ursprüngl
 
 An Annahme und Worker-Ausführung wird derselbe AST-basierte Ableiter verwendet. Er erhält unabhängiges Markdown und Formatierungen, weist Mehrdeutigkeit, unsichere Links, Grössenüberschreitungen, doppelte Abschnittsänderungen und widersprüchliche manuelle/strukturierte Änderungen ab. Wiederholung, Labels, Hierarchie und Kontext behalten ihre bisherigen Prüfungen. Ein Dokumententwurf mit anderer geladener Basis wird nicht still mit dem Grundformular vermischt.
 
+Neue Links erhalten eine eigene Dokumentenlink-Überschrift, wenn die Beschreibung sonst mit dem verwalteten Ziel- oder Checklistenabschnitt endet. Dadurch wird ein Link weder Teil des Zieltextes noch eine ungültige Checklistenzeile. Bereits vorhandene Inhalte, Checkboxformatierungen und Links bleiben erhalten. Nach dem gemeinsamen Save muss auch das erneute Laden der E8-Detailansicht Ziel und Checkliste unverändert lesbar bestätigen.
+
 ## Eine externe Operation, nachvollziehbare Teilwirkung
 
 Der vorhandene Worker erzeugt genau einen nativen Aufgabenpatch mit den geänderten Grundfeldern und der vollständig abgeleiteten Beschreibung. Die bestehende vor dem Senden persistierte Request-ID, Quellkontrolle, Sitzung/Intent und der Workerlock bleiben verbindlich. Es entsteht keine clientseitige Kette unabhängig neu gestarteter Schreiboperationen.
