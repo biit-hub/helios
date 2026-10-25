@@ -134,6 +134,10 @@ test("UX-034/035 shared loading, reduced motion, contrast, prompt search, status
       path: `private/ui-consistency/loading-${info.project.name}-${width}.png`,
     });
   }
+  await page.setViewportSize({
+    width: info.project.name === "desktop" ? 1440 : 390,
+    height: 950,
+  });
   const visual = await pending.evaluate((button) => {
     const style = getComputedStyle(button);
     const channels = (value: string) =>
@@ -271,11 +275,26 @@ test("UX-034/035 shared loading, reduced motion, contrast, prompt search, status
   await expect(
     detail.getByText("Synthetisch nachbearbeitetes Ergebnis", { exact: true }),
   ).toBeVisible();
-  await detail
+  const versionHeader = detail
     .locator(".ai-job-result-card")
     .first()
-    .locator("summary")
-    .click();
+    .locator("summary");
+  if (info.project.name === "desktop") {
+    await page.mouse.move(0, 0);
+    const beforeHover = await versionHeader.evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    await versionHeader.hover();
+    const onHover = await versionHeader.evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    expect(onHover).not.toBe(beforeHover);
+  }
+  await versionHeader.focus();
+  await versionHeader.press("Enter");
+  expect(
+    await versionHeader.evaluate((el) => getComputedStyle(el).outlineWidth),
+  ).toBe("3px");
   await expect(
     detail.getByText("Synthetisches geprüftes Ergebnis", { exact: true }),
   ).toBeVisible();
