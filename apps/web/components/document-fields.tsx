@@ -109,7 +109,7 @@ export function DocumentFields({ model }: Readonly<{ model: DocumentModel }>) {
           ))}
           <div className="checklist-add">
             <label>
-              Neuer Checklistenpunkt
+              <span>Neuer Checklistenpunkt</span>
               <input
                 value={newItem}
                 maxLength={500}

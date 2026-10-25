@@ -60,7 +60,11 @@ export function TaskComments({
   }
   return (
     <TaskAccordion title="Kommentare" onOpenStateChange={changeOpen}>
-      {busy && <p role="status">Kommentare werden geladen …</p>}
+      {busy && (
+        <p>
+          <output>Kommentare werden geladen …</output>
+        </p>
+      )}
       {disabled && !shownComments && (
         <p>Kommentare sind für diesen Aufgabenstand nicht verfügbar.</p>
       )}

@@ -10,6 +10,8 @@ import { TaskAccordion } from "./task-accordion";
 import { TaskComments } from "./task-comments";
 import {
   TaskActionDialog,
+  actionIcons,
+  actionTitles,
   type TaskAction,
   type ActionAcknowledgement,
   type ActionFields,
@@ -40,6 +42,40 @@ import {
 import { TaskDocument } from "./task-document";
 import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
+const cardActionIcons = {
+  edit: "edit",
+  close: "check",
+  delete: "trash",
+} as const;
+function plannedValue(date: string, time: string, timezone?: string) {
+  if (!date) return null;
+  return time ? taskDateTime(date, time, timezone) : date;
+}
+function operationStatus(operation: TaskOperationView) {
+  if (operation.status === "succeeded") return "Extern nachgewiesen.";
+  if (["queued", "running"].includes(operation.status))
+    return "Änderung angenommen. Externer Nachweis steht aus.";
+  return taskError[operation.code ?? ""] ?? "Änderung nicht bestätigt.";
+}
+function commandDestination(
+  action: TaskCommand["action"],
+  project: string,
+  section: string,
+  parent: string,
+) {
+  if (action === "create")
+    return {
+      projectId: project || null,
+      ...(section ? { sectionId: section } : {}),
+      ...(parent ? { parentId: parent } : {}),
+    };
+  if (action === "move") {
+    if (project) return { projectId: project };
+    if (section) return { sectionId: section };
+    if (parent) return { parentId: parent };
+  }
+  return {};
+}
 class TaskApiFailure extends Error {
   constructor(
     message: string,
@@ -372,20 +408,8 @@ export function TaskManager({
                     setEditing(t.data.id);
                   }}
                 >
-                  <Icon
-                    name={
-                      kind === "edit"
-                        ? "edit"
-                        : kind === "delete"
-                          ? "trash"
-                          : "check"
-                    }
-                  />
-                  {kind === "edit"
-                    ? "Bearbeiten"
-                    : kind === "delete"
-                      ? "Aufgabe löschen"
-                      : "Aufgabe abschliessen"}
+                  <Icon name={cardActionIcons[kind]} />
+                  {kind === "edit" ? "Bearbeiten" : actionTitles[kind]}
                 </button>
               ))}
             </div>
@@ -876,19 +900,14 @@ export function TaskEditor({
     } else if (dirty && !window.confirm("Entwurf verwerfen?")) return;
     close();
   }
-  async function submit(
-    action: TaskCommand["action"],
-    confirmed = false,
-    acknowledgements?: ActionAcknowledgement,
-  ) {
-    if (["close", "delete"].includes(action) && !confirmed) return;
+  function canSubmit(action: TaskCommand["action"], confirmed: boolean) {
+    if (["close", "delete"].includes(action) && !confirmed) return false;
     if ((action === "update" || action === "create") && documentState.dirty) {
       setError(
         "Ziel, Checkliste oder Dokumentenlinks enthalten ungespeicherte Eingaben. Bitte deren Vorschau prüfen und ausdrücklich bestätigen, bevor das Grundformular gespeichert wird.",
       );
-      return;
+      return false;
     }
-    if (submitLock.current || pending) return;
     if (
       ["create", "update"].includes(action) &&
       aiTouched &&
@@ -896,101 +915,109 @@ export function TaskEditor({
         "Nur die Grundinformationen speichern? Ungespeicherte KI-Eingaben werden dabei verworfen; gespeicherte KI-Entwürfe und nachgewiesene Änderungen bleiben erhalten.",
       )
     )
-      return;
+      return false;
+    return true;
+  }
+  function coreFields(action: TaskCommand["action"]) {
+    const allLabels = [
+      ...new Set(
+        labels.concat(
+          fun && selectedContext?.kind === "private" ? ["fun"] : [],
+        ),
+      ),
+    ];
+    const fields: Record<string, unknown> = {};
+    const add = (name: string, value: unknown, changed: boolean) => {
+      if (action === "create" || changed) fields[name] = value;
+    };
+    add("content", title, title !== base.current.title);
+    add("description", description, description !== base.current.description);
+    add("priority", priority, priority !== base.current.priority);
+    add(
+      "labels",
+      allLabels,
+      JSON.stringify(labels) !== JSON.stringify(base.current.labels) ||
+        fun !== base.current.fun,
+    );
+    add(
+      "due",
+      plannedValue(date, time, snapshot.timezone),
+      date !== base.current.date || time !== base.current.time,
+    );
+    add("deadline", deadline || null, deadline !== base.current.deadline);
+    add(
+      "duration",
+      duration ? Number(duration) : null,
+      duration !== base.current.duration,
+    );
+    if (action === "create") {
+      for (const [key, value] of Object.entries({
+        due: date,
+        deadline,
+        duration,
+      })) {
+        if (!value) delete fields[key];
+      }
+    }
+    validateRecurrence(fields);
+    return fields;
+  }
+  function validateRecurrence(fields: Record<string, unknown>) {
+    if (recurring) {
+      if ("due" in fields)
+        throw new Error(
+          "Wähle entweder ein Planungsdatum oder einen vollständigen Wiederholungstext mit gewünschtem Startdatum.",
+        );
+      fields.recurring = recurring;
+    }
+    if (
+      taskId &&
+      inspection?.task.due?.is_recurring &&
+      "due" in fields &&
+      !removeRecurrence
+    )
+      throw new Error(
+        "Todoist würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext eingeben.",
+      );
+  }
+  function buildSubmission(
+    action: TaskCommand["action"],
+    confirmed: boolean,
+    acknowledgements?: ActionAcknowledgement,
+  ) {
+    const body: Record<string, unknown> = {
+      action,
+      contextId: taskId ? context!.id : (selectedContext?.id ?? null),
+      ...(taskId ? { taskId, basis: inspection?.basis } : {}),
+      acknowledgeHierarchy: acknowledgements?.hierarchy ?? false,
+      acknowledgeDestructive: confirmed && ["close", "delete"].includes(action),
+      acknowledgeRecurrenceChange: removeRecurrence,
+      ...(action === "close" &&
+      inspection?.task.labels.includes("epic") &&
+      acknowledgements?.epicDetach
+        ? { epicClosePolicy: "detach" as const }
+        : {}),
+    };
+    if (action === "create" || action === "update") {
+      body.fields = coreFields(action);
+    }
+    Object.assign(body, commandDestination(action, project, section, parent));
+    if (action === "comment") body.comment = comment;
+    if (action === "wait")
+      body.waiting = { who, subject, followUp: followUp || null };
+    return body;
+  }
+  async function submit(
+    action: TaskCommand["action"],
+    confirmed = false,
+    acknowledgements?: ActionAcknowledgement,
+  ) {
+    if (submitLock.current || pending || !canSubmit(action, confirmed)) return;
     submitLock.current = true;
     setError("");
     setBusy(true);
     try {
-      const body: Record<string, unknown> = {
-        action,
-        contextId: taskId ? context!.id : (selectedContext?.id ?? null),
-        ...(taskId ? { taskId, basis: inspection?.basis } : {}),
-        acknowledgeHierarchy: acknowledgements?.hierarchy ?? false,
-        acknowledgeDestructive:
-          confirmed && ["close", "delete"].includes(action),
-        acknowledgeRecurrenceChange: removeRecurrence,
-        ...(action === "close" &&
-        inspection?.task.labels.includes("epic") &&
-        acknowledgements?.epicDetach
-          ? { epicClosePolicy: "detach" as const }
-          : {}),
-      };
-      if (action === "create" || action === "update") {
-        const allLabels = [
-          ...new Set(
-            labels.concat(
-              fun && selectedContext?.kind === "private" ? ["fun"] : [],
-            ),
-          ),
-        ];
-        const fields: Record<string, unknown> = {};
-        const add = (name: string, value: unknown, changed: boolean) => {
-          if (action === "create" || changed) fields[name] = value;
-        };
-        add("content", title, title !== base.current.title);
-        add(
-          "description",
-          description,
-          description !== base.current.description,
-        );
-        add("priority", priority, priority !== base.current.priority);
-        add(
-          "labels",
-          allLabels,
-          JSON.stringify(labels) !== JSON.stringify(base.current.labels) ||
-            fun !== base.current.fun,
-        );
-        add(
-          "due",
-          date
-            ? time
-              ? taskDateTime(date, time, snapshot.timezone)
-              : date
-            : null,
-          date !== base.current.date || time !== base.current.time,
-        );
-        add("deadline", deadline || null, deadline !== base.current.deadline);
-        add(
-          "duration",
-          duration ? Number(duration) : null,
-          duration !== base.current.duration,
-        );
-        if (action === "create" && !date) {
-          delete fields.due;
-        }
-        if (action === "create" && !deadline) delete fields.deadline;
-        if (action === "create" && !duration) delete fields.duration;
-        if (recurring) {
-          if ("due" in fields)
-            throw new Error(
-              "Wähle entweder ein Planungsdatum oder einen vollständigen Wiederholungstext mit gewünschtem Startdatum.",
-            );
-          fields.recurring = recurring;
-        }
-        if (
-          taskId &&
-          inspection?.task.due?.is_recurring &&
-          "due" in fields &&
-          !removeRecurrence
-        )
-          throw new Error(
-            "Todoist würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext eingeben.",
-          );
-        body.fields = fields;
-        if (action === "create") {
-          body.projectId = project || null;
-          if (section) body.sectionId = section;
-          if (parent) body.parentId = parent;
-        }
-      }
-      if (action === "comment") body.comment = comment;
-      if (action === "wait")
-        body.waiting = { who, subject, followUp: followUp || null };
-      if (action === "move") {
-        if (project) body.projectId = project;
-        else if (section) body.sectionId = section;
-        else if (parent) body.parentId = parent;
-      }
+      const body = buildSubmission(action, confirmed, acknowledgements);
       const hash = JSON.stringify(body);
       if (attempt.current?.hash !== hash)
         attempt.current = { hash, key: crypto.randomUUID() };
@@ -1083,19 +1110,21 @@ export function TaskEditor({
         );
         return;
       }
-      if (!changed(current.title, base.current.title)) setTitle(next.title);
-      if (!changed(current.description, base.current.description))
-        setDescription(next.description);
-      if (!changed(current.priority, base.current.priority))
-        setPriority(next.priority);
-      if (!changed(current.labels, base.current.labels)) setLabels(next.labels);
-      if (!changed(current.date, base.current.date)) setDate(next.date);
-      if (!changed(current.time, base.current.time)) setTime(next.time);
-      if (!changed(current.deadline, base.current.deadline))
-        setDeadline(next.deadline);
-      if (!changed(current.duration, base.current.duration))
-        setDuration(next.duration);
-      if (!changed(current.fun, base.current.fun)) setFun(next.fun);
+      function adopt<K extends keyof typeof next>(
+        key: K,
+        set: (value: (typeof next)[K]) => void,
+      ) {
+        if (!changed(current[key], base.current[key])) set(next[key]);
+      }
+      adopt("title", setTitle);
+      adopt("description", setDescription);
+      adopt("priority", setPriority);
+      adopt("labels", setLabels);
+      adopt("date", setDate);
+      adopt("time", setTime);
+      adopt("deadline", setDeadline);
+      adopt("duration", setDuration);
+      adopt("fun", setFun);
       base.current = next;
       setBaseValues(next);
       setInspection(data);
@@ -1239,17 +1268,7 @@ export function TaskEditor({
               {error}
             </p>
           )}
-          {operation && (
-            <p role="status">
-              {operation.status === "succeeded"
-                ? "Extern nachgewiesen."
-                : operation.status === "queued" ||
-                    operation.status === "running"
-                  ? "Änderung angenommen. Externer Nachweis steht aus."
-                  : (taskError[operation.code ?? ""] ??
-                    "Änderung nicht bestätigt.")}
-            </p>
-          )}
+          {operation && <p role="status">{operationStatus(operation)}</p>}
           {operation && <TaskOperationEvidence operation={operation} />}
           {requestUncertain && (
             <button
@@ -1590,28 +1609,8 @@ export function TaskEditor({
                     setActionDialog(kind);
                   }}
                 >
-                  <Icon
-                    name={
-                      kind === "close"
-                        ? "check"
-                        : kind === "delete"
-                          ? "trash"
-                          : kind === "move"
-                            ? "move"
-                            : kind === "wait"
-                              ? "wait"
-                              : "progress"
-                    }
-                  />
-                  {kind === "close"
-                    ? "Aufgabe abschliessen"
-                    : kind === "delete"
-                      ? "Aufgabe löschen"
-                      : kind === "move"
-                        ? "Verschieben"
-                        : kind === "wait"
-                          ? "Warten"
-                          : "Kommentar hinzufügen"}
+                  <Icon name={actionIcons[kind]} />
+                  {actionTitles[kind]}
                 </button>
               ),
             )}

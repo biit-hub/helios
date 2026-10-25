@@ -19,7 +19,7 @@ export function displayDescription(
   if (
     start < 0 ||
     (start > 0 && normalized[start - 1] !== "\n") ||
-    normalized.indexOf(block, start + 1) >= 0
+    normalized.includes(block, start + 1)
   )
     return text;
   const rest = normalized.slice(start + block.length);
