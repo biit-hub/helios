@@ -1268,7 +1268,11 @@ export function TaskEditor({
               {error}
             </p>
           )}
-          {operation && <p role="status">{operationStatus(operation)}</p>}
+          {operation && (
+            <p>
+              <output>{operationStatus(operation)}</output>
+            </p>
+          )}
           {operation && <TaskOperationEvidence operation={operation} />}
           {requestUncertain && (
             <button
