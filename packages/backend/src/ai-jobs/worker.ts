@@ -37,6 +37,23 @@ import {
 } from "./research";
 
 export const JOB_QUEUE = "helios.ai-jobs";
+async function event(
+  db: Db,
+  job: AiJobRow,
+  kind: string,
+  code: string | null = null,
+) {
+  await db.insert(aiJobEvents).values({
+    id: randomUUID(),
+    jobId: job.id,
+    key: randomUUID(),
+    requestHash: fingerprint({ run: job.runId, kind, code }),
+    kind,
+    revision: job.revision + 1,
+    data: { code, attemptId: job.runId },
+  });
+}
+
 export function createAiJobWorker(
   database: Database,
   config: WorkConfig,
@@ -47,22 +64,6 @@ export function createAiJobWorker(
   const identity = createIdentityService(database, config);
   const controllers = new Set<AbortController>();
   let stopping = false;
-  async function event(
-    db: Db,
-    job: AiJobRow,
-    kind: string,
-    code: string | null = null,
-  ) {
-    await db.insert(aiJobEvents).values({
-      id: randomUUID(),
-      jobId: job.id,
-      key: randomUUID(),
-      requestHash: fingerprint({ run: job.runId, kind, code }),
-      kind,
-      revision: job.revision + 1,
-      data: { code, attemptId: job.runId },
-    });
-  }
   async function finish(job: AiJobRow, result: JobGeneration, input: JobInput) {
     const answer = result.answer;
     const artifact =
@@ -78,8 +79,7 @@ export function createAiJobWorker(
       await lockJobQueue(db);
       const [now] = await db.select().from(aiJobs).where(eq(aiJobs.id, job.id));
       if (
-        !now ||
-        now.status !== "running" ||
+        now?.status !== "running" ||
         now.runId !== job.runId ||
         now.deadlineAt! <= new Date()
       )
@@ -162,7 +162,7 @@ export function createAiJobWorker(
     await database.db.transaction(async (db) => {
       await lockJobQueue(db);
       const [now] = await db.select().from(aiJobs).where(eq(aiJobs.id, job.id));
-      if (!now || now.status !== "running" || now.runId !== job.runId) return;
+      if (now?.status !== "running" || now.runId !== job.runId) return;
       await db
         .update(aiJobs)
         .set({
@@ -182,7 +182,7 @@ export function createAiJobWorker(
     });
   }
   async function recover() {
-    const expired = await database.db
+    const [expired] = await database.db
       .select()
       .from(aiJobs)
       .where(
@@ -190,8 +190,9 @@ export function createAiJobWorker(
           eq(aiJobs.status, "running"),
           sql`${aiJobs.deadlineAt}<${new Date()}`,
         ),
-      );
-    for (const job of expired) await fail(job, "AI_JOB_INTERRUPTED");
+      )
+      .limit(1);
+    if (expired) await fail(expired, "AI_JOB_INTERRUPTED");
   }
   async function claim(): Promise<AiJobRow | null> {
     const [pending] = await database.db
@@ -249,6 +250,68 @@ export function createAiJobWorker(
       return job!;
     });
   }
+  async function processJob(job: AiJobRow, signal: AbortSignal) {
+    const [setting] = await database.db
+      .select()
+      .from(aiJobSettings)
+      .where(
+        and(
+          eq(aiJobSettings.userId, job.userId),
+          eq(aiJobSettings.output, job.output),
+        ),
+      );
+    if (!setting?.enabled) throw new WorkFault("AI_JOB_TYPE_DISABLED", 409);
+    const turns = await database.db
+      .select({ kind: aiJobTurns.kind, text: aiJobTurns.text })
+      .from(aiJobTurns)
+      .where(eq(aiJobTurns.jobId, job.id))
+      .orderBy(asc(aiJobTurns.createdAt), asc(aiJobTurns.id));
+    const [previous] = await database.db
+      .select({ text: aiJobResults.text })
+      .from(aiJobResults)
+      .where(eq(aiJobResults.jobId, job.id))
+      .orderBy(sql`${aiJobResults.version} DESC`)
+      .limit(1);
+    let sources: JobInput["sources"] = [];
+    try {
+      if (job.output === "research")
+        sources = await research(job, turns, signal);
+    } catch (error) {
+      if (!(error instanceof ResearchQuestion)) throw error;
+      const input = { job, turns, previous: previous?.text ?? null, sources };
+      const answer = {
+        kind: "question" as const,
+        text: PUBLIC_SEARCH_QUESTION,
+      };
+      await finish(
+        job,
+        {
+          answer,
+          raw: JSON.stringify(answer),
+          metrics: { researchTermsRequired: 1 },
+        },
+        input,
+      );
+      return;
+    }
+    const input = { job, turns, previous: previous?.text ?? null, sources };
+    await database.db
+      .update(aiJobAttempts)
+      .set({
+        inputHash: fingerprint({
+          prompt: job.originalPrompt,
+          turns,
+          previous: input.previous,
+          sources,
+          output: job.output,
+          format: job.format,
+        }),
+      })
+      .where(eq(aiJobAttempts.id, job.runId!));
+    const result = await generate(input, signal);
+    if (signal.aborted) return; // Leave claim fenced until recovery; never start a duplicate.
+    await finish(job, result, input);
+  }
   async function runNext() {
     if (stopping || config.RESTORE_MODE || !config.WORKER_ENABLED) return false;
     const client = await database.pool.connect();
@@ -270,66 +333,7 @@ export function createAiJobWorker(
         controller.signal,
         AbortSignal.timeout(JOB_TIMEOUT_MS),
       ]);
-      const [setting] = await database.db
-        .select()
-        .from(aiJobSettings)
-        .where(
-          and(
-            eq(aiJobSettings.userId, job.userId),
-            eq(aiJobSettings.output, job.output),
-          ),
-        );
-      if (!setting?.enabled) throw new WorkFault("AI_JOB_TYPE_DISABLED", 409);
-      const turns = await database.db
-        .select({ kind: aiJobTurns.kind, text: aiJobTurns.text })
-        .from(aiJobTurns)
-        .where(eq(aiJobTurns.jobId, job.id))
-        .orderBy(asc(aiJobTurns.createdAt), asc(aiJobTurns.id));
-      const [previous] = await database.db
-        .select({ text: aiJobResults.text })
-        .from(aiJobResults)
-        .where(eq(aiJobResults.jobId, job.id))
-        .orderBy(sql`${aiJobResults.version} DESC`)
-        .limit(1);
-      let sources: JobInput["sources"] = [];
-      try {
-        if (job.output === "research")
-          sources = await research(job, turns, signal);
-      } catch (error) {
-        if (!(error instanceof ResearchQuestion)) throw error;
-        const input = { job, turns, previous: previous?.text ?? null, sources };
-        const answer = {
-          kind: "question" as const,
-          text: PUBLIC_SEARCH_QUESTION,
-        };
-        await finish(
-          job,
-          {
-            answer,
-            raw: JSON.stringify(answer),
-            metrics: { researchTermsRequired: 1 },
-          },
-          input,
-        );
-        return true;
-      }
-      const input = { job, turns, previous: previous?.text ?? null, sources };
-      await database.db
-        .update(aiJobAttempts)
-        .set({
-          inputHash: fingerprint({
-            prompt: job.originalPrompt,
-            turns,
-            previous: input.previous,
-            sources,
-            output: job.output,
-            format: job.format,
-          }),
-        })
-        .where(eq(aiJobAttempts.id, job.runId!));
-      const result = await generate(input, signal);
-      if (signal.aborted) return true; // Leave claim fenced until recovery; never start a duplicate.
-      await finish(job, result, input);
+      await processJob(job, signal);
       return true;
     } catch (error) {
       // Cancellation/lost connection can leave a model running remotely. Retain the

@@ -30,9 +30,8 @@ export const csvCell = (s: string) => {
 };
 const markdownText = (s: string) =>
   plain(s)
-    .replace(/[\\`*_{}\[\]()#+.!|>~-]/g, "\\$&")
-    .replaceAll("<", "&lt;")
-    .replaceAll("&", "&amp;");
+    .replaceAll(/[\\`*_{}[\]()#+.!|>~-]/g, String.raw`\$&`)
+    .replaceAll(/[&<]/g, (character) => (character === "&" ? "&amp;" : "&lt;"));
 async function pdf(content: FileContent) {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -61,7 +60,7 @@ async function pdf(content: FileContent) {
     y -= 16;
   }
   const widths = new Map<string, number>();
-  for (const p of paragraphs) {
+  function drawParagraph(p: string) {
     let current = "";
     let currentWidth = 0;
     for (const ch of plain(p).replaceAll("\t", "    ")) {
@@ -87,6 +86,9 @@ async function pdf(content: FileContent) {
       currentWidth += width;
     }
     line(current);
+  }
+  for (const p of paragraphs) {
+    drawParagraph(p);
     y -= 8;
   }
   return Buffer.from(await doc.save());

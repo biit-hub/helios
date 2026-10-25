@@ -85,6 +85,17 @@ function taskRequest(
   if (links.planLink) return { command, planLink: links.planLink };
   return command;
 }
+async function linkAdmittedJob(
+  db: Db,
+  user: string,
+  id: string,
+  payload: TaskPayload,
+  delegation?: JobDelegation,
+  jobClose?: JobCloseLink,
+) {
+  if (delegation) await linkJob(db, user, delegation, id, payload);
+  if (jobClose) await linkJobClose(db, user, jobClose, payload.command.key, id);
+}
 export async function taskScope(
   db: Db,
   userId: string,
@@ -447,8 +458,7 @@ export function createTaskService(
           status: "queued",
           intentExpiresAt: new Date(Date.now() + 600000),
         });
-        if (delegation) await linkJob(db, user, delegation, id, payload);
-        if (jobClose) await linkJobClose(db, user, jobClose, command.key, id);
+        await linkAdmittedJob(db, user, id, payload, delegation, jobClose);
         await db.insert(planSteps).values({
           id: randomUUID(),
           operationId: id,

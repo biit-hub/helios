@@ -1,3 +1,4 @@
+import addressPolicy from "./research-address-policy.json";
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
 import http from "node:http";
@@ -17,31 +18,19 @@ export type ResearchSources = (
   turns: JobInput["turns"],
   signal: AbortSignal,
 ) => Promise<JobInput["sources"]>;
+// Immutable IANA-derived safety data is audited separately from configured endpoints.
 const blocked = new BlockList();
-for (const [address, prefix] of [
-  ["0.0.0.0", 8],
-  ["10.0.0.0", 8],
-  ["100.64.0.0", 10],
-  ["127.0.0.0", 8],
-  ["169.254.0.0", 16],
-  ["172.16.0.0", 12],
-  ["192.0.0.0", 24],
-  ["192.0.2.0", 24],
-  ["192.88.99.0", 24],
-  ["192.168.0.0", 16],
-  ["198.18.0.0", 15],
-  ["198.51.100.0", 24],
-  ["203.0.113.0", 24],
-  ["224.0.0.0", 3],
-] as const)
-  blocked.addSubnet(address, prefix, "ipv4");
+for (const range of addressPolicy.reservedIPv4)
+  blocked.addSubnet(range.address, range.prefix, "ipv4");
 const public6 = new BlockList();
-public6.addSubnet("2000::", 3, "ipv6");
+public6.addSubnet(
+  addressPolicy.globalIPv6.address,
+  addressPolicy.globalIPv6.prefix,
+  "ipv6",
+);
 const blocked6 = new BlockList();
-blocked6.addSubnet("2001::", 23, "ipv6");
-blocked6.addSubnet("2001:db8::", 32, "ipv6");
-blocked6.addSubnet("2002::", 16, "ipv6");
-blocked6.addSubnet("3fff::", 20, "ipv6");
+for (const range of addressPolicy.reservedIPv6)
+  blocked6.addSubnet(range.address, range.prefix, "ipv6");
 export function publicAddress(address: string) {
   if (isIP(address) === 4) return !blocked.check(address, "ipv4");
   return (
@@ -188,6 +177,42 @@ export function sourceText(html: string) {
     .trim()
     .slice(0, 4500);
 }
+function publicTerms(turns: JobInput["turns"]) {
+  let terms: string | undefined;
+  for (let i = 0; i < turns.length - 1; i++) {
+    if (
+      turns[i]!.kind === "question" &&
+      turns[i]!.text === PUBLIC_SEARCH_QUESTION &&
+      turns[i + 1]!.kind === "answer"
+    )
+      terms = turns[i + 1]!.text;
+  }
+  if (!terms || terms.length > 300)
+    throw new ResearchQuestion(PUBLIC_SEARCH_QUESTION);
+  return terms;
+}
+async function readCandidates(
+  entries: { title: string; url: string }[],
+  signal: AbortSignal,
+  readPage: typeof readPublicPage,
+  index = 0,
+  sources: JobInput["sources"] = [],
+): Promise<JobInput["sources"]> {
+  if (sources.length === 3 || index >= entries.length) return sources;
+  const entry = entries[index]!;
+  try {
+    const page = await readPage(entry.url, signal);
+    if (!sources.some((source) => source.url === page.url))
+      sources.push({
+        ...page,
+        title: entry.title,
+        retrievedAt: new Date().toISOString(),
+      });
+  } catch {
+    if (signal.aborted) throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
+  }
+  return readCandidates(entries, signal, readPage, index + 1, sources);
+}
 export function researchSources(
   env: NodeJS.ProcessEnv = process.env,
   fetcher: typeof fetch = fetch,
@@ -204,17 +229,7 @@ export function researchSources(
     : null;
   return async (_job, turns, outerSignal) => {
     if (!base) throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
-    let terms: string | undefined;
-    for (let i = 0; i < turns.length - 1; i++) {
-      if (
-        turns[i]!.kind === "question" &&
-        turns[i]!.text === PUBLIC_SEARCH_QUESTION &&
-        turns[i + 1]!.kind === "answer"
-      )
-        terms = turns[i + 1]!.text;
-    }
-    if (!terms || terms.length > 300)
-      throw new ResearchQuestion(PUBLIC_SEARCH_QUESTION);
+    const terms = publicTerms(turns);
     const signal = AbortSignal.any([outerSignal, AbortSignal.timeout(30000)]);
     const url = new URL("/search", base);
     url.searchParams.set("q", terms);
@@ -234,22 +249,11 @@ export function researchSources(
           .max(100),
       })
       .parse(JSON.parse(await boundedOllamaText(response)));
-    const sources: JobInput["sources"] = [];
-    for (const entry of result.results.slice(0, 5)) {
-      if (sources.length === 3) break;
-      try {
-        const page = await readPage(entry.url, signal);
-        if (!sources.some((s) => s.url === page.url))
-          sources.push({
-            ...page,
-            title: entry.title,
-            retrievedAt: new Date().toISOString(),
-          });
-      } catch {
-        if (signal.aborted)
-          throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
-      }
-    }
+    const sources = await readCandidates(
+      result.results.slice(0, 5),
+      signal,
+      readPage,
+    );
     if (!sources.length)
       throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
     return sources;

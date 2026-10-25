@@ -1,4 +1,5 @@
 // @vitest-environment node
+import addressPolicy from "../../packages/backend/src/ai-jobs/research-address-policy.json";
 import { createRequire } from "node:module";
 import { expect, it } from "vitest";
 import { inflateRawSync } from "node:zlib";
@@ -102,6 +103,9 @@ it("neutralizes CSV formula prefixes and active Markdown without changing the st
   expect(csv.data.toString()).toContain("\"'=HYPERLINK");
   const md = await renderJobFile(id, 1, "md", content);
   expect(md.data.toString()).not.toContain("<script>");
+  expect(md.data.toString()).toContain("&lt;script");
+  expect(md.data.toString()).not.toContain("&amp;lt;");
+  expect(md.data.toString()).toContain("&amp;");
   expect(md.data.toString()).not.toContain("[click](javascript:");
   expect(content.rows[0]![1]).toMatch(/^=HYPERLINK/);
   await expect(
@@ -379,4 +383,12 @@ it.each([
   { kind: "result", text: "\n", document: null, uncertainties: [] },
 ])("rejects whitespace-only questions and results %#", (answer) => {
   expect(() => validateJobAnswer(answer, "text")).toThrow();
+});
+
+it("keeps every declared reserved address range blocked after policy separation", () => {
+  for (const range of [
+    ...addressPolicy.reservedIPv4,
+    ...addressPolicy.reservedIPv6,
+  ])
+    expect(publicAddress(range.address)).toBe(false);
 });

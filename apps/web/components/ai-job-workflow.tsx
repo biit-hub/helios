@@ -12,6 +12,21 @@ type Pending = {
     questionId?: string;
   };
 };
+const confirmationText = {
+  close:
+    "Diesen Auftrag bewusst abschliessen? Eine verknüpfte KI-Unteraufgabe wird über das Operationsjournal abgeschlossen. Die Hauptaufgabe bleibt unverändert.",
+  retry:
+    "Einen neuen Bearbeitungsversuch mit demselben gespeicherten Modell starten? Der bisherige Verlauf bleibt erhalten.",
+  delete:
+    "Diesen lokalen Auftrag mit Gespräch, Ergebnissen und Dateien endgültig löschen? Todoist-Aufgaben und das Operationsjournal bleiben erhalten. Bestehende verschlüsselte Backups werden dadurch nicht rückwirkend verändert.",
+};
+function lastQuestion(turns: AiJobDetail["turns"]) {
+  let question: AiJobDetail["turns"][number] | undefined;
+  for (const turn of turns) {
+    if (turn.kind === "question") question = turn;
+  }
+  return question;
+}
 export function AiJobWorkflow({
   job,
   updated,
@@ -34,14 +49,14 @@ export function AiJobWorkflow({
     dirty(!!text || busy || !!pending);
     return () => dirty(false);
   }, [text, busy, pending, dirty]);
-  const question = job.turns.filter((t) => t.kind === "question").at(-1);
+  const question = lastQuestion(job.turns);
   const incompleteClose =
     job.status === "closed" &&
     job.reference?.state === "closing" &&
     !job.reference.closeOperationId;
   function accepted(value: AiJobDetail, request: Pending) {
     updated(value);
-    const event = value.events.find((e) => e.key === request.body.key);
+    const event = value.events.some((e) => e.key === request.body.key);
     if (
       event &&
       !(
@@ -54,7 +69,7 @@ export function AiJobWorkflow({
       setText("");
       setConfirm(null);
     }
-    return !!event;
+    return event;
   }
   async function reconcile() {
     setBusy(true);
@@ -250,13 +265,7 @@ export function AiJobWorkflow({
           </div>
           {confirm && (
             <fieldset aria-label="Auftragsaktion bestätigen">
-              <p>
-                {confirm === "close"
-                  ? "Diesen Auftrag bewusst abschliessen? Eine verknüpfte KI-Unteraufgabe wird über das Operationsjournal abgeschlossen. Die Hauptaufgabe bleibt unverändert."
-                  : confirm === "retry"
-                    ? "Einen neuen Bearbeitungsversuch mit demselben gespeicherten Modell starten? Der bisherige Verlauf bleibt erhalten."
-                    : "Diesen lokalen Auftrag mit Gespräch, Ergebnissen und Dateien endgültig löschen? Todoist-Aufgaben und das Operationsjournal bleiben erhalten. Bestehende verschlüsselte Backups werden dadurch nicht rückwirkend verändert."}
-              </p>
+              <p>{confirmationText[confirm]}</p>
               <div className="actions">
                 <button
                   type="button"

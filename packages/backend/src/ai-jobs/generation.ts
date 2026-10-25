@@ -66,7 +66,7 @@ export function validateJobAnswer(raw: unknown, output: AiJobRow["output"]) {
     if ((output === "file") !== (result.document !== null))
       throw new WorkFault("AI_JOB_INVALID_OUTPUT", 502);
     const doc = result.document;
-    if (doc && doc.rows.some((row) => row.length !== doc.columns.length))
+    if (doc?.rows.some((row) => row.length !== doc.columns.length))
       throw new WorkFault("AI_JOB_INVALID_OUTPUT", 502);
     if (JSON.stringify(result).length > 48000)
       throw new WorkFault("AI_JOB_INPUT_LIMIT", 409);
