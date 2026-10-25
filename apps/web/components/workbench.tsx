@@ -1067,7 +1067,12 @@ function taskStateLabel(task: TaskView) {
     return "Externer Zustand unbekannt · letzter gespeicherter Stand";
   if (task.state === "completed") return "Von Todoist als erledigt gemeldet";
   if (task.state === "deleted") return "Von Todoist als gelöscht gemeldet";
-  return task.sectionName ?? "Ohne Abschnitt";
+  return (
+    task.sectionName ??
+    (task.data.section_id
+      ? "Abschnitt noch nicht verifiziert"
+      : "Ohne Abschnitt")
+  );
 }
 function TaskCard({
   task,

@@ -57,7 +57,14 @@ export function TaskProperties({
       ["Gegenstand", task.waiting.subject],
     );
     if (task.waiting.followUp)
-      fields.push(["Nächste Prüfung", dateLabel(task.waiting.followUp)]);
+      fields.push([
+        "Nächste Prüfung",
+        dateLabel(task.waiting.followUp) +
+          (task.waiting.followUp <=
+          new Date().toLocaleDateString("en-CA", { timeZone: timezone })
+            ? " · fällig"
+            : ""),
+      ]);
   }
   return (
     <>

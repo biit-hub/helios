@@ -597,3 +597,17 @@ it("does not adopt another recurrence instance when refreshing after a document 
   expect(screen.getByLabelText("Geplantes Datum")).toHaveValue("2026-10-25");
   expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
 });
+
+it("retains the due follow-up hint inside the structured waiting property", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-29T00:30:00Z"));
+  const task: TaskView = {
+    data: inspection.task,
+    state: "active",
+    sectionName: "Wartet",
+    retrievedAt: "2026-10-25T08:00:00Z",
+    waiting: { who: "Testteam", subject: "Freigabe", followUp: "2026-10-28" },
+  };
+  render(<TaskProperties task={task} status="Wartet" />);
+  expect(screen.getByText("28.10.2026 · fällig")).toBeVisible();
+});
