@@ -9,6 +9,7 @@ import {
   csvCell,
 } from "../../packages/backend/src/ai-jobs/render";
 import {
+  searchOrigin,
   publicAddress,
   publicUrl,
   researchSources,
@@ -145,7 +146,7 @@ it("only allows public web origins, no credentials, special ports or local proto
 it("does not leak private prompts into search and requires explicit public terms, records fetched sources", async () => {
   const requests: string[] = [];
   const search = researchSources(
-    { ...process.env, RESEARCH_SEARXNG_BASE_URL: "http://192.168.1.10:8080" },
+    { ...process.env, SEARXNG_BASE_URL: "http://192.168.1.10:8080" },
     async (url) => {
       requests.push(String(url));
       return Response.json({
@@ -391,4 +392,35 @@ it("keeps every declared reserved address range blocked after policy separation"
     ...addressPolicy.reservedIPv6,
   ])
     expect(publicAddress(range.address)).toBe(false);
+});
+
+it("accepts only an explicitly configured search origin, including a separate Docker service", () => {
+  expect(searchOrigin(undefined)).toBeNull();
+  expect(searchOrigin("  ")).toBeNull();
+  expect(searchOrigin("http://searxng:8080")?.origin).toBe(
+    "http://searxng:8080",
+  );
+  expect(searchOrigin("https://search.example.test")?.origin).toBe(
+    "https://search.example.test",
+  );
+  for (const value of [
+    "invalid",
+    "file:///tmp",
+    "https://user:secret@search.example.test",
+    "https://search.example.test/path",
+    "https://search.example.test/?q=private",
+    "https://search.example.test/#private",
+  ])
+    expect(() => searchOrigin(value)).toThrow("AI_JOB_RESEARCH_UNAVAILABLE");
+});
+it("never calls a public fallback when no search service is configured", async () => {
+  let requests = 0;
+  const search = researchSources({ SEARXNG_BASE_URL: "" }, async () => {
+    requests++;
+    return Response.json({ results: [] });
+  });
+  await expect(
+    search({} as AiJobRow, [], new AbortController().signal),
+  ).rejects.toThrow("AI_JOB_RESEARCH_UNAVAILABLE");
+  expect(requests).toBe(0);
 });

@@ -4,7 +4,6 @@ import { BlockList, isIP } from "node:net";
 import http from "node:http";
 import https from "node:https";
 import { z } from "zod";
-import { aiConfig } from "../ai/config";
 import { boundedOllamaText } from "../ai/ollama";
 import { WorkFault } from "../work/service";
 import type { JobInput } from "./generation";
@@ -213,20 +212,35 @@ async function readCandidates(
   }
   return readCandidates(entries, signal, readPage, index + 1, sources);
 }
+export function searchOrigin(value: string | undefined): URL | null {
+  if (!value?.trim()) return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
+  }
+  if (
+    !["http:", "https:"].includes(url.protocol) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    url.pathname !== "/" ||
+    !url.hostname ||
+    url.href.length > 2048
+  )
+    throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
+  return url;
+}
 export function researchSources(
   env: NodeJS.ProcessEnv = process.env,
   fetcher: typeof fetch = fetch,
   readPage = readPublicPage,
 ): ResearchSources {
-  // Only a fixed operator-configured private gateway is permitted. Search queries
-  // are explicit public terms; the private prompt is never sent to this gateway.
-  const base = env.RESEARCH_SEARXNG_BASE_URL
-    ? aiConfig({
-        ...env,
-        OLLAMA_BASE_URL: env.RESEARCH_SEARXNG_BASE_URL,
-        OLLAMA_MODEL: "research-gateway",
-      }).base
-    : null;
+  // The trusted operator explicitly selects this origin, including Docker DNS.
+  // Search terms are public-only; the private prompt never reaches this service.
+  const base = searchOrigin(env.SEARXNG_BASE_URL);
   return async (_job, turns, outerSignal) => {
     if (!base) throw new WorkFault("AI_JOB_RESEARCH_UNAVAILABLE", 503);
     const terms = publicTerms(turns);

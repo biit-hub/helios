@@ -14,9 +14,9 @@ Die [Architektur und Grenzen](../architecture/ai-jobs.md) dokumentieren Hintergr
 
 Die endgültigen Ergebnisse werden vor Integration für denselben Quellstand im PR nachgewiesen. Bis alle Gates bestanden sind, ist diese Etappe nicht technisch abgeschlossen.
 
-- Vollständige lokale Unit-/UI-Regression: 338 Tests in 32 Dateien bestanden. Vollständige PostgreSQL-Regression: 297 Tests in 16 Dateien bestanden. Lint, Workspace-Typprüfung, Build, Secretprüfung und Produktionsabhängigkeitsprüfung erfolgreich.
+- Vollständige lokale Unit-/UI-Regression: 340 Tests in 32 Dateien bestanden. Vollständige PostgreSQL-Regression: 297 Tests in 16 Dateien bestanden. Lint, Workspace-Typprüfung, Build, Secretprüfung und Produktionsabhängigkeitsprüfung erfolgreich.
 - Bereits gezielt geprüft: 16 synthetische PostgreSQL-Verträge für Verarbeitung, Serialisierung, Fragezyklen, Sitzungsablauf, Revisionen, Wiederaufnahme, Ergebnisse/Dateien, nativen Abschluss, Unknown-Abgleich, Elternkonflikte und Löschschutz bestanden.
-- Gezielte Unit-/UI-Prüfung: 29 Datei-/Recherche-/Modellverträge und 16 bisherige KI-UI-Verträge bestanden; fünf neue Workflow-UI-Fälle bestanden.
+- Gezielte Unit-/UI-Prüfung: 31 Datei-/Recherche-/Modellverträge und 16 bisherige KI-UI-Verträge bestanden; fünf neue Workflow-UI-Fälle bestanden.
 - Verschlüsselte isolierte Restore-Probe mit 17 SQL-Migrationen und 26 fachlichen Tabellen erfolgreich: alte E1–E9-/F-001.1-Daten, zwei Ergebnis-/Dateiversionen, Frage/Antwort, Prioritätssequenz und ungeklärter nativer Close erhalten. Restaurierte Single-Running-/Single-Answer- und Historienguards erneut geprüft; kein Worker, kein externer Aufruf und keine Klartext-Dumpdatei.
 - Erste exakte Image-/Layerscans ohne behebbare HIGH/CRITICAL- oder Secretbefunde; alle fünf Renderer samt Fontintegrität im tatsächlichen Worker-Image ohne Netzwerk erfolgreich. Die abschliessenden Images und der Compose-Smoke werden nach der letzten HTTP-Guard-Korrektur erneut geprüft und im PR nachgewiesen. Finale CI-/Sonar-Gates bleiben vor Integration erforderlich.
 - Gezielte Browserverträge für bisherige Verwaltung und neue Rückfrage/Antwort, verlorene Rückmeldung, automatische Fortsetzung, zwei Ergebnisversionen, bewussten Abschluss, echten Word-Download und globale Probleme auf Desktop und Mobil erfolgreich: vier Fälle ohne Fehler. Vollständige Browserregression: 31 bestanden, 13 bestehende bewusste Skips, keine Fehler. Danach vier betroffene Desktop-/Mobilfälle mit dem abschliessenden Download-Guard erneut bestanden.
@@ -25,7 +25,7 @@ Alle automatisierten Todoist-Verträge verwenden isolierte `_test`-Datenbanken u
 
 ## Offene Integrations- und menschliche Abnahme
 
-Ein bestehender kontrollierter Suchgateway wurde bisher nicht konfiguriert. Der Such-/Webadapter wird synthetisch geprüft; eine positive reale Rechercheabnahme bleibt bis zur Bereitstellung eines geeigneten privaten Endpunkts offen. Die fehlende Verbindung wird als Fehler angezeigt, niemals durch vermeintlich aktuelle Modellfakten ersetzt.
+SearXNG ist als bevorzugter selbst gehosteter Suchdienst bestätigt und wird ausschliesslich über `SEARXNG_BASE_URL` angebunden; die URL steht noch nicht fest. Ein separater Docker-Dienst ist unterstützt, wird in dieser Etappe jedoch nicht bereitgestellt. Der Such-/Webadapter wird synthetisch geprüft; eine positive reale Rechercheabnahme bleibt bis zur Bereitstellung eines geeigneten privaten Endpunkts offen. Die fehlende Verbindung wird als Fehler angezeigt, niemals durch vermeintlich aktuelle Modellfakten ersetzt.
 
 Dateien sind einfache Text-/Tabellendokumente. PDF unterstützt die enthaltene Schrift; nicht abgedeckte Zeichen und übergrosse Dateien liefern nachvollziehbare Fehler. Dynamisch gerenderte, zugriffsgeschützte und übergrosse Webquellen sind nicht Teil des lesenden Rechercheadapters.
 
