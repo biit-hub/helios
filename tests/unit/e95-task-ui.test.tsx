@@ -192,6 +192,9 @@ it("loads comments only on opening, deduplicates concurrent reads and permits ex
           finish = resolve;
         }),
     );
+  load.mockResolvedValue([
+    { id: "c2", content: "Neu nachgelesen", posted_at: null },
+  ]);
   const { container } = render(<TaskComments load={load} />);
   expect(load).not.toHaveBeenCalled();
   const details = container.querySelector("details")!;
@@ -211,7 +214,8 @@ it("loads comments only on opening, deduplicates concurrent reads and permits ex
   fireEvent(details, new Event("toggle"));
   details.open = true;
   fireEvent(details, new Event("toggle"));
-  expect(load).toHaveBeenCalledTimes(2);
+  expect(await screen.findByText("Neu nachgelesen")).toBeVisible();
+  expect(load).toHaveBeenCalledTimes(3);
 });
 it("cancels an unchanged editor without mutation and protects changed fields", async () => {
   const calls = provision(),

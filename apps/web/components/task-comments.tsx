@@ -50,8 +50,16 @@ export function TaskComments({
       void read();
     }
   }, [open, disabled, shownComments, error, read]);
+  function changeOpen(next: boolean) {
+    if (next && !open && initial === undefined) {
+      attempted.current = false;
+      setComments(undefined);
+      setError("");
+    }
+    setOpen(next);
+  }
   return (
-    <TaskAccordion title="Kommentare" onOpenStateChange={setOpen}>
+    <TaskAccordion title="Kommentare" onOpenStateChange={changeOpen}>
       {busy && <p role="status">Kommentare werden geladen …</p>}
       {disabled && !shownComments && (
         <p>Kommentare sind für diesen Aufgabenstand nicht verfügbar.</p>

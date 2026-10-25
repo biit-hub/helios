@@ -235,6 +235,17 @@ test("E9.5 compact task properties, flat sections, draft protection, persistent 
     .getByRole("button", { name: "Kommentar absenden", exact: true })
     .dblclick();
   await expect(editor).toBeHidden({ timeout: 20000 });
+  await row
+    .locator("summary")
+    .filter({ hasText: /^Kommentare$/ })
+    .click();
+  await row
+    .locator("summary")
+    .filter({ hasText: /^Kommentare$/ })
+    .click();
+  await expect(
+    row.getByText("E9.5 bewusst bestätigter Kommentar", { exact: true }),
+  ).toBeVisible();
   editor = await openTaskEditor(page, title);
   await editor
     .locator("summary")
