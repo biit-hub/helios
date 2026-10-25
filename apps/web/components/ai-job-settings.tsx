@@ -56,7 +56,7 @@ export function AiJobSettingsPanel() {
           {error}
         </p>
       )}
-      {busy && <p role="status">Modellliste wird geprüft …</p>}
+      {busy && <output>Modellliste wird geprüft …</output>}
       {data && !data.connected && (
         <p role="alert">
           Ollama ist nicht erreichbar. Gespeicherte Modellzuordnungen bleiben
@@ -113,7 +113,9 @@ function Setting({
     setKey(crypto.randomUUID());
     setError("");
   }
-  const selected = data.models.find((m) => m.name === model && m.available);
+  const selected = data.models.some(
+    (m) => m.name === model && m.available && m.local,
+  );
   return (
     <form
       className="ai-job-setting"
@@ -134,10 +136,10 @@ function Setting({
               setEnabled(e.target.checked);
             }}
           />
-          Ausgabe aktivieren
+          <span>Ausgabe aktivieren</span>
         </label>
         <label>
-          Lokales Modell für {aiJobOutputNames[value.output]}
+          <span>Lokales Modell für {aiJobOutputNames[value.output]}</span>
           <select
             value={model}
             disabled={busy}
@@ -166,11 +168,11 @@ function Setting({
         </label>
       </div>
       {value.enabled && !value.available && (
-        <p role="status">
+        <output>
           Das gespeicherte Modell ist nicht verfügbar oder seine Version wurde
           geändert. Die Ausgabe bleibt für neue Aufträge gesperrt. Ein Modell
           bewusst auswählen und speichern.
-        </p>
+        </output>
       )}
       {error && (
         <p role="alert" className="form-error">

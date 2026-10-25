@@ -321,3 +321,30 @@ it("lets the user disable an unavailable configured model without clearing its c
     output: "text",
   });
 });
+it.each([401, 403, 408, 500, 503])(
+  "keeps ambiguous HTTP %s after submission bound to the original id",
+  async (status) => {
+    const posts: Record<string, unknown>[] = [];
+    await capture(async (url, init) => {
+      if (init?.method === "POST") {
+        posts.push(JSON.parse(String(init.body)));
+        return Response.json(
+          { error: { message: "Synthetic response after admission" } },
+          { status },
+        );
+      }
+      if (String(url).includes("?id="))
+        return Response.json(detail({ id: String(posts[0]!.key) }));
+      return Response.json(settings);
+    });
+    fireEvent.change(screen.getByLabelText("Auftrag"), {
+      target: { value: "Nicht erneut anlegen" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Auftrag erstellen" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Auftragsstatus prüfen" }),
+    );
+    await screen.findByRole("link", { name: "KI-Auftrag öffnen" });
+    expect(posts).toHaveLength(1);
+  },
+);

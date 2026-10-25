@@ -11,7 +11,7 @@ Der Erfassungsdialog schützt ungespeicherte Eingaben und behält bei verlorenen
 ## Prüfstand
 
 - Lint, vollständige Workspace-Typprüfung und Build erfolgreich.
-- Vollständige Unit-/UI-Regression: 299 Tests in 30 Dateien erfolgreich; davon 17 Modell-/Vertragstests und elf neue UI-Tests.
+- Vollständige Unit-/UI-Regression: 304 Tests in 30 Dateien erfolgreich; davon 17 Modell-/Vertragstests und 16 neue UI-Tests.
 - Neue PostgreSQL-Vertragstests: 18 erfolgreich, ausschliesslich isolierte `_test`-Datenbank und synthetische Todoist-Fixtures. Einschliesslich gleichzeitiger Doppelanfragen, Prioritäts-FIFO, revisionsgeschütztem Stop, maximal einem laufenden Claim, Ursprungsänderung vor/nach Schreiben, verlorenem Create-Ergebnis ohne blindes Replay, E6-Referenzsperre, unveränderlichem Original/Verlauf sowie tabellenübergreifender Fragen-/Versuchs-/Artefaktzuordnung.
 - Vollständige PostgreSQL-Regression: 279 Tests in 15 Dateien erfolgreich. Gezielter neuer Browservertrag auf Desktop und Mobil erfolgreich (zwei Fälle); vollständiger Browserlauf bleibt mergepflichtig und wird mit dem endgültigen Ergebnis im PR nachgewiesen.
 - Verschlüsselte isolierte Restore-Probe erfolgreich: 26 fachliche Tabellen, unveränderte E1–E9-Daten nach additiver Migration, Originalprompt, Modelle, Gespräch, Ergebnisversion, Dateiinhalt, Queue-Sequenz und ungeklärte E4-/F-001-Referenzen erhalten. SQL-Schutzregeln nach Restore erneut geprüft; kein Worker, kein externer Aufruf und keine Klartext-Dumpdatei.
@@ -25,3 +25,9 @@ Kein produktives Todoist-Konto, keine produktiven Aufgaben und keine echten Zuga
 F-001.1 führt noch keine KI-Aufträge aus; Queue und Ergebnisstruktur werden durch F-001.2 vervollständigt. Kein F-001.1-Status wird als erfolgreicher Inferenznachweis ausgegeben. Recherche benötigt später einen kontrollierten Suchzugang; fehlende Konfiguration darf keine angeblich recherchierten Fakten erzeugen. Dateien und Verlauf werden nicht der E6-30-Tage-Bereinigung unterstellt.
 
 Die lokale Entwicklungsinstallation wird nach den integrierten Folgeänderungen mit frischen verschlüsselten Sicherungen, Schema-/Datenerhalt und Worker-/Ollama-/Browser-Smoke kontrolliert aktualisiert. Menschliche Funktionsabnahme bleibt offen; insbesondere Modellwahl, spontane/delegierte Aufträge, kompakte Darstellung, reale Quellen-/Modellgrenzen und später Fragen/Ergebnisse bewusst ausprobieren. Kein Release, kein Produktivdeployment, kein Main-Update und kein E10.
+
+## Zusätzliche Prüfung vor Integration
+
+Ein gezielter Review zeigte: Auch HTTP 5xx oder ein Sitzungsfehler nach persistenter Annahme kann ein unklarer Erfassungsabschluss sein. Fünf zunächst fehlgeschlagene Tests reproduzierten die Behandlung von HTTP 401, 403, 408, 500 und 503. Der Dialog hält nun auch dort Originaleingaben und Auftrags-ID fest; zuerst lesender Abgleich, ausschliesslich identisches erneutes Senden mit derselben ID. Nach der Korrektur bestehen alle 16 KI-UI-Tests. Fehlgeschlagene Reads und native Unknown-/Partial-Journale werden dadurch nicht erneut ausgeführt.
+
+Die konkreten Sonar-Befunde werden ohne Unterdrückung bereinigt: kleinere Erfassungsbausteine, native Status-/Gruppenelemente, eindeutige Formularbeschriftungen und unveränderte Priorität der E4-Requesthash-Ableitung. Der laufende Status wird im SQL-Claimcheck und im globalen Unique-Index durch dasselbe unveränderliche SQL-Prädikat beschrieben. Die eindeutige Antwortbindung nutzt die bestehenden NULL-/Kind-Prüfungen ohne redundantes Indexprädikat. Die noch nicht integrierte additive Migration wird erneut auf einer frischen isolierten Datenbank geprüft. Endgültiger Null-Befund-, Browser-, Image- und Integrationsnachweis im PR.

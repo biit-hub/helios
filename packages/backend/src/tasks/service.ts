@@ -59,6 +59,21 @@ export type TaskPayload = {
 };
 export { canonical, fingerprint } from "./hash";
 export { descendants } from "./hierarchy";
+function taskRequest(
+  command: TaskCommand,
+  links: {
+    delegation?: JobDelegation;
+    routineLink?: RoutineLink;
+    draftLink?: DraftLink;
+    planLink?: PlanLink;
+  },
+) {
+  if (links.delegation) return { command, jobLink: links.delegation.link };
+  if (links.routineLink) return { command, routineLink: links.routineLink };
+  if (links.draftLink) return { command, draftLink: links.draftLink };
+  if (links.planLink) return { command, planLink: links.planLink };
+  return command;
+}
 export async function taskScope(
   db: Db,
   userId: string,
@@ -184,15 +199,7 @@ export function createTaskService(
     if (command.action === "plan-select" && !planLink)
       throw new WorkFault("INVALID_REQUEST");
     const hash = fingerprint(
-      delegation
-        ? { command, jobLink: delegation.link }
-        : routineLink
-          ? { command, routineLink }
-          : draftLink
-            ? { command, draftLink }
-            : planLink
-              ? { command, planLink }
-              : command,
+      taskRequest(command, { delegation, routineLink, draftLink, planLink }),
     );
     const base = await identity.withActive(
       h,

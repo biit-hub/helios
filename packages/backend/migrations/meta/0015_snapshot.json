@@ -1,5 +1,5 @@
 {
-  "id": "428585be-e23a-4f6a-a727-192a2e80f097",
+  "id": "ff46264d-69b9-4537-9539-d5edbde0f62f",
   "prevId": "da3d68b3-526e-4d71-b418-bcab323ec9a3",
   "version": "7",
   "dialect": "postgresql",
@@ -4560,7 +4560,6 @@
             }
           ],
           "isUnique": true,
-          "where": "kind='answer'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4642,7 +4641,7 @@
         },
         "ai_job_answer_reference": {
           "name": "ai_job_answer_reference",
-          "value": "(kind='answer' AND question_id IS NOT NULL) OR (kind<>'answer' AND question_id IS NULL)"
+          "value": "(kind='answer') = (question_id IS NOT NULL)"
         }
       },
       "isRLSEnabled": false
@@ -4860,7 +4859,7 @@
             }
           ],
           "isUnique": true,
-          "where": "status='running'",
+          "where": "helios_ai_job_running(status)",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4911,7 +4910,7 @@
         },
         "ai_jobs_running_claim": {
           "name": "ai_jobs_running_claim",
-          "value": "status<>'running' OR (run_id IS NOT NULL AND deadline_at IS NOT NULL)"
+          "value": "NOT helios_ai_job_running(status) OR (run_id IS NOT NULL AND deadline_at IS NOT NULL)"
         }
       },
       "isRLSEnabled": false

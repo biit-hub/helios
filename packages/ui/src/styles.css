@@ -248,3 +248,8 @@ footer {
 .workspace .ai-job-card h3 {
   font-size: 1rem;
 }
+.ai-job-detail fieldset {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}

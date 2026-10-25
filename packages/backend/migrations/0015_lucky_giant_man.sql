@@ -1,3 +1,6 @@
+CREATE FUNCTION helios_ai_job_running(job_status text) RETURNS boolean
+LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS $$ SELECT job_status='running' $$;
+--> statement-breakpoint
 CREATE TABLE "ai_job_artifacts" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"job_id" uuid NOT NULL,
@@ -101,7 +104,7 @@ CREATE TABLE "ai_job_turns" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "ai_job_turn_kind" CHECK (kind IN ('question','answer','refinement')),
 	CONSTRAINT "ai_job_turn_limits" CHECK (length(text) BETWEEN 1 AND 12000),
-	CONSTRAINT "ai_job_answer_reference" CHECK ((kind='answer' AND question_id IS NOT NULL) OR (kind<>'answer' AND question_id IS NULL))
+	CONSTRAINT "ai_job_answer_reference" CHECK ((kind='answer') = (question_id IS NOT NULL))
 );
 --> statement-breakpoint
 CREATE TABLE "ai_jobs" (
@@ -135,7 +138,7 @@ CREATE TABLE "ai_jobs" (
 	CONSTRAINT "ai_jobs_revision" CHECK (revision>=0 AND run_number>=0),
 	CONSTRAINT "ai_jobs_prompt" CHECK (length(original_prompt) BETWEEN 1 AND 12000),
 	CONSTRAINT "ai_jobs_queue_presence" CHECK (status<>'queued' OR (queue_order IS NOT NULL AND queued_at IS NOT NULL)),
-	CONSTRAINT "ai_jobs_running_claim" CHECK (status<>'running' OR (run_id IS NOT NULL AND deadline_at IS NOT NULL))
+	CONSTRAINT "ai_jobs_running_claim" CHECK (NOT helios_ai_job_running(status) OR (run_id IS NOT NULL AND deadline_at IS NOT NULL))
 );
 --> statement-breakpoint
 ALTER TABLE "ai_job_artifacts" ADD CONSTRAINT "ai_job_artifacts_job_id_ai_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."ai_jobs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -160,11 +163,11 @@ CREATE INDEX "ai_job_event_order" ON "ai_job_events" USING btree ("job_id","revi
 CREATE UNIQUE INDEX "ai_job_reference_child" ON "ai_job_refs" USING btree ("child_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "ai_job_result_version" ON "ai_job_results" USING btree ("job_id","version");--> statement-breakpoint
 CREATE UNIQUE INDEX "ai_job_result_attempt" ON "ai_job_results" USING btree ("attempt_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "ai_job_question_answer" ON "ai_job_turns" USING btree ("question_id") WHERE kind='answer';--> statement-breakpoint
+CREATE UNIQUE INDEX "ai_job_question_answer" ON "ai_job_turns" USING btree ("question_id");--> statement-breakpoint
 CREATE INDEX "ai_job_turn_order" ON "ai_job_turns" USING btree ("job_id","created_at");--> statement-breakpoint
 CREATE INDEX "ai_jobs_owner_date" ON "ai_jobs" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX "ai_jobs_queue" ON "ai_jobs" USING btree ("status","priority_order","queue_order");--> statement-breakpoint
-CREATE UNIQUE INDEX "ai_jobs_one_running" ON "ai_jobs" USING btree ((true)) WHERE status='running';
+CREATE UNIQUE INDEX "ai_jobs_one_running" ON "ai_jobs" USING btree ((true)) WHERE helios_ai_job_running(status);
 --> statement-breakpoint
 CREATE FUNCTION helios_ai_job_input_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN

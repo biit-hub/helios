@@ -14,6 +14,20 @@ import {
 import { jobRequest, jobDate } from "./ai-job-client";
 import { UiDialog } from "./ui-help";
 import { useNavigationLocked } from "./navigation-lock";
+const referenceNames = {
+  verified: "nachgewiesen",
+  pending: "wird geprüft",
+  unknown: "nicht bestätigt",
+  error: "nicht bestätigt",
+  closing: "nicht bestätigt",
+  closed: "nicht bestätigt",
+};
+const turnNames = {
+  prompt: "Originalauftrag",
+  question: "Rückfrage",
+  answer: "Antwort",
+  refinement: "Nachbearbeitung",
+};
 
 export function AiJobs() {
   const query = useSearchParams();
@@ -87,7 +101,7 @@ export function AiJobs() {
         </div>
         <div className="task-filters">
           <label>
-            Status
+            <span>Status</span>
             <select
               value={status}
               disabled={locked}
@@ -105,7 +119,7 @@ export function AiJobs() {
             </select>
           </label>
           <label>
-            Sortierung
+            <span>Sortierung</span>
             <select
               value={sort}
               disabled={locked}
@@ -124,7 +138,7 @@ export function AiJobs() {
             {error}
           </p>
         )}
-        {busy && !list && <p role="status">Aufträge werden geladen …</p>}
+        {busy && !list && <output>Aufträge werden geladen …</output>}
         {list && !list.jobs.length && (
           <p>
             Keine KI-Aufträge{status ? " für diesen Filter" : " vorhanden"}.
@@ -256,7 +270,7 @@ export function AiJobDetails({
           {error}
         </p>
       )}
-      {!job && !error && <p role="status">Auftrag wird geladen …</p>}
+      {!job && !error && <output>Auftrag wird geladen …</output>}
       {job && (
         <div className="ai-job-detail">
           <p className="ai-job-id">{job.id}</p>
@@ -280,11 +294,7 @@ export function AiJobDetails({
           {job.reference && (
             <p>
               Ursprung: {job.reference.title} · Todoist-Verknüpfung:{" "}
-              {job.reference.state === "verified"
-                ? "nachgewiesen"
-                : job.reference.state === "pending"
-                  ? "wird geprüft"
-                  : "nicht bestätigt"}
+              {referenceNames[job.reference.state]}
               {["unknown", "error"].includes(job.reference.state) && (
                 <>
                   {" "}
@@ -300,13 +310,7 @@ export function AiJobDetails({
             .filter((t) => t.kind !== "prompt")
             .map((t) => (
               <div key={t.id}>
-                <strong>
-                  {t.kind === "question"
-                    ? "Rückfrage"
-                    : t.kind === "answer"
-                      ? "Antwort"
-                      : "Nachbearbeitung"}
-                </strong>
+                <strong>{turnNames[t.kind]}</strong>
                 <p className="ai-job-text">{t.text}</p>
               </div>
             ))}
@@ -347,7 +351,7 @@ export function AiJobDetails({
             </div>
           )}
           {stop && job.status === "queued" && (
-            <div role="group" aria-label="Stoppen bestätigen">
+            <fieldset aria-label="Stoppen bestätigen">
               <p>
                 Diesen wartenden Auftrag stoppen? Original und Verlauf bleiben
                 erhalten.
@@ -369,7 +373,7 @@ export function AiJobDetails({
                   Zurück
                 </button>
               </div>
-            </div>
+            </fieldset>
           )}
           <details>
             <summary>Technischer Nachweis</summary>

@@ -86,7 +86,7 @@ export const aiJobs = pgTable(
     index("ai_jobs_queue").on(t.status, t.priorityOrder, t.queueOrder),
     uniqueIndex("ai_jobs_one_running")
       .on(sql`(true)`)
-      .where(sql`status='running'`),
+      .where(sql`helios_ai_job_running(status)`),
     check("ai_jobs_output", sql`output IN ('text','research','file')`),
     check(
       "ai_jobs_format",
@@ -104,7 +104,7 @@ export const aiJobs = pgTable(
     ),
     check(
       "ai_jobs_running_claim",
-      sql`status<>'running' OR (run_id IS NOT NULL AND deadline_at IS NOT NULL)`,
+      sql`NOT helios_ai_job_running(status) OR (run_id IS NOT NULL AND deadline_at IS NOT NULL)`,
     ),
   ],
 );
@@ -216,15 +216,13 @@ export const aiJobTurns = pgTable(
     createdAt: time("created_at").notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("ai_job_question_answer")
-      .on(t.questionId)
-      .where(sql`kind='answer'`),
+    uniqueIndex("ai_job_question_answer").on(t.questionId),
     index("ai_job_turn_order").on(t.jobId, t.createdAt),
     check("ai_job_turn_kind", sql`kind IN ('question','answer','refinement')`),
     check("ai_job_turn_limits", sql`length(text) BETWEEN 1 AND 12000`),
     check(
       "ai_job_answer_reference",
-      sql`(kind='answer' AND question_id IS NOT NULL) OR (kind<>'answer' AND question_id IS NULL)`,
+      sql`(kind='answer') = (question_id IS NOT NULL)`,
     ),
   ],
 );

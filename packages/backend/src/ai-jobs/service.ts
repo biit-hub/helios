@@ -62,17 +62,16 @@ export function createAiJobService(
             !!model?.available &&
             model.local &&
             model.digest === row.digest;
+          let reason: string | null = "AI_JOB_TYPE_DISABLED";
+          if (row?.enabled)
+            reason = available ? null : "AI_JOB_MODEL_UNAVAILABLE";
           return {
             output,
             enabled: row?.enabled ?? false,
             model: row?.model ?? null,
             revision: row?.revision ?? 0,
             available,
-            reason: !row?.enabled
-              ? "AI_JOB_TYPE_DISABLED"
-              : available
-                ? null
-                : "AI_JOB_MODEL_UNAVAILABLE",
+            reason,
           };
         }),
       };

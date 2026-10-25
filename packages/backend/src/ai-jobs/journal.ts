@@ -107,11 +107,9 @@ export async function finishJobLink(
     task.content === "KI Aufgabe " + link.id &&
     !task.checked &&
     !task.is_deleted;
-  const state = success
-    ? "verified"
-    : ["unknown", "partial"].includes(status)
-      ? "unknown"
-      : "error";
+  let state: "verified" | "unknown" | "error" = "error";
+  if (["unknown", "partial"].includes(status)) state = "unknown";
+  if (success) state = "verified";
   const revision = row.job.revision + 1;
   const failure = code ?? "AI_JOB_REFERENCE_UNCONFIRMED";
   await db

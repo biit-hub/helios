@@ -757,8 +757,7 @@ export function createTaskExecutor(
         );
         const child = progress.task;
         if (
-          !child ||
-          child.parent_id !== payload.jobLink.parentId ||
+          child?.parent_id !== payload.jobLink.parentId ||
           child.project_id !== payload.projectId ||
           child.content !== "KI Aufgabe " + payload.jobLink.id ||
           child.checked ||
