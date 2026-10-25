@@ -1,5 +1,6 @@
 "use client";
-import { problemMessages } from "@helios/contracts";
+import Link from "next/link";
+import { aiJobErrorMessages, problemMessages } from "@helios/contracts";
 import type { WorkSnapshot } from "@helios/contracts";
 type Action = (name: string, body: unknown) => Promise<unknown>;
 const at = (value: string | null) =>
@@ -16,6 +17,21 @@ export function Problems({
   return (
     <section className="card settings-panel">
       <h2>Verbindungen & Probleme</h2>
+      {!!snapshot.aiJobProblems?.length && (
+        <div>
+          <h3>KI-Aufträge · {snapshot.aiJobProblems.length} offen</h3>
+          {snapshot.aiJobProblems.map((job) => (
+            <article key={job.id} className="problem-row">
+              <p>
+                {aiJobErrorMessages[job.code ?? ""] ??
+                  "Die KI-Bearbeitung wurde nicht bestätigt."}
+              </p>
+              <Link href={"/ai-jobs?job=" + job.id}>KI-Auftrag ansehen</Link>
+              <p className="help">{at(job.updatedAt)}</p>
+            </article>
+          ))}
+        </div>
+      )}
       {!snapshot.problems.length ? (
         <p>Keine erfassten Verbindungsprobleme.</p>
       ) : (

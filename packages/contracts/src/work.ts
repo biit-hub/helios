@@ -118,6 +118,7 @@ export type ContextView = {
   lastSyncAt: string | null;
 };
 export type WorkSnapshot = {
+  aiJobProblems?: { id: string; code: string | null; updatedAt: string }[];
   timezone?: string;
   contexts: ContextView[];
   integration: {

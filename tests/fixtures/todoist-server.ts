@@ -1,3 +1,4 @@
+import { createDatabase } from "@helios/backend";
 import { termihubServerFixture } from "./termihub-server";
 import { ollamaFixture } from "./ollama";
 import { createServer } from "node:http";
@@ -11,6 +12,15 @@ const origin = new URL(
   process.env.TODOIST_TEST_ORIGIN ?? "http://127.0.0.1:3102/api/v1/",
 );
 if (origin.hostname !== "127.0.0.1") throw new Error("Loopback required");
+const gpuDatabase = createDatabase(process.env.DATABASE_URL!);
+const connectGpu = () => gpuDatabase.pool.connect();
+let gpuClient: Awaited<ReturnType<typeof connectGpu>> | undefined;
+async function releaseGpu() {
+  if (!gpuClient) return;
+  await gpuClient.query("select pg_advisory_unlock(1748014)");
+  gpuClient.release();
+  gpuClient = undefined;
+}
 let f = fixture();
 const ai = { mode: "ok", calls: 0 };
 const calendar = termihubServerFixture();
@@ -36,6 +46,11 @@ const server = createServer(async (req, res) => {
       let raw = "";
       for await (const chunk of req) raw += chunk;
       const data = JSON.parse(raw);
+      if (data.holdGpu === true && !gpuClient) {
+        gpuClient = await connectGpu();
+        await gpuClient.query("select pg_advisory_lock(1748014)");
+      }
+      if (data.releaseGpu === true || data.reset === true) await releaseGpu();
       if (data.reset === true) {
         f = fixture();
         ai.mode = "ok";

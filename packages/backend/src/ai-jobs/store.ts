@@ -109,16 +109,14 @@ export async function insertJob(
       queuedAt: status === "queued" ? new Date() : null,
     })
     .returning();
-  await db
-    .insert(aiJobEvents)
-    .values({
-      id: randomUUID(),
-      jobId: created!.id,
-      key: job.input.key,
-      requestHash: job.requestHash,
-      kind: "created",
-      revision: 0,
-    });
+  await db.insert(aiJobEvents).values({
+    id: randomUUID(),
+    jobId: created!.id,
+    key: job.input.key,
+    requestHash: job.requestHash,
+    kind: "created",
+    revision: 0,
+  });
   return created!;
 }
 export async function mutateQueue(
@@ -160,16 +158,14 @@ export async function mutateQueue(
             },
       )
       .where(eq(aiJobs.id, job.id));
-  await db
-    .insert(aiJobEvents)
-    .values({
-      id: randomUUID(),
-      jobId: job.id,
-      key: input.key,
-      requestHash: hash,
-      kind: noChange ? "priority_unchanged" : action,
-      revision,
-    });
+  await db.insert(aiJobEvents).values({
+    id: randomUUID(),
+    jobId: job.id,
+    key: input.key,
+    requestHash: hash,
+    kind: noChange ? "priority_unchanged" : action,
+    revision,
+  });
   return ownedJob(db, userId, job.id);
 }
 function reference(ref: AiJobRefRow | undefined): AiJobReference | null {
@@ -337,6 +333,7 @@ export async function jobDetail(
       uncertainties: r.uncertainties,
     })),
     events: events.map((e) => ({
+      key: e.key,
       id: e.id,
       kind: e.kind,
       revision: e.revision,

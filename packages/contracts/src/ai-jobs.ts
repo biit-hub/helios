@@ -135,6 +135,7 @@ export type AiJobResult = {
   uncertainties: string[];
 };
 export type AiJobEvent = {
+  key?: string;
   id: string;
   kind: string;
   revision: number;
@@ -183,6 +184,26 @@ export type AiJobList = {
   pageSize: number;
 };
 export const aiJobErrorMessages: Record<string, string> = {
+  AI_JOB_INVALID_OUTPUT:
+    "Die lokale KI-Antwort entspricht nicht dem erlaubten Ausgabeformat. Kein Ergebnis wurde übernommen.",
+  AI_JOB_INPUT_LIMIT:
+    "Der Auftrag oder sein Verlauf überschreitet die sichere Verarbeitungsgrenze. Bitte einen kleineren Folgeauftrag erstellen.",
+  AI_JOB_INTERRUPTED:
+    "Der Modelllauf wurde unterbrochen oder nicht rechtzeitig bestätigt. Ein neuer Versuch benötigt deine bewusste Entscheidung.",
+  AI_JOB_RESEARCH_UNAVAILABLE:
+    "Der kontrollierte Suchdienst oder ausreichende lesbare Internetquellen sind nicht verfügbar. Es wurde keine aktuelle Recherche behauptet.",
+  AI_JOB_RESEARCH_BLOCKED:
+    "Diese Webadresse ist für den kontrollierten Recherchezugriff nicht zugelassen.",
+  AI_JOB_RESEARCH_LIMIT:
+    "Die Recherchequelle überschreitet die zulässige Datenmenge.",
+  AI_JOB_FILE_LIMIT:
+    "Die erzeugte Datei überschreitet die zulässige Grösse oder Seitenzahl.",
+  AI_JOB_FILE_CHARACTERS:
+    "Die PDF-Schrift unterstützt einzelne Zeichen nicht. Bitte die Ausgabe mit passenden Zeichen nachbearbeiten lassen oder ein anderes Format als neuen Auftrag wählen.",
+  AI_JOB_CLOSE_UNCONFIRMED:
+    "Der Auftrag ist lokal abgeschlossen. Der Abschluss seiner Todoist-Unteraufgabe ist noch nicht bestätigt. Operationsjournal prüfen.",
+  AI_JOB_DELETE_BLOCKED:
+    "Ein laufender oder wartender Auftrag beziehungsweise eine aktive Todoist-Operation kann noch nicht gelöscht werden. Wartende Aufträge zuerst stoppen; ungeklärte Vorgänge prüfen.",
   AI_JOB_UNAVAILABLE:
     "Die lokale KI-Auftragsverwaltung ist vorübergehend nicht erreichbar.",
   AI_JOB_MODEL_UNAVAILABLE:

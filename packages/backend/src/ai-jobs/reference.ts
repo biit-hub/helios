@@ -1,3 +1,4 @@
+import { planOperations } from "../planning/schema";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import type { TodoistTask } from "@helios/contracts";
 import type { Db } from "../planning/store";
@@ -50,4 +51,19 @@ export async function assertOrdinaryAiTask(
       ),
     );
   if (row) throw new WorkFault("AI_JOB_REFERENCE_ONLY", 409);
+  // The E4 journal deliberately survives local aggregate deletion. Its verified
+  // native child ID keeps an existing pure reference out of E6 afterwards.
+  const [historical] = await db
+    .select({ id: planOperations.id })
+    .from(planOperations)
+    .where(
+      and(
+        eq(planOperations.userId, userId),
+        eq(planOperations.kind, "task"),
+        sql`${planOperations.payload}->'jobLink' IS NOT NULL`,
+        sql`${planOperations.result}->'task'->>'id' = ${task.id}`,
+      ),
+    )
+    .limit(1);
+  if (historical) throw new WorkFault("AI_JOB_REFERENCE_ONLY", 409);
 }

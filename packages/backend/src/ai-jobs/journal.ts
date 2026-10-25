@@ -76,6 +76,25 @@ export async function linkJob(
     operationId,
   });
 }
+export async function assertJobLinkExists(
+  db: Db,
+  user: string,
+  link: JobLink,
+  operationId: string,
+) {
+  const [row] = await db
+    .select({ id: aiJobs.id })
+    .from(aiJobs)
+    .innerJoin(aiJobRefs, eq(aiJobRefs.jobId, aiJobs.id))
+    .where(
+      and(
+        eq(aiJobs.id, link.id),
+        eq(aiJobs.userId, user),
+        eq(aiJobRefs.operationId, operationId),
+      ),
+    );
+  if (!row) throw new WorkFault("AI_JOB_REFERENCE_UNCONFIRMED", 409);
+}
 export async function finishJobLink(
   db: Db,
   user: string,

@@ -30,4 +30,5 @@ export { createEpicService } from "./epics/service";
 
 export { createTermiHubService } from "./termihub/service";
 export { createTermiHubWorker } from "./termihub/worker";
+export { createAiJobWorker } from "./ai-jobs/worker";
 export { createAiJobService } from "./ai-jobs/service";

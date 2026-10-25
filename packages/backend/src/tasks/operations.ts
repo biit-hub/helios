@@ -1,5 +1,15 @@
 import { prepareTaskSave } from "./save";
-import { assertJobParent, finishJobLink } from "../ai-jobs/journal";
+import {
+  assertCloseChild,
+  assertCloseParent,
+  authorizeJobClose,
+  finishJobClose,
+} from "../ai-jobs/closure";
+import {
+  assertJobLinkExists,
+  assertJobParent,
+  finishJobLink,
+} from "../ai-jobs/journal";
 import { validateUserLabels } from "./labels";
 import { verifyEpicDetach } from "../epics/close";
 import {
@@ -151,6 +161,10 @@ export function createTaskExecutor(
               Math.ceil((s.i.nextAllowedAt.getTime() - Date.now()) / 1000),
             );
           await allowedProject(db, s.i, payload.projectId);
+          if (payload.jobLink)
+            await assertJobLinkExists(db, op.userId, payload.jobLink, op.id);
+          if (payload.jobClose)
+            await authorizeJobClose(db, op.userId, payload.jobClose, op.id);
           if (payload.routineLink)
             await authorizeRoutine(
               db,
@@ -413,6 +427,20 @@ export function createTaskExecutor(
         throw new WorkFault("FUN_EPIC_CONFLICT", 409);
     }
     async function validateLinkedMutations(token: string) {
+      if (payload.jobClose) {
+        assertCloseParent(
+          payload.jobClose,
+          payload.projectId,
+          await reader.task(token, payload.jobClose.parentId),
+        );
+        const child = await reader.task(token, payload.jobClose.childId);
+        assertCloseChild(
+          payload.jobClose,
+          payload.projectId,
+          child,
+          descendants(await reader.tasks(token, payload.projectId), child.id),
+        );
+      }
       if (payload.jobLink)
         assertJobParent(
           payload.jobLink,
@@ -731,6 +759,7 @@ export function createTaskExecutor(
               await fresh(token);
             }
             if (
+              !payload.jobClose &&
               progress.stage !== "moved" &&
               progress.stage !== "recurrence-advanced"
             )
@@ -749,6 +778,19 @@ export function createTaskExecutor(
         }
       }
       await authorize();
+      if (payload.jobClose) {
+        assertCloseParent(
+          payload.jobClose,
+          payload.projectId,
+          await reader.task(token, payload.jobClose.parentId),
+        );
+        if (
+          !progress.task?.checked ||
+          progress.task.id !== payload.jobClose.childId ||
+          progress.task.parent_id !== payload.jobClose.parentId
+        )
+          throw new WorkFault("AI_JOB_CLOSE_UNCONFIRMED", 409);
+      }
       if (payload.jobLink) {
         assertJobParent(
           payload.jobLink,
@@ -870,6 +912,15 @@ export function createTaskExecutor(
           : "failed";
     await database.db.transaction(async (db) => {
       await db.execute(sql`select pg_advisory_xact_lock(1748012)`);
+      if (payload.jobClose)
+        await finishJobClose(
+          db,
+          op.userId,
+          payload.jobClose,
+          op.id,
+          status,
+          code,
+        );
       if (payload.jobLink)
         await finishJobLink(
           db,

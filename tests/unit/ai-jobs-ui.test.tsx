@@ -227,6 +227,7 @@ it("requires a deliberate confirmation to stop a waiting job and sends its revis
   fireEvent.click(screen.getByRole("button", { name: "Auftrag stoppen" }));
   await screen.findByText("Gestoppt");
   expect(posts[0]).toMatchObject({ id: detail().id, revision: 1 });
+  fireEvent.click(screen.getByText("Originalauftrag", { selector: "summary" }));
   expect(screen.getByText(detail().originalPrompt)).toBeVisible();
 });
 it("offers no preemption controls for running jobs", async () => {

@@ -1,0 +1,87 @@
+{
+  "purpose": "Fixed conservative public-web destination policy, not configurable service endpoints.",
+  "sources": [
+    "https://www.iana.org/assignments/iana-ipv4-special-registry",
+    "https://www.iana.org/assignments/iana-ipv6-special-registry"
+  ],
+  "reservedIPv4": [
+    {
+      "address": "0.0.0.0",
+      "prefix": 8
+    },
+    {
+      "address": "10.0.0.0",
+      "prefix": 8
+    },
+    {
+      "address": "100.64.0.0",
+      "prefix": 10
+    },
+    {
+      "address": "127.0.0.0",
+      "prefix": 8
+    },
+    {
+      "address": "169.254.0.0",
+      "prefix": 16
+    },
+    {
+      "address": "172.16.0.0",
+      "prefix": 12
+    },
+    {
+      "address": "192.0.0.0",
+      "prefix": 24
+    },
+    {
+      "address": "192.0.2.0",
+      "prefix": 24
+    },
+    {
+      "address": "192.88.99.0",
+      "prefix": 24
+    },
+    {
+      "address": "192.168.0.0",
+      "prefix": 16
+    },
+    {
+      "address": "198.18.0.0",
+      "prefix": 15
+    },
+    {
+      "address": "198.51.100.0",
+      "prefix": 24
+    },
+    {
+      "address": "203.0.113.0",
+      "prefix": 24
+    },
+    {
+      "address": "224.0.0.0",
+      "prefix": 3
+    }
+  ],
+  "globalIPv6": {
+    "address": "2000::",
+    "prefix": 3
+  },
+  "reservedIPv6": [
+    {
+      "address": "2001::",
+      "prefix": 23
+    },
+    {
+      "address": "2001:db8::",
+      "prefix": 32
+    },
+    {
+      "address": "2002::",
+      "prefix": 16
+    },
+    {
+      "address": "3fff::",
+      "prefix": 20
+    }
+  ]
+}

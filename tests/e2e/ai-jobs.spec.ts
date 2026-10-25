@@ -22,6 +22,12 @@ async function configure(page: Page, output: "Text" | "Datei") {
     page.getByRole("link", { name: "KI-Aufträge", exact: true }),
   ).toHaveAttribute("aria-disabled", "false");
 }
+test.afterEach(async () => {
+  await fetch(new URL("/control", process.env.TODOIST_TEST_ORIGIN!), {
+    method: "POST",
+    body: JSON.stringify({ releaseGpu: true }),
+  });
+});
 test("F-001.1 local jobs, loss recovery, queue actions, native reference and responsive authenticated UI", async ({
   page,
   baseURL,
@@ -75,6 +81,12 @@ test("F-001.1 local jobs, loss recovery, queue actions, native reference and res
   await expect(
     capture.getByRole("textbox", { name: "Auftrag", exact: true }),
   ).toHaveValue("Nicht verlieren");
+  // Simulate an existing E6 GPU run through the real shared lock, so these
+  // admission/queue contracts stay deterministic with the F-001.2 worker enabled.
+  await fetch(new URL("/control", process.env.TODOIST_TEST_ORIGIN!), {
+    method: "POST",
+    body: JSON.stringify({ holdGpu: true }),
+  });
   const prompt = "Synthetischer lokaler Bericht. ".repeat(15);
   await capture
     .getByRole("textbox", { name: "Auftrag", exact: true })
@@ -99,6 +111,10 @@ test("F-001.1 local jobs, loss recovery, queue actions, native reference and res
     .getByRole("link", { name: "KI-Auftrag öffnen", exact: true })
     .click();
   const detail = page.getByRole("dialog", { name: "KI-Auftrag", exact: true });
+  await detail
+    .locator("summary")
+    .filter({ hasText: /^Originalauftrag$/ })
+    .click();
   await expect(detail.locator(".ai-job-text").first()).toHaveText(prompt);
   await detail
     .getByRole("button", { name: "Priorisieren", exact: true })

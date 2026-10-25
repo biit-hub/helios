@@ -12,14 +12,18 @@
   },
   "dependencies": {
     "@helios/contracts": "workspace:*",
+    "@pdf-lib/fontkit": "1.1.1",
     "argon2": "0.45.1",
     "better-auth": "1.7.7",
+    "docx": "9.14.0",
     "drizzle-orm": "0.45.4",
     "luxon": "3.7.2",
     "mdast-util-from-markdown": "2.1.0",
+    "pdf-lib": "1.17.1",
     "pg": "8.23.1",
     "pg-boss": "12.37.1",
     "qrcode": "1.5.4",
+    "write-excel-file": "4.1.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
