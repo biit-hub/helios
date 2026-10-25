@@ -266,7 +266,7 @@ footer {
 .ai-job-filters > label:first-child {
   flex-basis: 260px;
 }
-.ai-job-card-closed {
+.ui-card.ai-job-card-closed {
   background: #f0eee8;
   border-color: #d1cec8;
 }
@@ -274,11 +274,11 @@ footer {
 .ai-job-card-closed p {
   color: #5d6470;
 }
-.ai-job-result-card {
+.ui-card.ai-job-result-card {
   padding: 0;
   border-color: #c8b28d;
 }
-.ai-job-result-card > .ui-accordion {
+.workspace .ui-card.ai-job-result-card > .ui-accordion {
   margin: 0;
   border: 0;
   background: transparent;
