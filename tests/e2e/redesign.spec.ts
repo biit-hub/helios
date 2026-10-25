@@ -14,6 +14,7 @@ test("E9.3 approved shell, contextual scopes, employer dialog, six color preview
     "Tagesplan",
     "Aufgaben",
     "Epics",
+    "KI-Aufträge",
     "Morgenroutine",
     "Probleme",
     "Einstellungen",
@@ -108,7 +109,7 @@ test("E9.3 approved shell, contextual scopes, employer dialog, six color preview
   }
   await expect(
     page.getByRole("button", { name: "KI-Auftrag starten", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page.getByRole("link", { name: "Probleme", exact: true }).click();
   await expect(
     page.getByRole("group", { name: "Kontext auswählen" }),

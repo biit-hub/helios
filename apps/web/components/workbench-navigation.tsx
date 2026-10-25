@@ -7,6 +7,7 @@ type View =
   | "plan"
   | "tasks"
   | "epics"
+  | "ai-jobs"
   | "settings"
   | "security"
   | "problems";
@@ -22,6 +23,7 @@ export function WorkbenchNavigation({
     { id: "plan", label: "Tagesplan", path: contextPath("/plan") },
     { id: "tasks", label: "Aufgaben", path: contextPath("/tasks") },
     { id: "epics", label: "Epics", path: contextPath("/epics") },
+    { id: "ai-jobs", label: "KI-Aufträge", path: "/ai-jobs" },
     { id: "morning", label: "Morgenroutine", path: "/morning" },
     { id: "problems", label: "Probleme", path: "/problems" },
     { id: "settings", label: "Einstellungen", path: "/settings/contexts" },
@@ -44,7 +46,7 @@ export function WorkbenchNavigation({
           href={link.path}
           aria-current={view === link.id ? "page" : undefined}
         >
-          <Icon name={link.id} />
+          <Icon name={link.id === "ai-jobs" ? "sparkles" : link.id} />
           {link.label}
         </Link>
       ))}
@@ -66,6 +68,7 @@ export function SettingsChapters({
         ["contexts", "Kontexte & Projekte"],
         ["connections", "Verbindungen"],
         ["hours", "Arbeitszeiten & Kalender"],
+        ["delegation", "KI-Delegation"],
         ["security", "Sicherheit"],
       ].map(([id, label]) => (
         <button

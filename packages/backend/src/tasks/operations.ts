@@ -1,4 +1,5 @@
 import { prepareTaskSave } from "./save";
+import { assertJobParent, finishJobLink } from "../ai-jobs/journal";
 import { validateUserLabels } from "./labels";
 import { verifyEpicDetach } from "../epics/close";
 import {
@@ -412,6 +413,12 @@ export function createTaskExecutor(
         throw new WorkFault("FUN_EPIC_CONFLICT", 409);
     }
     async function validateLinkedMutations(token: string) {
+      if (payload.jobLink)
+        assertJobParent(
+          payload.jobLink,
+          payload,
+          await reader.task(token, payload.jobLink.parentId),
+        );
       if (payload.analysisLink)
         await validateAnalysisMutation(database, config, reader, op, payload);
       if (payload.draftLink)
@@ -742,6 +749,22 @@ export function createTaskExecutor(
         }
       }
       await authorize();
+      if (payload.jobLink) {
+        assertJobParent(
+          payload.jobLink,
+          payload,
+          await reader.task(token, payload.jobLink.parentId),
+        );
+        const child = progress.task;
+        if (
+          child?.parent_id !== payload.jobLink.parentId ||
+          child.project_id !== payload.projectId ||
+          child.content !== "KI Aufgabe " + payload.jobLink.id ||
+          child.checked ||
+          child.is_deleted
+        )
+          throw new WorkFault("AI_JOB_REFERENCE_UNCONFIRMED", 409);
+      }
       if (progress.task && op.contextId) {
         const task = progress.task;
         const sections = await reader.sections(token, task.project_id);
@@ -847,6 +870,16 @@ export function createTaskExecutor(
           : "failed";
     await database.db.transaction(async (db) => {
       await db.execute(sql`select pg_advisory_xact_lock(1748012)`);
+      if (payload.jobLink)
+        await finishJobLink(
+          db,
+          op.userId,
+          payload.jobLink,
+          op.id,
+          status,
+          progress.task,
+          code,
+        );
       if (!error && payload.analysisLink) await finishAnalysis(db, payload);
       if (payload.draftLink)
         await finishDraftLink(

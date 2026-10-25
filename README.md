@@ -149,3 +149,8 @@ Aufgeklappte Aufgaben zeigen kompakte Eigenschaftsfelder, Beschreibung, Kommenta
 ## E9.6 – Gemeinsam speichern
 
 Speichern sammelt Grundinformationen, Ziel, Checkliste und Dokumentenlinks in einem kompakten Bestätigungsdialog. Die bestehende Quellen- und Journalprüfung weist den gesamten nativen Patch nach; ungeklärte Ergebnisse bleiben gesperrt. [Vertrag](docs/architecture/task-save.md), [Prüfstand und menschliche Nachprüfung](docs/development/e9.6-verification.md).
+
+
+## F-001 – KI-Auftragsverwaltung
+
+[Architektur und Verträge](docs/architecture/ai-jobs.md) und [F-001.1-Prüfbericht](docs/development/f-001-1-verification.md) beschreiben die neue lokale Verwaltung. In Einstellungen → KI-Delegation wird je Ausgabe ein vorhandenes lokales Ollama-Modell bewusst aktiviert. Spontane Aufträge bleiben in PostgreSQL; delegierte Todoist-Aufgaben erhalten nur eine sichere Unteraufgabenreferenz. F-001.1 stellt Queue, Priorisierung und Historie bereit; die Ausführung folgt in F-001.2. Kein separater Todoist-Kanbanbereich und keine Umwidmung von E10.

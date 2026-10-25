@@ -1,4 +1,5 @@
 import { knownHierarchy } from "../epics/hierarchy";
+import { assertOrdinaryAiTask } from "../ai-jobs/reference";
 import { aiTaskSignals } from "./schema";
 import { referenceDay } from "./dates";
 import { and, eq } from "drizzle-orm";
@@ -38,6 +39,7 @@ export async function readSource(
   const task = await reader.task(token, taskId);
   if (task.project_id !== scope.c.projectId || task.checked || task.is_deleted)
     throw new WorkFault("AI_SCOPE_DENIED", 409);
+  await assertOrdinaryAiTask(database.db, user, contextId, task);
   const [rows, comments] = await Promise.all([
     reader.tasks(token, task.project_id),
     reader.comments(token, taskId),
@@ -222,6 +224,13 @@ export function clarityHash(source: AiSource) {
 }
 export async function assertDraftScope(db: Db, d: AiDraft) {
   if (!d.contextId) return;
+  if (d.source?.inspection.task)
+    await assertOrdinaryAiTask(
+      db,
+      d.userId,
+      d.contextId,
+      d.source.inspection.task,
+    );
   const s = await managedScope(db, d.userId, d.contextId);
   if (
     s.c.revision !== d.contextRevision ||
@@ -264,6 +273,7 @@ export async function projectionScope(
     );
   if (!p || p.projectId !== s.c.projectId)
     throw new WorkFault("AI_SCOPE_DENIED", 409);
+  await assertOrdinaryAiTask(db, user, contextId, p.data);
   return s;
 }
 

@@ -21,3 +21,5 @@ export * from "./routine";
 export * from "./epics";
 
 export * from "./calendar";
+
+export * from "./ai-jobs";
