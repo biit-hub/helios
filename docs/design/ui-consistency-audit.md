@@ -20,3 +20,9 @@ Stand vor der Konsolidierung: `develop` einschliesslich PR29–31. Verbindlich s
 ## Nachweisplan
 
 Originaldatei und Zeichengeometrie nachvollziehbar übernehmen; Lifecycle-, Reduced-Motion- und RAF-Cleanup-Prüfungen. Gemeinsame Komponenten auf Semantik, Lade-/Disabled-Zustände und Tastatur prüfen. Bestehende Fachregressionen unverändert weiterführen; neue Such-, Status-, Ergebnis-/Nachbearbeitungs- und mobile Browserfälle ergänzen. Finale Pflichtgates und kontrolliertes lokales Update mit verschlüsselten Sicherungen im Verifikationsbericht dokumentieren. Keine Schema-/Worker-/Integrationsänderung zur Designkonsolidierung.
+
+## Ergebnis der Konsolidierung
+
+Die geplanten Primitives sind in `@helios/ui` umgesetzt und in den bestehenden Hauptansichten, Formularen und Dialogen übernommen. Gemeinsame CSS-Regeln lösen die alten speziellen Aufgaben-Switch-/Standard-Accordion- und Gefahrenbutton-Regeln ab. Die unterschiedlichen Sicherheitscheckboxen bleiben bestehen; Freiwillig / Spass, Kontextaktivierung und KI-Ausgabeaktivierung verwenden denselben Switch. Bestehende Aufgabenkarten behalten den geeigneten nativen Listenkopf, der Aufgabeneditor seine feste Aktionsleiste und seinen Entwurfsschutz. Fachliche Warnungen und ungeklärte Nachweise bleiben unmittelbar sichtbar.
+
+Die KI-Ergebnis-/Nachbearbeitungskarten und Status-Badges verwenden die gemeinsamen Flächen und semantischen Tokens. Die einzige Backendergänzung ist die begrenzte lesende Promptsuche. Einzelheiten, Testumfang und verbindliche finale Gates stehen im [Verifikationsbericht](../development/ui-consistency-verification.md) und [PR32](https://github.com/biit-hub/helios/pull/32). Die menschliche Designabnahme bleibt ausdrücklich offen.

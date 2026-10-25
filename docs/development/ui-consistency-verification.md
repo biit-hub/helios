@@ -12,15 +12,23 @@ KI-Details erhalten Ergebniskarten mit sicher lesbarem Markdown, unverändertem 
 
 Keine Datenbankmigration, neue Abhängigkeit, Workeränderung oder externe Schreibpipeline. Die einzige Backendergänzung ist die angeforderte begrenzte Lesesuche. Authentifizierung, Modellkonfiguration, serielle Ausführung, Fragezyklen, Versionierung, E4-Journal, Todoist-Referenzabschluss, SearXNG und alle bestehenden Fachregeln bleiben erhalten. Keine produktiven Todoist-Aufgaben/Zugangsdaten in automatisierten Tests.
 
-## Prüfstand
+## Prüfungen und Abnahmenachweise
 
-- Unit/UI: 363 Tests in 34 Dateien erfolgreich, einschliesslich neuer Canvas-/Button-/Semantik- und KI-Darstellungsfälle. Originalzeichnung zusätzlich über normalisierten Syntaxbaum nachgewiesen; keine Geometrieänderung.
-- Gezielte PostgreSQL-Verträge: 25 erfolgreiche Fälle, einschliesslich fünf neuer Such-/Scope-/Paginationfälle. Ausschliesslich separate synthetische `_test`-Datenbank.
-- Vollständiger Web-/Workerbuild und Typprüfung erfolgreich; erneute Pflichtprüfung am finalen Stand bleibt verbindlich.
-- Bestehende gezielte Browserfälle für Designansichten, Aufgabeneditor, Unknown/Partial und E9.6-Sammelsave: neun bestanden, drei bestehende mobile Doppelungen übersprungen. Der neue UI-Gesamttest ist noch in Bearbeitung und wird nicht als bestanden ausgegeben.
-- Vollständige PostgreSQL-/Browserregression, Secret-/Dependency-Prüfung, exakte Imagescans, isolierter Compose-Smoke sowie CI/CodeQL/Sonar sind vor Integration verpflichtend. Konkrete finale Ergebnisse und Installationsnachweise werden im PR ergänzt.
+- Unit/UI: 363 Tests in 34 Dateien erfolgreich, einschliesslich Canvas-Geometrie, RAF-/Visibility-/Reduced-Motion-Lifecycle, normalem Disabled, gezieltem ActionButton und Erfolg/Fehler/Unknown/Partial. Die beschriftete Canvas-Statusrolle ist zusätzlich zur dekorativen Verwendung innerhalb eines Ladebuttons verfügbar.
+- Vollständige PostgreSQL-Regression: 302 Tests in 16 Dateien erfolgreich, einschliesslich fünf neuer Fälle für vollständigen Originalprompt, Gross-/Kleinschreibung, wörtliche Sonderzeichen, kombinierte Filter/Datumssortierung, 20er-Pagination und Owner-/Session-Grenzen. Ausschliesslich getrennte synthetische `_test`-Datenbanken.
+- Lint, Typprüfung, Web-/Worker-Produktionsbuild, Secretprüfung und Produktionsabhängigkeitsprüfung erfolgreich; keine bekannte Abhängigkeitsschwachstelle gemeldet.
+- Die Browserregression umfasst alle bisherigen Fachfälle und den zusätzlichen Desktop-/Mobilablauf für Anlage, Loader-Geometrie im Button, Kontrast, reduzierte Bewegung, Switch-Abmessungen/Tastatur, Suche/Filter, Kopieren, Nachbearbeitung, Ergebnisversionen, bewussten Abschluss und weiterhin lesbare Details. Bestehende Assertions und Schutzfälle bleiben erhalten.
+- Versionsgebundene Ergebnisse der vollständigen Browserregression, CI, CodeQL, Sonar ohne offene Befunde, exakten Image-/Secret-Scans und des isolierten Compose-Smokes werden im [PR32-Prüfprotokoll](https://github.com/biit-hub/helios/pull/32) geführt. Diese Gates sind verbindliche Voraussetzung für die Integration, auch bei grünem Teilcheck.
 
-Synthetische Screenshots bleiben lokal. Die gezielte visuelle Nachprüfung umfasst Desktop, 1024 Pixel und Mobilgrössen; daraus wird keine vollständige externe WCAG-Abnahme abgeleitet.
+Die Originaldatei hat SHA-256 `e2a00404d374eb80568d4ade3afacdaad832d105554d1548cd5baeb0ecb894c4`; der normalisierte mathematische Zeichenausdruck stimmt überein (SHA-256 `342018b926c21a64430cfeaf6f01eac7002222bcee5103b6fcaef135c6e8cea4`). Die JSX-Statussemantik und sichere TypeScript-Ref-Aliase ändern keine Kurven, Phasen oder Zyklusparameter.
+
+Synthetische Screenshots bleiben lokal. Die visuelle Nachprüfung umfasst Hauptansichten und Dialoge bei Desktop, 1024 Pixeln und Mobilgrössen; daraus wird keine vollständige externe WCAG-Abnahme abgeleitet. Die besondere native Aufgabenlisten-Kopfstruktur bleibt erhalten, anstatt ihre Informationen in einen unpassenden Standardtitel zu pressen.
+
+## Kontrolliertes lokales Update
+
+Erst nach sämtlichen finalen Gates und dem nachgewiesenen develop-Merge werden die exakt gescannten Images lokal übernommen. Der Ablauf wartet auf ruhende E4-/E6-/F-001-Arbeit, stoppt Web/Worker kontrolliert und erstellt eine frische verschlüsselte Datenbank- und Konfigurationssicherung. Die Sicherungen werden authentifiziert entschlüsselt, das Archivverzeichnis geprüft und die Konfiguration bytegleich verglichen; Klartext bleibt nur in kurzlebigen Puffern.
+
+Es wird keine Migration ausgeführt. Alle 43 vorhandenen öffentlichen Tabellen werden vor dem Neustart auf unveränderte Zeilenzahl und Inhaltshashes geprüft; das 17-stufige Migrationsjournal bleibt identisch. Nach dem Neustart werden geschützte Fachdaten einschliesslich sämtlicher KI-Auftragstabellen, Credential-/Verbindungsreferenzen und Unknown-/Partial-Journale erneut verglichen. Image-IDs, Queue-Smoke, Bereitschaft, anonyme Zugriffssperren und der private Ollama-Endpunkt werden geprüft. Der konkrete Installationsnachweis gehört zum PR-Prüfprotokoll. Keine Datenvolumes werden gelöscht; vorhandene Images bleiben für einen kontrollierten Rückweg erhalten.
 
 ## Menschliche Nachtests und offene Grenzen
 
