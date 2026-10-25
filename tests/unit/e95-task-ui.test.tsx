@@ -7,6 +7,7 @@ import {
   displayDescription,
 } from "../../apps/web/components/task-properties";
 import { TaskComments } from "../../apps/web/components/task-comments";
+import { InfoTip } from "../../apps/web/components/ui-help";
 import { TaskMarkdown } from "../../apps/web/components/task-markdown";
 import type {
   TaskCommand,
@@ -616,4 +617,29 @@ it("retains the due follow-up hint inside the structured waiting property", () =
   };
   render(<TaskProperties task={task} status="Wartet" />);
   expect(screen.getByText("28.10.2026 · fällig")).toBeVisible();
+});
+
+it("keeps a tapped tooltip open through compatibility mouseleave and touch pointerout while preserving mouse hover, Escape and blur", () => {
+  const { container } = render(<InfoTip label="Test">Erklärung</InfoTip>);
+  const button = screen.getByRole("button", { name: "Information zu Test" });
+  const wrapper = container.querySelector(".ux-tooltip")!;
+  const pointer = (type: string, pointerType: string) => {
+    const event = new MouseEvent(type, { bubbles: true });
+    Object.defineProperty(event, "pointerType", { value: pointerType });
+    fireEvent(wrapper, event);
+  };
+  fireEvent.click(button);
+  fireEvent.mouseLeave(wrapper);
+  pointer("pointerout", "touch");
+  expect(screen.getByRole("tooltip")).toBeVisible();
+  fireEvent.keyDown(button, { key: "Escape" });
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  pointer("pointerover", "mouse");
+  expect(screen.getByRole("tooltip")).toBeVisible();
+  pointer("pointerout", "mouse");
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  fireEvent.focus(button);
+  expect(screen.getByRole("tooltip")).toBeVisible();
+  fireEvent.blur(button);
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 });
