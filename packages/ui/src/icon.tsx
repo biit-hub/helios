@@ -1,4 +1,10 @@
 import {
+  ChevronDown,
+  Pencil,
+  Trash2,
+  ArrowRightLeft,
+  Clock,
+  Save,
   Target,
   Sunrise,
   ListOrdered,
@@ -20,6 +26,12 @@ import {
   TriangleAlert,
 } from "lucide-react";
 const icons = {
+  chevron: ChevronDown,
+  edit: Pencil,
+  trash: Trash2,
+  move: ArrowRightLeft,
+  wait: Clock,
+  save: Save,
   focus: Target,
   morning: Sunrise,
   plan: ListOrdered,

@@ -1,5 +1,13 @@
 # Changelog
 
+## E9.5 – Aufgabenansicht und Bearbeitung (menschliche Abnahme offen)
+
+- Beschriftete Eigenschaftsfelder im responsiven Grid, eigener Beschreibungsbereich und aufklappbare Kommentare statt Lesebutton. Technische Kennungen bleiben verborgen.
+- Flache Ziel-/Checklisten-/Linkbereiche, Checklistenanzahl mit Textfeld/Plus/Enter und zugänglicher Freiwillig-/Spass-Switch. Vorhandene Dokumentvorschauen und Einzelbestätigungen bleiben erhalten.
+- Dauerhaft sichtbare Aktionsleiste; getrennte Dialoge für Abschluss, endgültige Löschung, Verschieben, Warten und Kommentare. Kontrastreicher Gefahrenbutton und Schutz ungespeicherter Eingaben.
+- Nachgewiesene Dokumentänderungen erhalten andere Entwürfe und aktualisieren die Lesesicht. Verlorene Submit-Antworten sperren neue Schreibversuche; bewusster Journal-Read mit ursprünglichem Schlüssel statt erneutem Senden.
+- Bestehende Todoist-, Hierarchie-, Wiederholungs-, Kontext- und Unknown-/Partial-Regeln unverändert; keine Migration oder neue Schreibpipeline. Free-Konto-Livegrenzen bleiben offen.
+
 ## E9.4 – Stabilisierung und gezielter Feinschliff (Abnahmen offen)
 
 - Feldgenaue Datums-/Dauernachweise im bestehenden Operationsjournal; beantwortete, aber nicht bestätigte Felder bleiben gesperrt. Timeout, Verbindung, Serverantwort und Ablehnung sind unterscheidbar; kein blindes Replay.

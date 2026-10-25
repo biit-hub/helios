@@ -54,3 +54,13 @@ Datums-/Uhrzeitfelder verwenden die konfigurierte Planungszeitzone, nicht die zu
 Bei beantworteten, aber abweichenden Werten nennt der Operationsnachweis die bestätigten und nicht bestätigten Felder. Die Gesamtänderung bleibt ungeklärt. Technische Details enthalten Operation, Request-ID, Kommando und Code. Zeitüberschreitung, Netzwerk-/Serverfehler und eine unlesbare Antwort sind unterscheidbar; kein automatischer Retry. Alte Unknown-Einträge werden nicht rückwirkend bereinigt.
 
 Das separate Free-Testkonto speichert im Live-Vertrag die angeforderte Dauer trotz HTTP 200 nicht. Kein lokaler Ersatz und keine gesicherte Tarifdiagnose allein aus einer beliebigen Fehlermeldung. Native Dauer bleibt verbindlich; positive Fälle laufen synthetisch. Berechtigungspflichtige Dauer-/Deadline-Liveabnahmen bleiben offen. [Sichere manuelle Nachprüfung](../development/e9.4-verification.md#manuelle-nachprüfung-und-offene-abnahmen).
+
+## E9.5 – Detailansicht und eigene Aktionsdialoge
+
+Aufgabe aufklappen: Eigenschaften als beschriftete Felder, Beschreibung separat, Kommentare im eigenen aufklappbaren Bereich. Bestehende Abrufpausen werden eingehalten; ein geöffneter Bereich lädt danach nach. Die unteren Kartenbuttons öffnen Bearbeitung oder eine eigene Abschluss-/Löschentscheidung. Historische Projektionen bleiben ohne Schreibaktionen.
+
+In der Bearbeitung stehen Grundinformationen direkt oben. Ziel, Checkliste und Dokumentenlinks haben jeweils eine eigene Vorschau mit ausdrücklicher Bestätigung. Ihre offenen Entwürfe werden vom Grundformular-Save nicht verworfen. Checklistenpunkte mit Textfeld/Plus/Enter ergänzen; es entstehen keine nativen Unteraufgaben. Freiwillig / Spass ist ein Switch mit unveränderter Labelwirkung.
+
+Die dauerhaft sichtbare Leiste bietet Abbrechen, Speichern und eigene Dialoge für Abschluss, Löschen, Verschieben, Warten sowie Kommentar hinzufügen. Eine Sofortaktion übernimmt offene Grund-/Dokumententwürfe nur dann nicht, wenn diese Nichtübernahme ausdrücklich bestätigt wurde. Geänderte Aktionsdialoge beim Abbrechen bewusst verwerfen; nichts wird automatisch gespeichert. Abschluss-/Löschbestätigungen sind getrennt; Hierarchie- und Epic-Trennnachweise bleiben erforderlich.
+
+Bei verlorener Submit-Antwort keine neue Anfrage senden. «Schreibauftrag im Journal prüfen» liest nur den ursprünglichen Schlüssel nach; kein Treffer beweist keinen Fehlschlag. Unknown-/Partial-Nachweise bleiben sichtbar und sperren neue Mutationen. [Automatisierte und manuelle Prüfungen](../development/e9.5-verification.md).

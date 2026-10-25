@@ -1,5 +1,8 @@
 "use client";
-import { headerDate, taskDateLabel, dateLabel } from "./task-dates";
+import { TaskAccordion } from "./task-accordion";
+import { TaskComments } from "./task-comments";
+import { TaskProperties } from "./task-properties";
+import { headerDate } from "./task-dates";
 import { optionNames } from "./option-names";
 import { UiDialog } from "./ui-help";
 import { taskChangedEvent, type VerifiedTaskChange } from "./task-events";
@@ -1064,7 +1067,12 @@ function taskStateLabel(task: TaskView) {
     return "Externer Zustand unbekannt · letzter gespeicherter Stand";
   if (task.state === "completed") return "Von Todoist als erledigt gemeldet";
   if (task.state === "deleted") return "Von Todoist als gelöscht gemeldet";
-  return task.sectionName ?? "Ohne Abschnitt";
+  return (
+    task.sectionName ??
+    (task.data.section_id
+      ? "Abschnitt noch nicht verifiziert"
+      : "Ohne Abschnitt")
+  );
 }
 function TaskCard({
   task,
@@ -1083,8 +1091,6 @@ function TaskCard({
   compact?: boolean;
   snapshotZone?: string;
 }>) {
-  const [comments, setComments] = useState<CommentView[] | null>(null),
-    [error, setError] = useState("");
   const t = task.data;
   const Details = compact ? "div" : "details";
   const parent = tasks.find((p) => p.data.id === t.parent_id);
@@ -1096,60 +1102,23 @@ function TaskCard({
       }
       id={"task-" + t.id}
     >
-      <div className="task-heading">
-        {!compact && <h3>{t.content}</h3>}
-        <span className="pill">Priorität {5 - t.priority}</span>
-      </div>
-      <p className="help">
-        {taskStateLabel(task)}
-        {task.sectionName
-          ? ""
-          : t.section_id
-            ? " · Abschnitt noch nicht verifiziert"
-            : ""}
-      </p>
-      {task.sectionName === "Wartet" && task.waiting && (
-        <p className="status-notice">
-          Wartet auf {task.waiting.who}: {task.waiting.subject}
-          {task.waiting.followUp && (
-            <>
-              {" "}
-              · Nachfassen am {task.waiting.followUp}
-              {task.waiting.followUp <= new Date().toLocaleDateString("en-CA")
-                ? " · Nachfasshinweis fällig"
-                : ""}
-            </>
-          )}
-        </p>
-      )}
-      <dl className="task-dates">
-        <div>
-          <dt>Geplant</dt>
-          <dd>
-            {taskDateLabel(t.due, snapshotZone)}
-            {(t.due?.datetime ?? t.due?.date ?? "").includes("T")
-              ? " · " + snapshotZone
-              : ""}
-            {t.due?.is_recurring ? " · wiederkehrend" : ""}
-          </dd>
-        </div>
-        <div>
-          <dt>Deadline</dt>
-          <dd>{t.deadline ? dateLabel(t.deadline.date) : "Nicht gesetzt"}</dd>
-        </div>
-      </dl>
+      {!compact && <h3>{t.content}</h3>}
+      <TaskProperties
+        task={task}
+        timezone={snapshotZone}
+        status={taskStateLabel(task)}
+      />
       <Details>
         {!compact && <summary>Aufgabendetails</summary>}
-        <p className="task-description">
-          {t.description || "Keine Beschreibung vorhanden."}
-        </p>
-        <p>Labels: {t.labels.join(", ") || "Keine"}</p>
-        <details className="technical-details">
-          <summary>Technische Aufgabendetails</summary>
+        <TaskAccordion
+          title="Technische Aufgabendetails"
+          className="technical-details"
+        >
           <p>Todoist-ID: {t.id}</p>
           {t.section_id && <p>Abschnitt-ID: {t.section_id}</p>}
           {t.parent_id && <p>Übergeordnete Referenz: {t.parent_id}</p>}
-        </details>
+          <p>Abgerufen: {at(task.retrievedAt)}</p>
+        </TaskAccordion>
         {t.parent_id && (
           <p>
             Übergeordnete Aufgabe:{" "}
@@ -1160,52 +1129,16 @@ function TaskCard({
             )}
           </p>
         )}
-        {t.duration && (
-          <p>
-            Dauer: {t.duration.amount} {t.duration.unit}
-          </p>
-        )}
-        <p className="help">Abgerufen: {at(task.retrievedAt)}</p>
-        {task.state === "active" && (
-          <button
-            type="button"
-            className="secondary"
-            disabled={disabled}
-            onClick={async () => {
-              try {
-                const r = (await action("comments-read", {
-                  contextId,
-                  taskId: t.id,
-                })) as { comments: CommentView[] };
-                setComments(r.comments);
-                setError("");
-              } catch (e) {
-                setError(
-                  e instanceof Error
-                    ? e.message
-                    : "Kommentare nicht verfügbar.",
-                );
-              }
-            }}
-          >
-            Kommentare lesen
-          </button>
-        )}
-        {error && <p role="alert">{error}</p>}
-        {comments && (
-          <div>
-            {!comments.length ? (
-              <p>Keine Kommentare vorhanden.</p>
-            ) : (
-              comments.map((c) => (
-                <blockquote key={c.id}>
-                  <p className="task-description">{c.content}</p>
-                  <small>{at(c.posted_at)}</small>
-                </blockquote>
-              ))
-            )}
-          </div>
-        )}
+        <TaskComments
+          disabled={disabled || task.state !== "active"}
+          load={async () => {
+            const value = (await action("comments-read", {
+              contextId,
+              taskId: t.id,
+            })) as { comments: CommentView[] };
+            return value.comments;
+          }}
+        />
       </Details>
     </article>
   );

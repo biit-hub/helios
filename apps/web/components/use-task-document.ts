@@ -27,25 +27,82 @@ export function useTaskDocument(context: ContextView, taskId: string) {
     [operation, setOperation] = useState<TaskOperationView | null>(null),
     [linkLabel, setLinkLabel] = useState(""),
     [linkUrl, setLinkUrl] = useState(""),
-    [linkTarget, setLinkTarget] = useState("");
+    [linkTarget, setLinkTarget] = useState(""),
+    [newItem, setNewItem] = useState("");
+  const draft = useRef({
+    detail,
+    goal,
+    items,
+    correction,
+    linkLabel,
+    linkUrl,
+    newItem,
+  });
+  useEffect(() => {
+    draft.current = {
+      detail,
+      goal,
+      items,
+      correction,
+      linkLabel,
+      linkUrl,
+      newItem,
+    };
+  });
   const key = useRef(crypto.randomUUID());
   const path =
     "/api/epics?" + new URLSearchParams({ contextId: context.id, taskId });
-  const load = useCallback(async () => {
-    const d: EpicDetail = await request(path);
-    setDetail(d);
-    setGoal(d.goal);
-    setItems(
-      d.checklist.map(({ text, checked }) => ({
-        id: crypto.randomUUID(),
-        text,
-        checked,
-      })),
-    );
-    setCorrection(d.correction);
-    setPreview(null);
-    return d;
-  }, [path]);
+  const load = useCallback(
+    async (preserveDraft = false) => {
+      const d: EpicDetail = await request(path);
+      const current = draft.current;
+      const clean = (items: { text: string; checked: boolean }[]) =>
+        items.map(({ text, checked }) => ({ text, checked }));
+      const changed = (a: unknown, b: unknown) =>
+        JSON.stringify(a) !== JSON.stringify(b);
+      setDetail(d);
+      if (
+        !preserveDraft ||
+        !current.detail ||
+        !changed(current.goal, current.detail.goal) ||
+        current.goal === d.goal
+      )
+        setGoal(d.goal);
+      if (
+        !preserveDraft ||
+        !current.detail ||
+        !changed(clean(current.items), current.detail.checklist) ||
+        !changed(clean(current.items), d.checklist)
+      )
+        setItems(
+          d.checklist.map(({ text, checked }) => ({
+            id: crypto.randomUUID(),
+            text,
+            checked,
+          })),
+        );
+      if (
+        !preserveDraft ||
+        !current.detail ||
+        current.correction === current.detail.correction
+      )
+        setCorrection(d.correction);
+      if (
+        !preserveDraft ||
+        d.inspection.links.some(
+          (l) => l.url === current.linkUrl && l.label === current.linkLabel,
+        )
+      ) {
+        setLinkLabel("");
+        setLinkUrl("");
+        setLinkTarget("");
+      }
+      if (!preserveDraft) setNewItem("");
+      setPreview(null);
+      return d;
+    },
+    [path],
+  );
   useEffect(() => {
     let alive = true;
     void request(path)
@@ -88,7 +145,7 @@ export function useTaskDocument(context: ContextView, taskId: string) {
           if (op.status === "succeeded") {
             setBusy(true);
             try {
-              await load();
+              await load(true);
             } finally {
               if (alive) {
                 setOperation(op);
@@ -153,6 +210,8 @@ export function useTaskDocument(context: ContextView, taskId: string) {
   }
   return {
     detail,
+    newItem,
+    setNewItem,
     setDetail,
     goal,
     setGoal,

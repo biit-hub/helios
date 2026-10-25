@@ -6,11 +6,22 @@ import {
   taskDateInputs,
   taskDateTime,
 } from "./task-dates";
+import { TaskAccordion } from "./task-accordion";
+import { TaskComments } from "./task-comments";
+import {
+  TaskActionDialog,
+  actionIcons,
+  actionTitles,
+  type TaskAction,
+  type ActionAcknowledgement,
+  type ActionFields,
+} from "./task-action-dialog";
+import { type DocumentUiState } from "./task-document";
 import { TaskOperationEvidence } from "./task-operation-evidence";
 import { nativeTaskOrder } from "./task-list-order";
 import { UiDialog, InfoTip } from "./ui-help";
 import { Icon } from "@helios/ui";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type {
   ContextView,
   WorkSnapshot,
@@ -31,16 +42,81 @@ import {
 import { TaskDocument } from "./task-document";
 import { AiDraftPanel } from "./ai-drafts";
 import { AddToPlan, TaskPlanProvider } from "./agenda";
+const cardActionIcons = {
+  edit: "edit",
+  close: "check",
+  delete: "trash",
+} as const;
+function plannedValue(date: string, time: string, timezone?: string) {
+  if (!date) return null;
+  return time ? taskDateTime(date, time, timezone) : date;
+}
+function operationStatus(operation: TaskOperationView) {
+  if (operation.status === "succeeded") return "Extern nachgewiesen.";
+  if (["queued", "running"].includes(operation.status))
+    return "Änderung angenommen. Externer Nachweis steht aus.";
+  return taskError[operation.code ?? ""] ?? "Änderung nicht bestätigt.";
+}
+function commandDestination(
+  action: TaskCommand["action"],
+  project: string,
+  section: string,
+  parent: string,
+) {
+  if (action === "create")
+    return {
+      projectId: project || null,
+      ...(section ? { sectionId: section } : {}),
+      ...(parent ? { parentId: parent } : {}),
+    };
+  if (action === "move") {
+    if (project) return { projectId: project };
+    if (section) return { sectionId: section };
+    if (parent) return { parentId: parent };
+  }
+  return {};
+}
+class TaskApiFailure extends Error {
+  constructor(
+    message: string,
+    readonly uncertain = false,
+  ) {
+    super(message);
+  }
+}
 async function api(path: string, body?: unknown) {
-  const r = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
-    headers: body === undefined ? {} : { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    cache: "no-store",
-  });
-  const data = await r.json();
-  if (!r.ok)
-    throw new Error(data.error?.message ?? "Die Anfrage ist fehlgeschlagen.");
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: body === undefined ? {} : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+    });
+  } catch {
+    throw new TaskApiFailure(
+      body === undefined
+        ? "Verbindung unterbrochen. Die Daten konnten nicht geladen werden; vorhandene Eingaben bleiben erhalten."
+        : "Verbindung unterbrochen. Der Schreibauftrag ist möglicherweise angekommen; zuerst das Journal prüfen und nicht erneut senden.",
+      body !== undefined,
+    );
+  }
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new TaskApiFailure(
+      body === undefined
+        ? "Antwort nicht sicher lesbar. Quelle erneut laden; vorhandene Eingaben bleiben erhalten."
+        : "Antwort nicht sicher lesbar. Den Auftragsnachweis im Journal prüfen.",
+      body !== undefined,
+    );
+  }
+  if (!response.ok)
+    throw new TaskApiFailure(
+      data.error?.message ?? "Die Anfrage ist fehlgeschlagen.",
+      body !== undefined && response.status >= 500,
+    );
   return data;
 }
 const taskError: Record<string, string> = {
@@ -94,7 +170,8 @@ export function TaskManager({
     [initialMode, setInitialMode] = useState<"form" | "progress">("form"),
     [progressPicking, setProgressPicking] = useState(false),
     [progressSearch, setProgressSearch] = useState(""),
-    [editing, setEditing] = useState<string | null>(null);
+    [editing, setEditing] = useState<string | null>(null),
+    [initialAction, setInitialAction] = useState<TaskAction | null>(null);
   const query = useSearchParams();
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -112,6 +189,7 @@ export function TaskManager({
         setInitialMode(
           url.searchParams.get("mode") === "progress" ? "progress" : "form",
         );
+        setInitialAction(null);
         setEditing(task);
       }
       for (const key of ["progress", "task", "mode"])
@@ -311,21 +389,30 @@ export function TaskManager({
                   ? " · Deadline " + dateLabel(t.data.deadline.date)
                   : ""}
               </span>
-              <button
-                type="button"
-                className="secondary task-open"
-                aria-label={"Aufgabe öffnen und bearbeiten: " + t.data.content}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setInitialMode("form");
-                  setEditing(t.data.id);
-                }}
-              >
-                <Icon name="open" />
-              </button>
+              <span className="task-entry-chevron" aria-hidden="true">
+                <Icon name="chevron" />
+              </span>
             </summary>
             {renderTask(t)}
+            <div className="task-card-actions">
+              {(["edit", "close", "delete"] as const).map((kind) => (
+                <button
+                  type="button"
+                  key={kind}
+                  className={
+                    kind === "delete" ? "task-delete secondary" : "secondary"
+                  }
+                  onClick={() => {
+                    setInitialMode("form");
+                    setInitialAction(kind === "edit" ? null : kind);
+                    setEditing(t.data.id);
+                  }}
+                >
+                  <Icon name={cardActionIcons[kind]} />
+                  {kind === "edit" ? "Bearbeiten" : actionTitles[kind]}
+                </button>
+              ))}
+            </div>
             <AddToPlan
               taskId={t.data.id}
               instanceKey={entryKey({ taskId: t.data.id, source: t.data })}
@@ -359,6 +446,7 @@ export function TaskManager({
                   type="button"
                   key={t.data.id}
                   onClick={() => {
+                    setInitialAction(null);
                     setInitialMode("progress");
                     setEditing(t.data.id);
                     setProgressPicking(false);
@@ -380,6 +468,7 @@ export function TaskManager({
       {editing && (
         <TaskEditor
           key={editing}
+          initialAction={initialAction}
           initialMode={initialMode}
           context={context}
           taskId={editing}
@@ -536,6 +625,7 @@ export function TaskEditor({
   taskId,
   close,
   initialMode = "form",
+  initialAction = null,
   expectedInstanceKey,
 }: {
   snapshot: WorkSnapshot;
@@ -543,6 +633,7 @@ export function TaskEditor({
   taskId?: string;
   close: () => void;
   initialMode?: "form" | "progress" | "clarification";
+  initialAction?: TaskAction | null;
   expectedInstanceKey?: string;
 }) {
   const submitted = useRef<{
@@ -577,12 +668,36 @@ export function TaskEditor({
     [who, setWho] = useState(""),
     [subject, setSubject] = useState(""),
     [followUp, setFollowUp] = useState(""),
-    [hierarchy, setHierarchy] = useState(false),
-    [epicDetach, setEpicDetach] = useState(false),
-    [destructive, setDestructive] = useState(false),
     [fun, setFun] = useState(false),
     [recurring, setRecurring] = useState(""),
     [removeRecurrence, setRemoveRecurrence] = useState(false);
+  const [actionDialog, setActionDialog] = useState<TaskAction | null>(
+    initialAction,
+  );
+  const [documentState, setDocumentState] = useState<DocumentUiState>({
+    dirty: false,
+    pending: false,
+  });
+  const [documentEpoch, setDocumentEpoch] = useState(0);
+  const [requestUncertain, setRequestUncertain] = useState(false);
+  const [aiTouched, setAiTouched] = useState(false);
+  const [instanceChanged, setInstanceChanged] = useState(false);
+  const formId = useId();
+  const formValues = {
+    title,
+    description,
+    priority,
+    labels,
+    date,
+    time,
+    deadline,
+    duration,
+    fun,
+  };
+  const valuesRef = useRef(formValues);
+  useEffect(() => {
+    valuesRef.current = formValues;
+  });
   const [options, setOptions] = useState<{
     sections: { id: string; name: string }[];
     parents: { id: string; content: string }[];
@@ -608,6 +723,7 @@ export function TaskEditor({
     return () => previous?.focus();
   }, []);
   const base = useRef<Record<string, unknown>>({});
+  const [baseValues, setBaseValues] = useState<Record<string, unknown>>({});
   const attempt = useRef<{ hash: string; key: string } | null>(null);
   const selectedContext = taskId
     ? context
@@ -624,7 +740,7 @@ export function TaskEditor({
           "&taskId=" +
           encodeURIComponent(taskId),
       );
-      setEpicDetach(false);
+      setDocumentEpoch((value) => value + 1);
       const t = data.task;
       if (
         expectedInstanceKey &&
@@ -633,6 +749,7 @@ export function TaskEditor({
         throw new Error(
           "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
         );
+      setInstanceChanged(false);
       setInspection(data);
       const dates = taskDateInputs(t.due, snapshot.timezone);
       const values = {
@@ -650,6 +767,7 @@ export function TaskEditor({
         fun: t.labels.includes("fun"),
       };
       base.current = values;
+      setBaseValues(values);
       setTitle(values.title);
       setDescription(values.description);
       setPriority(values.priority);
@@ -677,6 +795,30 @@ export function TaskEditor({
     const timer = setTimeout(() => void loadSource(), 0);
     return () => clearTimeout(timer);
   }, [loadSource]);
+  const acceptOperation = useCallback(
+    (row: TaskOperationView) => {
+      setOperation(row);
+      if (
+        row.status === "succeeded" &&
+        completed.current !== row.id &&
+        submitted.current
+      ) {
+        completed.current = row.id;
+        const task = row.result?.task as { id?: string } | undefined;
+        announceTaskChange({
+          ...submitted.current,
+          taskId: task?.id ?? taskId,
+        });
+        closeRef.current();
+      }
+      if (!["queued", "running", "succeeded"].includes(row.status))
+        setError(
+          taskError[row.code ?? ""] ??
+            "Änderung nicht bestätigt. Eingaben bleiben erhalten.",
+        );
+    },
+    [taskId],
+  );
   useEffect(() => {
     if (
       !operation?.id ||
@@ -689,27 +831,7 @@ export function TaskEditor({
         void api("/api/tasks")
           .then((rows: TaskOperationView[]) => {
             const row = rows.find((r) => r.id === operation.id);
-            if (alive && row) {
-              setOperation(row);
-              if (
-                row.status === "succeeded" &&
-                completed.current !== row.id &&
-                submitted.current
-              ) {
-                completed.current = row.id;
-                const task = row.result?.task as { id?: string } | undefined;
-                announceTaskChange({
-                  ...submitted.current,
-                  taskId: task?.id ?? taskId,
-                });
-                closeRef.current();
-              }
-              if (!["queued", "running", "succeeded"].includes(row.status))
-                setError(
-                  taskError[row.code ?? ""] ??
-                    "Änderung nicht bestätigt. Eingaben bleiben erhalten.",
-                );
-            }
+            if (alive && row) acceptOperation(row);
           })
           .catch(() => {}),
       1500,
@@ -718,16 +840,45 @@ export function TaskEditor({
       alive = false;
       clearInterval(timer);
     };
-  }, [operation?.id, operation?.status, taskId]);
+  }, [operation?.id, operation?.status, acceptOperation]);
   const pending =
     busy ||
+    requestUncertain ||
+    instanceChanged ||
+    documentState.pending ||
     (!!operation &&
       ["queued", "running", "unknown", "partial"].includes(operation.status));
-  useNavigationLock(pending);
-  const touched = useRef(false);
+  const formDirty = taskId
+    ? !!inspection &&
+      (Object.keys(formValues).some(
+        (key) =>
+          JSON.stringify(formValues[key as keyof typeof formValues]) !==
+          JSON.stringify(baseValues[key]),
+      ) ||
+        !!recurring ||
+        removeRecurrence)
+    : !!(
+        title ||
+        description ||
+        project ||
+        labels.length ||
+        date ||
+        deadline ||
+        duration ||
+        recurring ||
+        fun ||
+        time ||
+        priority !== 1 ||
+        section ||
+        parent
+      );
+  const dirty = formDirty || documentState.dirty || aiTouched;
+  useNavigationLock(pending || dirty);
+
   function requestClose() {
     if (
       busy ||
+      documentState.running ||
       (operation && ["queued", "running"].includes(operation.status))
     ) {
       setError(
@@ -735,111 +886,138 @@ export function TaskEditor({
       );
       return;
     }
-    if (operation && ["unknown", "partial"].includes(operation.status)) {
+    if (
+      requestUncertain ||
+      documentState.uncertain ||
+      (operation && ["unknown", "partial"].includes(operation.status))
+    ) {
       if (
         !window.confirm(
-          "Das Ergebnis bleibt ungeklärt im Operationsjournal erhalten. Dialog schliessen, ohne erneut zu schreiben?",
+          "Das Ergebnis ist ungeklärt. Das Operationsjournal vor weiteren Änderungen prüfen. Dialog schliessen, ohne erneut zu schreiben?",
         )
       )
         return;
-    } else if (touched.current && !window.confirm("Entwurf verwerfen?")) return;
+    } else if (dirty && !window.confirm("Entwurf verwerfen?")) return;
     close();
   }
-  async function submit(action: TaskCommand["action"]) {
-    if (submitLock.current || pending) return;
+  function canSubmit(action: TaskCommand["action"], confirmed: boolean) {
+    if (["close", "delete"].includes(action) && !confirmed) return false;
+    if ((action === "update" || action === "create") && documentState.dirty) {
+      setError(
+        "Ziel, Checkliste oder Dokumentenlinks enthalten ungespeicherte Eingaben. Bitte deren Vorschau prüfen und ausdrücklich bestätigen, bevor das Grundformular gespeichert wird.",
+      );
+      return false;
+    }
+    if (
+      ["create", "update"].includes(action) &&
+      aiTouched &&
+      !window.confirm(
+        "Nur die Grundinformationen speichern? Ungespeicherte KI-Eingaben werden dabei verworfen; gespeicherte KI-Entwürfe und nachgewiesene Änderungen bleiben erhalten.",
+      )
+    )
+      return false;
+    return true;
+  }
+  function coreFields(action: TaskCommand["action"]) {
+    const allLabels = [
+      ...new Set(
+        labels.concat(
+          fun && selectedContext?.kind === "private" ? ["fun"] : [],
+        ),
+      ),
+    ];
+    const fields: Record<string, unknown> = {};
+    const add = (name: string, value: unknown, changed: boolean) => {
+      if (action === "create" || changed) fields[name] = value;
+    };
+    add("content", title, title !== base.current.title);
+    add("description", description, description !== base.current.description);
+    add("priority", priority, priority !== base.current.priority);
+    add(
+      "labels",
+      allLabels,
+      JSON.stringify(labels) !== JSON.stringify(base.current.labels) ||
+        fun !== base.current.fun,
+    );
+    add(
+      "due",
+      plannedValue(date, time, snapshot.timezone),
+      date !== base.current.date || time !== base.current.time,
+    );
+    add("deadline", deadline || null, deadline !== base.current.deadline);
+    add(
+      "duration",
+      duration ? Number(duration) : null,
+      duration !== base.current.duration,
+    );
+    if (action === "create") {
+      for (const [key, value] of Object.entries({
+        due: date,
+        deadline,
+        duration,
+      })) {
+        if (!value) delete fields[key];
+      }
+    }
+    validateRecurrence(fields);
+    return fields;
+  }
+  function validateRecurrence(fields: Record<string, unknown>) {
+    if (recurring) {
+      if ("due" in fields)
+        throw new Error(
+          "Wähle entweder ein Planungsdatum oder einen vollständigen Wiederholungstext mit gewünschtem Startdatum.",
+        );
+      fields.recurring = recurring;
+    }
+    if (
+      taskId &&
+      inspection?.task.due?.is_recurring &&
+      "due" in fields &&
+      !removeRecurrence
+    )
+      throw new Error(
+        "Todoist würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext eingeben.",
+      );
+  }
+  function buildSubmission(
+    action: TaskCommand["action"],
+    confirmed: boolean,
+    acknowledgements?: ActionAcknowledgement,
+  ) {
+    const body: Record<string, unknown> = {
+      action,
+      contextId: taskId ? context!.id : (selectedContext?.id ?? null),
+      ...(taskId ? { taskId, basis: inspection?.basis } : {}),
+      acknowledgeHierarchy: acknowledgements?.hierarchy ?? false,
+      acknowledgeDestructive: confirmed && ["close", "delete"].includes(action),
+      acknowledgeRecurrenceChange: removeRecurrence,
+      ...(action === "close" &&
+      inspection?.task.labels.includes("epic") &&
+      acknowledgements?.epicDetach
+        ? { epicClosePolicy: "detach" as const }
+        : {}),
+    };
+    if (action === "create" || action === "update") {
+      body.fields = coreFields(action);
+    }
+    Object.assign(body, commandDestination(action, project, section, parent));
+    if (action === "comment") body.comment = comment;
+    if (action === "wait")
+      body.waiting = { who, subject, followUp: followUp || null };
+    return body;
+  }
+  async function submit(
+    action: TaskCommand["action"],
+    confirmed = false,
+    acknowledgements?: ActionAcknowledgement,
+  ) {
+    if (submitLock.current || pending || !canSubmit(action, confirmed)) return;
     submitLock.current = true;
     setError("");
     setBusy(true);
     try {
-      const body: Record<string, unknown> = {
-        action,
-        contextId: taskId ? context!.id : (selectedContext?.id ?? null),
-        ...(taskId ? { taskId, basis: inspection?.basis } : {}),
-        acknowledgeHierarchy: hierarchy,
-        acknowledgeDestructive: destructive,
-        acknowledgeRecurrenceChange: removeRecurrence,
-        ...(action === "close" &&
-        inspection?.task.labels.includes("epic") &&
-        epicDetach
-          ? { epicClosePolicy: "detach" as const }
-          : {}),
-      };
-      if (action === "create" || action === "update") {
-        const allLabels = [
-          ...new Set(
-            labels.concat(
-              fun && selectedContext?.kind === "private" ? ["fun"] : [],
-            ),
-          ),
-        ];
-        const fields: Record<string, unknown> = {};
-        const add = (name: string, value: unknown, changed: boolean) => {
-          if (action === "create" || changed) fields[name] = value;
-        };
-        add("content", title, title !== base.current.title);
-        add(
-          "description",
-          description,
-          description !== base.current.description,
-        );
-        add("priority", priority, priority !== base.current.priority);
-        add(
-          "labels",
-          allLabels,
-          JSON.stringify(labels) !== JSON.stringify(base.current.labels) ||
-            fun !== base.current.fun,
-        );
-        add(
-          "due",
-          date
-            ? time
-              ? taskDateTime(date, time, snapshot.timezone)
-              : date
-            : null,
-          date !== base.current.date || time !== base.current.time,
-        );
-        add("deadline", deadline || null, deadline !== base.current.deadline);
-        add(
-          "duration",
-          duration ? Number(duration) : null,
-          duration !== base.current.duration,
-        );
-        if (action === "create" && !date) {
-          delete fields.due;
-        }
-        if (action === "create" && !deadline) delete fields.deadline;
-        if (action === "create" && !duration) delete fields.duration;
-        if (recurring) {
-          if ("due" in fields)
-            throw new Error(
-              "Wähle entweder ein Planungsdatum oder einen vollständigen Wiederholungstext mit gewünschtem Startdatum.",
-            );
-          fields.recurring = recurring;
-        }
-        if (
-          taskId &&
-          inspection?.task.due?.is_recurring &&
-          "due" in fields &&
-          !removeRecurrence
-        )
-          throw new Error(
-            "Todoist würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext eingeben.",
-          );
-        body.fields = fields;
-        if (action === "create") {
-          body.projectId = project || null;
-          if (section) body.sectionId = section;
-          if (parent) body.parentId = parent;
-        }
-      }
-      if (action === "comment") body.comment = comment;
-      if (action === "wait")
-        body.waiting = { who, subject, followUp: followUp || null };
-      if (action === "move") {
-        if (project) body.projectId = project;
-        else if (section) body.sectionId = section;
-        else if (parent) body.parentId = parent;
-      }
+      const body = buildSubmission(action, confirmed, acknowledgements);
       const hash = JSON.stringify(body);
       if (attempt.current?.hash !== hash)
         attempt.current = { hash, key: crypto.randomUUID() };
@@ -851,6 +1029,11 @@ export function TaskEditor({
         ...body,
         key: attempt.current!.key,
       });
+      if (typeof result?.operationId !== "string" || !result.operationId.trim())
+        throw new TaskApiFailure(
+          "Auftragsantwort nicht sicher auswertbar. Den ursprünglichen Auftrag im Journal prüfen; nicht erneut senden.",
+          true,
+        );
       setOperation({
         id: result.operationId,
         status: "queued",
@@ -859,22 +1042,112 @@ export function TaskEditor({
         result: null,
       });
     } catch (e) {
+      if (e instanceof TaskApiFailure && e.uncertain) setRequestUncertain(true);
       setError(e instanceof Error ? e.message : "Änderung fehlgeschlagen.");
     } finally {
       setBusy(false);
       submitLock.current = false;
     }
   }
+  function changeActionField(key: keyof ActionFields, value: string) {
+    const setters = {
+      project: setProject,
+      section: setSection,
+      parent: setParent,
+      comment: setComment,
+      who: setWho,
+      subject: setSubject,
+      followUp: setFollowUp,
+    };
+    setters[key](value);
+  }
+  async function refreshDocumentSource() {
+    if (!taskId || !context) return;
+    setBusy(true);
+    try {
+      const data: TaskInspection = await api(
+        "/api/tasks?" + new URLSearchParams({ contextId: context.id, taskId }),
+      );
+      const t = data.task,
+        dates = taskDateInputs(t.due, snapshot.timezone);
+      if (
+        expectedInstanceKey &&
+        entryKey({ taskId: t.id, source: t }) !== expectedInstanceKey
+      ) {
+        setInstanceChanged(true);
+        throw new Error(
+          "Die Aufgabeninstanz wurde geändert. Historischen Review erneut prüfen.",
+        );
+      }
+      const next = {
+        title: t.content,
+        description: t.description,
+        priority: t.priority,
+        labels: t.labels.filter(
+          (x) => context.kind !== "private" || x !== "fun",
+        ),
+        date: dates.date,
+        time: dates.time,
+        deadline: t.deadline?.date ?? "",
+        duration:
+          t.duration?.unit === "minute" ? String(t.duration.amount) : "",
+        fun: t.labels.includes("fun"),
+      };
+      const current = valuesRef.current;
+      const keys = Object.keys(next) as (keyof typeof next)[];
+      const changed = (a: unknown, b: unknown) =>
+        JSON.stringify(a) !== JSON.stringify(b);
+      if (
+        keys.some(
+          (key) =>
+            changed(current[key], base.current[key]) &&
+            changed(next[key], base.current[key]) &&
+            changed(current[key], next[key]),
+        )
+      ) {
+        setError(
+          "Die gespeicherte Quelle überschneidet sich mit deinen ungespeicherten Eingaben. Eingaben bleiben erhalten. Quelle und Entwurf vor dem Speichern vergleichen.",
+        );
+        return;
+      }
+      function adopt<K extends keyof typeof next>(
+        key: K,
+        set: (value: (typeof next)[K]) => void,
+      ) {
+        if (!changed(current[key], base.current[key])) set(next[key]);
+      }
+      adopt("title", setTitle);
+      adopt("description", setDescription);
+      adopt("priority", setPriority);
+      adopt("labels", setLabels);
+      adopt("date", setDate);
+      adopt("time", setTime);
+      adopt("deadline", setDeadline);
+      adopt("duration", setDuration);
+      adopt("fun", setFun);
+      base.current = next;
+      setBaseValues(next);
+      setInspection(data);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Aktuelle Quelle nicht verfügbar.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="task-dialog-backdrop">
       <section
-        className="task-dialog card"
+        className="task-dialog card task-editor"
         ref={dialogRoot}
         tabIndex={-1}
-        onChangeCapture={() => {
-          touched.current = true;
+        onChangeCapture={(event) => {
+          if ((event.target as HTMLElement).closest(".ai-panel"))
+            setAiTouched(true);
         }}
         onKeyDown={(e) => {
+          if ((e.target as HTMLElement).closest("dialog")) return;
           if (e.key === "Escape") {
             e.preventDefault();
             requestClose();
@@ -909,604 +1182,486 @@ export function TaskEditor({
       >
         <div className="panel-heading">
           <h2>{taskId ? "Aufgabe bearbeiten" : "Eine neue Aufgabe"}</h2>
-          <button type="button" onClick={requestClose}>
-            Abbrechen
-          </button>
         </div>
-        <div className="ai-mode-switch">
-          <button
-            type="button"
-            aria-pressed={aiMode === "form"}
-            onClick={() => setAiMode("form")}
+        <div className="task-editor-scroll">
+          <fieldset
+            className="ai-mode-switch"
+            disabled={pending}
+            aria-label="Bearbeitungsmodus"
           >
-            Formular
-          </button>
-          {!taskId ? (
             <button
               type="button"
-              aria-pressed={aiMode === "capture"}
-              onClick={() => setAiMode("capture")}
+              aria-pressed={aiMode === "form"}
+              onClick={() => setAiMode("form")}
             >
-              KI-Modus
+              Formular
             </button>
-          ) : (
-            <>
-              <button type="button" onClick={() => setAiMode("progress")}>
-                Fortschritt dokumentieren
+            {!taskId ? (
+              <button
+                type="button"
+                aria-pressed={aiMode === "capture"}
+                onClick={() => setAiMode("capture")}
+              >
+                KI-Modus
               </button>
-              <button type="button" onClick={() => setAiMode("clarification")}>
-                Aufgabenklärung
-              </button>
-            </>
-          )}
-        </div>
-        {!taskId && (
-          <div hidden={aiMode !== "capture"}>
-            <AiDraftPanel
-              kind="capture"
-              active={aiMode === "capture"}
-              snapshot={snapshot}
-              manualFields={{
-                ...(title ? { content: title } : {}),
-                ...(description ? { description } : {}),
-                ...(duration ? { duration: Number(duration) } : {}),
-                ...(date ? { due: date } : {}),
-                ...(deadline ? { deadline } : {}),
-                priority,
-                ...(labels.length ? { labels } : {}),
-              }}
-            />
-          </div>
-        )}
-        {taskId && context && (
-          <>
-            <div hidden={aiMode !== "progress"}>
-              <AiDraftPanel
-                kind="progress"
-                active={aiMode === "progress"}
-                expectedInstanceKey={expectedInstanceKey}
-                contextId={context.id}
-                taskId={taskId}
-                snapshot={snapshot}
-              />
-            </div>
-            <div hidden={aiMode !== "clarification"}>
-              <AiDraftPanel
-                kind="clarification"
-                active={aiMode === "clarification"}
-                expectedInstanceKey={expectedInstanceKey}
-                contextId={context.id}
-                taskId={taskId}
-                snapshot={snapshot}
-              />
-            </div>
-          </>
-        )}
-        {taskId && !inspection && (
-          <p role="status">Aktuelle Todoist-Quelle wird geladen …</p>
-        )}
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
-          </p>
-        )}
-        {operation && (
-          <p role="status">
-            {operation.status === "succeeded"
-              ? "Extern nachgewiesen."
-              : operation.status === "queued" || operation.status === "running"
-                ? "Änderung angenommen. Externer Nachweis steht aus."
-                : (taskError[operation.code ?? ""] ??
-                  "Änderung nicht bestätigt.")}
-          </p>
-        )}
-        {operation && <TaskOperationEvidence operation={operation} />}
-        {operation &&
-          ["unknown", "failed", "partial"].includes(operation.status) && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setBusy(true);
-                void api("/api/tasks/resume", { operationId: operation.id })
-                  .then(() => setOperation({ ...operation, status: "queued" }))
-                  .catch((e) => setError(e.message))
-                  .finally(() => setBusy(false));
-              }}
-            >
-              Originale Änderung prüfen und bewusst fortsetzen
-            </button>
-          )}
-        {inspection && (
-          <div className="task-source">
-            <p>
-              Quelle:{" "}
-              {inspection.task.checked
-                ? "nativ abgeschlossen"
-                : (inspection.sections.find(
-                    (s) => s.id === inspection.task.section_id,
-                  )?.name ?? "ohne Abschnitt")}{" "}
-              · {inspection.task.parent_id ? "Unteraufgabe" : "Hauptaufgabe"}
-              {inspection.task.due?.is_recurring ? " · wiederholend" : ""}
-            </p>
-            {inspection.children.length > 0 && (
-              <p>
-                Betroffene Unteraufgaben:{" "}
-                {inspection.children.map((c) => c.content).join(", ")}
-              </p>
-            )}
-            {inspection.task.due?.is_recurring && (
-              <p>
-                Aktuelle Wiederholung:{" "}
-                {inspection.task.due.string ??
-                  "Von Todoist als wiederholend gemeldet"}
-              </p>
-            )}
-            <details>
-              <summary>Kommentare und vorhandene Beschreibung</summary>
-              <pre>{inspection.task.description}</pre>
-              {inspection.links.map((link) => (
-                <p key={link.url}>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer">
-                    {link.label}
-                  </a>
-                </p>
-              ))}
-              {inspection.task.parent_id && (
-                <a
-                  href={
-                    "/tasks?context=" +
-                    context!.id +
-                    "&task=" +
-                    encodeURIComponent(inspection.task.parent_id)
-                  }
+            ) : (
+              <>
+                <button type="button" onClick={() => setAiMode("progress")}>
+                  Fortschritt dokumentieren
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiMode("clarification")}
                 >
-                  Oberaufgabe öffnen
-                </a>
-              )}
-              {inspection.comments.map((c) => (
-                <p key={c.id}>{c.content}</p>
-              ))}
-            </details>
-          </div>
-        )}
-        {inspection && context && (
-          <details className="ux-editor-document">
-            <summary>Ziel, Checkliste & Links</summary>
-            <TaskDocument
-              key={inspection.basis}
-              context={context}
-              taskId={inspection.task.id}
-              snapshot={snapshot}
-            />
-          </details>
-        )}
-        <fieldset
-          hidden={aiMode !== "form"}
-          disabled={
-            busy ||
-            (!!taskId && !inspection) ||
-            (!!operation && ["queued", "running"].includes(operation.status))
-          }
-        >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void submit(taskId ? "update" : "create");
-            }}
-          >
-            <label>
-              Titel
-              <input
-                required
-                maxLength={500}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </label>
-            <label>
-              Beschreibung
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </label>
-            <div className="task-fields">
-              <label>
-                <span>Priorität</span>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(Number(e.target.value))}
-                >
-                  {[4, 3, 2, 1].map((v) => (
-                    <option key={v} value={v}>
-                      P{5 - v}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <LabelPicker
-                value={labels}
-                onChange={(next) => {
-                  touched.current = true;
-                  setLabels(next);
+                  Aufgabenklärung
+                </button>
+              </>
+            )}
+          </fieldset>
+          {!taskId && (
+            <div hidden={aiMode !== "capture"}>
+              <AiDraftPanel
+                kind="capture"
+                active={aiMode === "capture"}
+                snapshot={snapshot}
+                manualFields={{
+                  ...(title ? { content: title } : {}),
+                  ...(description ? { description } : {}),
+                  ...(duration ? { duration: Number(duration) } : {}),
+                  ...(date ? { due: date } : {}),
+                  ...(deadline ? { deadline } : {}),
+                  priority,
+                  ...(labels.length ? { labels } : {}),
                 }}
               />
             </div>
-            <details className="ux-editor-planning">
-              <summary>Planung · Datum, Dauer & Deadline</summary>
+          )}
+          {taskId && context && (
+            <>
+              <div hidden={aiMode !== "progress"}>
+                <AiDraftPanel
+                  kind="progress"
+                  active={aiMode === "progress"}
+                  expectedInstanceKey={expectedInstanceKey}
+                  contextId={context.id}
+                  taskId={taskId}
+                  snapshot={snapshot}
+                />
+              </div>
+              <div hidden={aiMode !== "clarification"}>
+                <AiDraftPanel
+                  kind="clarification"
+                  active={aiMode === "clarification"}
+                  expectedInstanceKey={expectedInstanceKey}
+                  contextId={context.id}
+                  taskId={taskId}
+                  snapshot={snapshot}
+                />
+              </div>
+            </>
+          )}
+          {taskId && !inspection && (
+            <p role="status">Aktuelle Todoist-Quelle wird geladen …</p>
+          )}
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
+            </p>
+          )}
+          {operation && (
+            <p>
+              <output>{operationStatus(operation)}</output>
+            </p>
+          )}
+          {operation && <TaskOperationEvidence operation={operation} />}
+          {requestUncertain && (
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  const rows: TaskOperationView[] = await api("/api/tasks");
+                  const row = rows.find(
+                    (r) =>
+                      !!attempt.current?.key &&
+                      r.input?.key === attempt.current.key,
+                  );
+                  if (row) {
+                    setRequestUncertain(false);
+                    acceptOperation(row);
+                  } else
+                    setError(
+                      "Noch kein eindeutig zuordenbarer Journalnachweis verfügbar. Eingaben und Auftrag bleiben ungeklärt; nicht erneut senden.",
+                    );
+                } catch (e) {
+                  setError(
+                    e instanceof Error ? e.message : "Journal nicht verfügbar.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <Icon name="refresh" />
+              Schreibauftrag im Journal prüfen
+            </button>
+          )}
+          {operation &&
+            ["unknown", "failed", "partial"].includes(operation.status) && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  void api("/api/tasks/resume", { operationId: operation.id })
+                    .then(() =>
+                      setOperation({ ...operation, status: "queued" }),
+                    )
+                    .catch((e) => setError(e.message))
+                    .finally(() => setBusy(false));
+                }}
+              >
+                Originale Änderung prüfen und bewusst fortsetzen
+              </button>
+            )}
+          <fieldset
+            hidden={aiMode !== "form"}
+            disabled={pending || (!!taskId && !inspection)}
+          >
+            <form
+              id={formId}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submit(taskId ? "update" : "create");
+              }}
+            >
+              <label>
+                Titel
+                <input
+                  required
+                  maxLength={500}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </label>
+              <label>
+                Beschreibung
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </label>
               <div className="task-fields">
                 <label>
-                  Geplantes Datum
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
+                  <span>Priorität</span>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(Number(e.target.value))}
+                  >
+                    {[4, 3, 2, 1].map((v) => (
+                      <option key={v} value={v}>
+                        P{5 - v}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-                <label>
-                  Geplante Uhrzeit ({snapshot.timezone ?? "Europe/Zurich"})
-                  <input
-                    type="time"
-                    disabled={!date}
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                  />
-                </label>
-                {taskId && (
+                <LabelPicker
+                  value={labels}
+                  onChange={(next) => {
+                    setLabels(next);
+                  }}
+                />
+              </div>
+              {inspection?.task.due?.is_recurring && (
+                <p className="help">
+                  Aktuelle Wiederholung:{" "}
+                  {inspection.task.due.string ??
+                    "Von Todoist als wiederholend gemeldet"}
+                </p>
+              )}
+              <section className="task-planning-fields" aria-label="Planung">
+                <div className="task-fields">
                   <label>
-                    Neue Wiederholung (vollständiger Todoist-Text, Englisch)
+                    Geplantes Datum
                     <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Geplante Uhrzeit ({snapshot.timezone ?? "Europe/Zurich"})
+                    <input
+                      type="time"
+                      disabled={!date}
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                    />
+                  </label>
+                  {taskId && (
+                    <label>
+                      Neue Wiederholung (vollständiger Todoist-Text, Englisch)
+                      <input
+                        value={recurring}
+                        placeholder="every week starting 2026-11-01"
+                        onChange={(e) => setRecurring(e.target.value)}
+                      />
+                    </label>
+                  )}
+                  {inspection?.task.due?.is_recurring && (
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={removeRecurrence}
+                        onChange={(e) => setRemoveRecurrence(e.target.checked)}
+                      />
+                      Wiederholung entfernen: geändertes oder geleertes
+                      Planungsdatum ausdrücklich bestätigen
+                    </label>
+                  )}
+                  <label>
+                    Echte Deadline
+                    <input
+                      type="date"
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Dauer in Minuten
+                    <input
+                      type="number"
+                      min={1}
+                      max={14400}
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </section>
+              {selectedContext?.kind === "private" && (
+                <label className="task-fun-switch">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={fun}
+                    onChange={(e) => setFun(e.target.checked)}
+                  />
+                  <span className="task-switch-track" aria-hidden="true" />
+                  <span>Freiwillig / Spass</span>
+                </label>
+              )}
+              {!taskId && (
+                <>
+                  <label>
+                    Todoist-Projekt
+                    <select
+                      value={project}
+                      onChange={(e) => {
+                        setProject(e.target.value);
+                        setSection("");
+                        setParent("");
+                        setFun(false);
+                      }}
+                    >
+                      <option value="">
+                        Keine Projektwahl → nativer Eingang
+                      </option>
+                      {snapshot.projects
+                        .filter((p) => p.available && !p.inbox)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  {project && (
+                    <>
+                      <label>
+                        Abschnitt (optional)
+                        <select
+                          value={section}
+                          disabled={!!parent}
+                          onChange={(e) => setSection(e.target.value)}
+                        >
+                          <option value="">Kein Abschnitt gewählt</option>
+                          {options.sections.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Oberaufgabe (optional)
+                        <select
+                          value={parent}
+                          onChange={(e) => {
+                            setParent(e.target.value);
+                            setSection("");
+                          }}
+                        >
+                          <option value="">Eigenständige Aufgabe</option>
+                          {options.parents.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.content}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </>
+                  )}
+                  <label>
+                    Wiederholung (Todoist-Text, Englisch, optional)
+                    <input
+                      placeholder="every week"
                       value={recurring}
-                      placeholder="every week starting 2026-11-01"
                       onChange={(e) => setRecurring(e.target.value)}
                     />
                   </label>
-                )}
-                {inspection?.task.due?.is_recurring && (
-                  <label className="check-label">
-                    <input
-                      type="checkbox"
-                      checked={removeRecurrence}
-                      onChange={(e) => setRemoveRecurrence(e.target.checked)}
-                    />
-                    Wiederholung entfernen: geändertes oder geleertes
-                    Planungsdatum ausdrücklich bestätigen
-                  </label>
-                )}
-                <label>
-                  Echte Deadline
-                  <input
-                    type="date"
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Dauer in Minuten
-                  <input
-                    type="number"
-                    min={1}
-                    max={14400}
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                  />
-                </label>
-              </div>
-            </details>
-            {selectedContext?.kind === "private" && (
-              <label className="check-label">
-                <input
-                  type="checkbox"
-                  checked={fun}
-                  onChange={(e) => setFun(e.target.checked)}
-                />
-                Freiwillig / Spass (fun)
-              </label>
+                </>
+              )}
+            </form>
+            {inspection && context && (
+              <TaskDocument
+                key={taskId + ":" + documentEpoch}
+                context={context}
+                taskId={inspection.task.id}
+                snapshot={snapshot}
+                onStateChange={setDocumentState}
+                onVerified={refreshDocumentSource}
+                sourceControls={false}
+              />
             )}
-            {!taskId && (
-              <>
-                <label>
-                  Todoist-Projekt
-                  <select
-                    value={project}
-                    onChange={(e) => {
-                      setProject(e.target.value);
-                      setSection("");
-                      setParent("");
-                      setFun(false);
-                    }}
-                  >
-                    <option value="">
-                      Keine Projektwahl → nativer Eingang
-                    </option>
-                    {snapshot.projects
-                      .filter((p) => p.available && !p.inbox)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                {project && (
-                  <>
-                    <label>
-                      Abschnitt (optional)
-                      <select
-                        value={section}
-                        disabled={!!parent}
-                        onChange={(e) => setSection(e.target.value)}
-                      >
-                        <option value="">Kein Abschnitt gewählt</option>
-                        {options.sections.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Oberaufgabe (optional)
-                      <select
-                        value={parent}
-                        onChange={(e) => {
-                          setParent(e.target.value);
-                          setSection("");
-                        }}
-                      >
-                        <option value="">Eigenständige Aufgabe</option>
-                        {options.parents.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.content}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </>
+            {inspection && <TaskComments comments={inspection.comments} />}
+            {inspection && (
+              <TaskAccordion title="Technische Details">
+                <dl>
+                  <dt>Todoist-ID</dt>
+                  <dd>{inspection.task.id}</dd>
+                  <dt>Projekt-ID</dt>
+                  <dd>{inspection.task.project_id}</dd>
+                  <dt>Quellfassung</dt>
+                  <dd>{inspection.basis}</dd>
+                </dl>
+                {inspection.task.parent_id && (
+                  <p>Oberaufgaben-ID: {inspection.task.parent_id}</p>
                 )}
-                <label>
-                  Wiederholung (Todoist-Text, Englisch, optional)
-                  <input
-                    placeholder="every week"
-                    value={recurring}
-                    onChange={(e) => setRecurring(e.target.value)}
-                  />
-                </label>
-              </>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={pending}
+                  onClick={() => {
+                    if (
+                      !dirty ||
+                      window.confirm(
+                        "Ungespeicherte Eingaben durch die aktuelle Quelle ersetzen?",
+                      )
+                    ) {
+                      void loadSource();
+                    }
+                  }}
+                >
+                  Aktuelle Quelle neu laden und Entwurf ersetzen
+                </button>
+              </TaskAccordion>
             )}
+          </fieldset>
+        </div>
+        <footer className="task-editor-toolbar" aria-label="Aufgabenaktionen">
+          <button type="button" className="secondary" onClick={requestClose}>
+            <Icon name="close" />
+            Abbrechen
+          </button>
+          {
             <button
               type="submit"
-              disabled={pending || (!!taskId && !inspection)}
+              form={formId}
+              disabled={
+                aiMode !== "form" || pending || (!!taskId && !inspection)
+              }
             >
-              {taskId ? "Änderungen bewusst bestätigen" : "Aufgabe erstellen"}
+              <Icon name="save" />
+              {taskId ? "Speichern" : "Aufgabe erstellen"}
             </button>
-          </form>
-          {taskId && inspection && (
-            <details className="ux-editor-actions">
-              <summary>Weitere bewusste Aktionen</summary>
-              <label>
-                Kommentar
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={pending || !comment.trim()}
-                onClick={() => void submit("comment")}
-              >
-                Kommentar hinzufügen
-              </button>
-              <h3>Verschieben</h3>
-              <p>
-                Genau ein Ziel wählen. Abschnitts-/Projektwechsel einer
-                Unteraufgabe löst sie von ihrer Oberaufgabe; Kinder einer
-                Oberaufgabe werden mitverschoben.
-              </p>
-              <label>
-                Zielprojekt
-                <select
-                  value={project}
-                  onChange={(e) => {
-                    setProject(e.target.value);
-                    setSection("");
-                    setParent("");
+          }
+          {taskId &&
+            (["close", "delete", "move", "wait", "comment"] as const).map(
+              (kind) => (
+                <button
+                  type="button"
+                  key={kind}
+                  className={
+                    kind === "delete" ? "secondary task-delete" : "secondary"
+                  }
+                  disabled={
+                    aiMode !== "form" ||
+                    pending ||
+                    !inspection ||
+                    (kind === "close" && !!inspection.task.checked)
+                  }
+                  onClick={() => {
+                    if (kind === "move") {
+                      setProject("");
+                      setSection("");
+                      setParent("");
+                    }
+                    setError("");
+                    setActionDialog(kind);
                   }}
                 >
-                  <option value="">Kein Projektwechsel</option>
-                  {snapshot.projects
-                    .filter((p) => p.available)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label>
-                Zielabschnitt
-                <select
-                  value={section}
-                  onChange={(e) => {
-                    setSection(e.target.value);
-                    setProject("");
-                    setParent("");
-                  }}
-                >
-                  <option value="">Kein Abschnittswechsel</option>
-                  {inspection.sections.map((s) => (
-                    <option value={s.id} key={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Neue Oberaufgabe (Todoist-ID, optional)
-                <input
-                  value={parent}
-                  onChange={(e) => {
-                    setParent(e.target.value);
-                    setProject("");
-                    setSection("");
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={pending || !(project || section || parent)}
-                onClick={() => void submit("move")}
-              >
-                Verschieben bestätigen
-              </button>
-              <h3>Wartedetails</h3>
-              <label>
-                Wartet auf
-                <input value={who} onChange={(e) => setWho(e.target.value)} />
-              </label>
-              <label>
-                Gegenstand
-                <input
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </label>
-              <label>
-                Nachfassen am
-                <input
-                  type="date"
-                  value={followUp}
-                  onChange={(e) => setFollowUp(e.target.value)}
-                />
-              </label>
-              <p>
-                Als Hinweis in der Beschreibung; es wird keine Nachfassaufgabe
-                erzeugt.
-              </p>
-              <button
-                type="button"
-                disabled={pending || !who.trim() || !subject.trim()}
-                onClick={() => void submit("wait")}
-              >
-                Warten bewusst bestätigen
-              </button>
-              {(inspection.task.parent_id ||
-                inspection.children.length > 0) && (
-                <label className="check-label">
-                  <input
-                    type="checkbox"
-                    checked={hierarchy}
-                    onChange={(e) => setHierarchy(e.target.checked)}
-                  />
-                  {inspection.task.labels.includes("epic")
-                    ? "Ich bestätige die angezeigte Hierarchiewirkung. Für den Epic-Abschluss gilt ausschliesslich die unten ausdrücklich gewählte Trennung; beim Löschen werden Kinder mitgelöscht."
-                    : "Ich bestätige die angezeigte Hierarchiewirkung: bei Abschnittswechseln Unteraufgabe abtrennen, bei Oberaufgaben alle angezeigten Kinder mitverschieben beziehungsweise mitabschliessen oder mitlöschen."}
-                </label>
-              )}
-              {inspection.task.labels.includes("epic") && (
-                <section className="card">
-                  <h3>Epic manuell abschliessen</h3>
-                  {inspection.task.due?.is_recurring && (
-                    <p>
-                      Ein wiederholendes Epic kann nicht dauerhaft geschlossen
-                      werden. Wiederholung zuerst bewusst im Formular ändern
-                      oder entfernen.
-                    </p>
-                  )}
-                  {inspection.children.length > 0 && (
-                    <>
-                      <p>
-                        Der native Todoist-Abschluss würde offene Kinder
-                        mitabschliessen. Helios trennt deshalb die folgenden
-                        offenen Teilbäume vor dem Abschluss:
-                      </p>
-                      <ul>
-                        {inspection.children.map((c) => (
-                          <li key={c.id}>
-                            {c.content} ·{" "}
-                            {c.parentId === inspection.task.id
-                              ? "direktes Kind wird eigenständig"
-                              : "bleibt innerhalb des getrennten Teilbaums"}
-                          </li>
-                        ))}
-                      </ul>
-                      <p>
-                        Direkte offene Kinder werden im gleichen Projekt
-                        eigenständige Hauptaufgaben ohne Abschnitt. Ihre Kinder
-                        bleiben angehängt. IDs, Inhalte, Kommentare und
-                        historische Planreferenzen bleiben erhalten. Die
-                        bestehende Tagesauswahl wird nicht ergänzt. Ein neuer
-                        Vorschlag wird später bewusst geprüft. Das Epic wird
-                        erst nach vollständigem Nachweis nach Abgeschlossen
-                        verschoben und nativ geschlossen. Bei Fehlern bleibt es
-                        offen; bereits erfolgte Trennungen stehen im Journal.
-                      </p>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={epicDetach}
-                          onChange={(e) => setEpicDetach(e.target.checked)}
-                        />
-                        Alle angezeigten offenen Teilbäume bewusst trennen und
-                        anschliessend Epic abschliessen
-                      </label>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => {
-                          setEpicDetach(false);
-                          setDestructive(false);
-                        }}
-                      >
-                        Abbrechen – keine neue Änderung ausführen
-                      </button>
-                    </>
-                  )}
-                </section>
-              )}
-              <label className="check-label">
-                <input
-                  type="checkbox"
-                  checked={destructive}
-                  onChange={(e) => setDestructive(e.target.checked)}
-                />
-                Ich bestätige ausdrücklich den Abschluss beziehungsweise die
-                endgültige Löschung dieser Aufgabe.
-              </label>
-              <button
-                type="button"
-                disabled={
-                  pending ||
-                  !destructive ||
-                  !!inspection.task.checked ||
-                  (inspection.task.labels.includes("epic") &&
-                    (!!inspection.task.due?.is_recurring ||
-                      (inspection.children.length > 0 && !epicDetach)))
-                }
-                onClick={() => void submit("close")}
-              >
-                Aufgabe abschliessen
-              </button>
-              <button
-                type="button"
-                className="danger"
-                disabled={pending || !destructive}
-                onClick={() => void submit("delete")}
-              >
-                Aufgabe endgültig löschen
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => void loadSource()}
-              >
-                Aktuelle Quelle neu laden und Entwurf ersetzen
-              </button>
-            </details>
-          )}
-        </fieldset>
+                  <Icon name={actionIcons[kind]} />
+                  {actionTitles[kind]}
+                </button>
+              ),
+            )}
+        </footer>
+        {actionDialog && inspection && (
+          <TaskActionDialog
+            key={actionDialog}
+            action={actionDialog}
+            inspection={inspection}
+            snapshot={snapshot}
+            fields={{
+              project,
+              section,
+              parent,
+              comment,
+              who,
+              subject,
+              followUp,
+            }}
+            change={changeActionField}
+            dirty={dirty}
+            pending={pending}
+            processing={
+              busy ||
+              (!!operation && ["queued", "running"].includes(operation.status))
+            }
+            error={error}
+            operation={operation}
+            close={() => {
+              setActionDialog(null);
+              if (
+                !requestUncertain &&
+                (!operation ||
+                  !["unknown", "partial"].includes(operation.status))
+              ) {
+                setComment("");
+                setWho(inspection.waiting?.who ?? "");
+                setSubject(inspection.waiting?.subject ?? "");
+                setFollowUp(inspection.waiting?.followUp ?? "");
+                setProject("");
+                setSection("");
+                setParent("");
+              }
+            }}
+            confirm={(ack) => void submit(actionDialog, true, ack)}
+          />
+        )}
       </section>
     </div>
   );

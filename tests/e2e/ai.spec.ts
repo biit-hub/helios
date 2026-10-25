@@ -1,3 +1,4 @@
+import { openTaskEditor } from "../fixtures/task-detail";
 import { closeTaskDialog } from "../fixtures/task-dialog";
 import { test, expect } from "@playwright/test";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
@@ -137,12 +138,7 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
     }),
   ).toBeVisible({ timeout: 20000 });
   await closeTaskDialog(page, dialog);
-  await page
-    .getByRole("button", {
-      name: "Aufgabe öffnen und bearbeiten: Synthetische Präsentation vorbereiten",
-      exact: true,
-    })
-    .click();
+  await openTaskEditor(page, "Synthetische Präsentation vorbereiten");
   const editor = page.getByRole("dialog", {
     name: "Aufgabe bearbeiten",
     exact: true,
@@ -192,7 +188,14 @@ test("E6 reviewed AI capture, persistent edited drafts, shared progress, checkli
     }),
   ).toBeVisible({ timeout: 30000 });
   await editor.getByRole("button", { name: "Formular", exact: true }).click();
-  await editor.locator(".ux-editor-actions > summary").click();
+  await editor
+    .locator("summary")
+    .filter({ hasText: /^Technische Details$/ })
+    .click();
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toMatch(/Ungespeicherte Eingaben/);
+    await dialog.accept();
+  });
   await editor
     .getByRole("button", {
       name: "Aktuelle Quelle neu laden und Entwurf ersetzen",

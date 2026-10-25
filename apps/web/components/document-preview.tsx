@@ -1,4 +1,5 @@
 "use client";
+import { TaskOperationEvidence } from "./task-operation-evidence";
 import type { DocumentModel } from "./use-task-document";
 import { epicRequest as request } from "./epic-http";
 export function DocumentPreview({
@@ -58,6 +59,7 @@ export function DocumentPreview({
           </button>
         </section>
       )}
+      {operation && <TaskOperationEvidence operation={operation} />}
       {operation && (
         <output>
           Operationsstand: {operation.status}

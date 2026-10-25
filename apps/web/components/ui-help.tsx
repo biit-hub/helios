@@ -10,8 +10,12 @@ export function InfoTip({
   return (
     <span
       className="ux-tooltip"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") setOpen(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setOpen(false);
+      }}
     >
       <button
         type="button"
@@ -42,11 +46,13 @@ export function UiDialog({
   children,
   close,
   busy = false,
+  showCloseButton = true,
 }: Readonly<{
   title: string;
   children: ReactNode;
   close: () => void;
   busy?: boolean;
+  showCloseButton?: boolean;
 }>) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -69,14 +75,16 @@ export function UiDialog({
     >
       <div className="panel-heading">
         <h2>{title}</h2>
-        <button
-          type="button"
-          className="secondary"
-          disabled={busy}
-          onClick={close}
-        >
-          Schliessen
-        </button>
+        {showCloseButton && (
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy}
+            onClick={close}
+          >
+            Schliessen
+          </button>
+        )}
       </div>
       {children}
     </dialog>

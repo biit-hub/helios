@@ -1,3 +1,4 @@
+import { openTaskEditor } from "../fixtures/task-detail";
 import { expect, test } from "@playwright/test";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
 import type { TaskOperationView } from "@helios/contracts";
@@ -87,23 +88,7 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
     .fill("Verwaltungsaufgabe E4");
   await expect(page.locator(".task-list .task-card")).toHaveCount(1);
   async function open(title = "Synthetische Aufgabe E4 bearbeitet") {
-    const row = page
-      .locator(".task-entry")
-      .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
-    if ((await row.getAttribute("open")) === null)
-      await row.locator(":scope > summary").click();
-    await page
-      .getByRole("button", {
-        name: "Aufgabe öffnen und bearbeiten: " + title,
-        exact: true,
-      })
-      .click();
-    const editor = page.getByRole("dialog", { name: "Aufgabe bearbeiten" });
-    await expect(editor.getByLabel("Titel", { exact: true })).toHaveValue(
-      title,
-    );
-    await editor.locator(".ux-editor-actions > summary").click();
-    return editor;
+    return openTaskEditor(page, title);
   }
   dialog = await open("Synthetische Verwaltungsaufgabe E4");
   await expect(
@@ -120,16 +105,13 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await dialog
     .getByRole("combobox", { name: "Priorität", exact: true })
     .selectOption("3");
-  await dialog.locator(".ux-editor-planning > summary").click();
   await dialog
     .getByLabel("Geplantes Datum", { exact: true })
     .fill("2026-10-20");
   await dialog.getByLabel(/^Geplante Uhrzeit/).fill("14:00");
   await dialog.getByLabel("Dauer in Minuten", { exact: true }).fill("45");
   await dialog.getByLabel("Echte Deadline", { exact: true }).fill("2026-10-23");
-  await dialog
-    .getByRole("button", { name: "Änderungen bewusst bestätigen", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(dialog).toBeHidden({ timeout: 20000 });
   await expect(
     page.getByRole("heading", {
@@ -141,7 +123,6 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
     await page.getByLabel("Aufgaben suchen", { exact: true }).inputValue(),
   ).toBe("");
   dialog = await open();
-  await dialog.locator(".ux-editor-planning > summary").click();
   await expect(
     dialog.getByRole("textbox", { name: "Beschreibung", exact: true }),
   ).toHaveValue(/Die Bearbeitung wurde geprüft/);
@@ -159,26 +140,35 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
     dialog.getByLabel("Dauer in Minuten", { exact: true }),
   ).toHaveValue("45");
   await dialog
+    .getByRole("button", { name: "Kommentar hinzufügen", exact: true })
+    .click();
+  const commentDialog = page.getByRole("dialog", {
+    name: "Kommentar hinzufügen",
+    exact: true,
+  });
+  await commentDialog
     .getByLabel("Kommentar", { exact: true })
     .fill("Synthetischer Kommentar E4");
-  await dialog
-    .getByRole("button", { name: "Kommentar hinzufügen", exact: true })
+  await commentDialog
+    .getByRole("button", { name: "Kommentar absenden", exact: true })
     .click();
   await expect(dialog).toBeHidden({ timeout: 20000 });
   dialog = await open();
-  await dialog
-    .getByText("Kommentare und vorhandene Beschreibung", { exact: true })
-    .click();
+  await dialog.getByText("Kommentare", { exact: true }).click();
   await expect(
     dialog.getByText("Synthetischer Kommentar E4", { exact: true }),
   ).toBeVisible();
-  await dialog
+  await dialog.getByRole("button", { name: "Warten", exact: true }).click();
+  const waitDialog = page.getByRole("dialog", { name: "Warten", exact: true });
+  await waitDialog
     .getByLabel("Wartet auf", { exact: true })
     .fill("Synthetisches Team");
-  await dialog.getByLabel("Gegenstand", { exact: true }).fill("Freigabe");
-  await dialog.getByLabel("Nachfassen am", { exact: true }).fill("2026-10-22");
-  await dialog
-    .getByRole("button", { name: "Warten bewusst bestätigen", exact: true })
+  await waitDialog.getByLabel("Gegenstand", { exact: true }).fill("Freigabe");
+  await waitDialog
+    .getByLabel("Nächste Prüfung", { exact: true })
+    .fill("2026-10-22");
+  await waitDialog
+    .getByRole("button", { name: "Warten bestätigen", exact: true })
     .click();
   await expect(dialog).toBeHidden({ timeout: 20000 });
   await page
@@ -193,12 +183,11 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await page.screenshot({ path: "private/e4-tasks.png", fullPage: true });
   dialog = await open();
   await dialog
-    .getByLabel(
-      "Ich bestätige ausdrücklich den Abschluss beziehungsweise die endgültige Löschung dieser Aufgabe.",
-    )
-    .check();
-  await dialog
     .getByRole("button", { name: "Aufgabe abschliessen", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Aufgabe abschliessen", exact: true })
+    .getByRole("button", { name: "Abschluss bestätigen", exact: true })
     .click();
   await expect(dialog).toBeHidden({ timeout: 20000 });
   await expect(
@@ -215,7 +204,7 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await expect(
     page
       .locator(".historical-tasks")
-      .getByRole("button", { name: /öffnen und bearbeiten/i }),
+      .getByRole("button", { name: "Bearbeiten", exact: true }),
   ).toHaveCount(0);
   await page.reload();
   await page

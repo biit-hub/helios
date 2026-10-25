@@ -101,7 +101,7 @@ test("E9.1 synthetic desktop design evidence: settings, tasks, dialogs, plan, fo
   await capture(page, "tasks");
   await page.locator(".task-entry > summary").first().click();
   await page
-    .getByRole("button", { name: /^Aufgabe öffnen und bearbeiten:/ })
+    .getByRole("button", { name: "Bearbeiten", exact: true })
     .first()
     .click();
   await expect(
@@ -219,7 +219,10 @@ test("E9.1 synthetic desktop design evidence: Epic and SMART editor", async ({
   ).toBeVisible();
   await capture(page, "epics");
   await page.getByRole("button", { name: "Epic öffnen", exact: true }).click();
-  await page.locator(".task-document summary").first().click();
+  await page
+    .locator(".task-document summary")
+    .filter({ hasText: /^Ziel$/ })
+    .click();
   await expect(
     page.getByRole("textbox", { name: "Ziel", exact: true }),
   ).toHaveValue("Handbuch veröffentlichen");
