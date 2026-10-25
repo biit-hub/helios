@@ -193,10 +193,10 @@
 .workspace .ui-accordion > summary::after {
   content: none;
 }
-.workspace .ui-accordion > summary:is(:hover, :focus-visible) {
+.ui-accordion > summary:is(:hover, :focus-visible) {
   background: var(--ui-hover);
 }
-.workspace .ui-accordion > summary:focus-visible {
+.ui-accordion > summary:focus-visible {
   outline: 3px solid var(--ui-focus);
   outline-offset: -3px;
 }
@@ -384,4 +384,10 @@
   background: var(--ui-loading-surface);
   color: var(--ui-loading-ink);
   border-color: #b58046;
+}
+
+.ui-form-field:has(> .ui-checkbox) {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-control-gap);
 }
