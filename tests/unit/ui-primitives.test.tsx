@@ -1,3 +1,4 @@
+import { renderToString } from "react-dom/server";
 import { StrictMode, useState } from "react";
 import {
   act,
@@ -163,9 +164,9 @@ it("keeps ordinary and disabled buttons free of animations, exposes a readable l
     screen.getByRole("button", { name: "Aufgabe wird gespeichert …" }),
   ).toBeDisabled();
   expect(screen.getByRole("button")).toHaveAttribute("aria-busy", "true");
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Aufgabe wird gespeichert …",
-  );
+  expect(
+    view.container.querySelector('[aria-live="polite"]'),
+  ).toHaveTextContent("Aufgabe wird gespeichert …");
   expect(view.container.querySelectorAll("canvas")).toHaveLength(1);
   view.rerender(<Button onClick={click}>Speichern</Button>);
   expect(view.container.querySelector("canvas")).toBeNull();
@@ -338,4 +339,11 @@ it("shares modal naming, description, busy cancel protection and focus restorati
   view.unmount();
   expect(document.activeElement).toBe(trigger);
   trigger.remove();
+});
+
+it("keeps server-rendered buttons disabled until client handlers are hydrated", () => {
+  const html = renderToString(<Button type="submit">Sicher absenden</Button>);
+  expect(html).toContain('disabled=""');
+  render(<Button type="submit">Sicher absenden</Button>);
+  expect(screen.getByRole("button", { name: "Sicher absenden" })).toBeEnabled();
 });

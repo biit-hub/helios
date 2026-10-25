@@ -2,6 +2,7 @@
 import {
   createElement,
   useImperativeHandle,
+  useSyncExternalStore,
   useState,
   useEffect,
   useId,
@@ -19,6 +20,9 @@ export type ButtonProps = ComponentProps<"button"> & {
   loadingText?: string;
   variant?: "primary" | "secondary" | "danger" | "icon";
 };
+const subscribeHydration = () => () => {};
+const clientHydrated = () => true;
+const serverHydrated = () => false;
 export function Button({
   loading = false,
   loadingText = "Wird verarbeitet …",
@@ -28,6 +32,11 @@ export function Button({
   children,
   ...props
 }: Readonly<ButtonProps>) {
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    clientHydrated,
+    serverHydrated,
+  );
   const actualVariant =
     variant ??
     (className?.split(/\s+/).includes("task-delete") ? "danger" : undefined);
@@ -41,7 +50,7 @@ export function Button({
           variant === "secondary" && "secondary",
           className,
         )}
-        disabled={disabled || loading}
+        disabled={!hydrated || disabled || loading}
         aria-busy={loading}
       >
         {loading && (
@@ -54,7 +63,7 @@ export function Button({
         </span>
       </button>
       {loading && (
-        <span className="ui-sr-only" role="status" aria-live="polite">
+        <span className="ui-sr-only" aria-live="polite">
           {loadingText}
         </span>
       )}

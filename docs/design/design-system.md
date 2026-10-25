@@ -118,7 +118,7 @@ import { Button } from "@helios/ui";
 
 Icon-Buttons verwenden `variant="icon"`, ein vorhandenes dekoratives `Icon` und ein eindeutiges `aria-label`. Neue Buttons in Formularen erhalten einen bewussten `type`.
 
-Ein Ladebutton zeigt die originale 24-Pixel-Sphäre, konkreten lesbaren Text, `disabled` und `aria-busy`. Die höfliche Live-Region liegt ausserhalb des busy-Bereichs. Der hellere Ladehintergrund behält volle Deckkraft und kontrastreiche Schrift. Gewöhnliches `disabled` zeichnet keinen Canvas.
+Ein Ladebutton zeigt die originale 24-Pixel-Sphäre, konkreten lesbaren Text, `disabled` und `aria-busy`. Die höfliche Live-Region liegt ausserhalb des busy-Bereichs und verwendet aria-live ohne eine zusätzliche fachliche Statusrolle. Servergerenderte Buttons bleiben bis zur React-Hydration deaktiviert, damit ein früher Klick keine ungebundene native Formularübermittlung auslöst. Der hellere Ladehintergrund behält volle Deckkraft und kontrastreiche Schrift. Gewöhnliches `disabled` zeichnet keinen Canvas.
 
 Besteht bereits ein gemeinsames Busy-Flag für mehrere Aktionen, verwendet `ActionButton busy={busy}` denselben Button und merkt nur die aktivierte Schaltfläche beziehungsweise den nativen Form-Submitter. Andere wegen derselben Anfrage gesperrte Aktionen zeigen keine Animation. Der Adapter sendet keine Requests, erfindet keinen Erfolg und erzeugt keine Idempotenzschlüssel. HTTP-/Journalzustände bleiben vollständig beim vorhandenen Fachworkflow.
 

@@ -14,7 +14,7 @@ Keine Datenbankmigration, neue Abhängigkeit, Workeränderung oder externe Schre
 
 ## Prüfungen und Abnahmenachweise
 
-- Unit/UI: 363 Tests in 34 Dateien erfolgreich, einschliesslich Canvas-Geometrie, RAF-/Visibility-/Reduced-Motion-Lifecycle, normalem Disabled, gezieltem ActionButton und Erfolg/Fehler/Unknown/Partial. Die beschriftete Canvas-Statusrolle ist zusätzlich zur dekorativen Verwendung innerhalb eines Ladebuttons verfügbar.
+- Unit/UI: 364 Tests in 34 Dateien erfolgreich, einschliesslich Canvas-Geometrie, RAF-/Visibility-/Reduced-Motion-Lifecycle, normalem Disabled, gezieltem ActionButton, Hydrationsschutz und Erfolg/Fehler/Unknown/Partial. Die beschriftete Canvas-Statusrolle ist zusätzlich zur dekorativen Verwendung innerhalb eines Ladebuttons verfügbar.
 - Vollständige PostgreSQL-Regression: 302 Tests in 16 Dateien erfolgreich, einschliesslich fünf neuer Fälle für vollständigen Originalprompt, Gross-/Kleinschreibung, wörtliche Sonderzeichen, kombinierte Filter/Datumssortierung, 20er-Pagination und Owner-/Session-Grenzen. Ausschliesslich getrennte synthetische `_test`-Datenbanken.
 - Lint, Typprüfung, Web-/Worker-Produktionsbuild, Secretprüfung und Produktionsabhängigkeitsprüfung erfolgreich; keine bekannte Abhängigkeitsschwachstelle gemeldet.
 - Die Browserregression umfasst alle bisherigen Fachfälle und den zusätzlichen Desktop-/Mobilablauf für Anlage, Loader-Geometrie im Button, Kontrast, reduzierte Bewegung, Switch-Abmessungen/Tastatur, Suche/Filter, Kopieren, Nachbearbeitung, Ergebnisversionen, bewussten Abschluss und weiterhin lesbare Details. Bestehende Assertions und Schutzfälle bleiben erhalten.
