@@ -1,6 +1,7 @@
 "use client";
+import { Button, Icon } from "@helios/ui";
 import Link from "next/link";
-import { Icon } from "@helios/ui";
+
 type View =
   | "focus"
   | "morning"
@@ -71,7 +72,7 @@ export function SettingsChapters({
         ["delegation", "KI-Delegation"],
         ["security", "Sicherheit"],
       ].map(([id, label]) => (
-        <button
+        <Button
           key={id}
           type="button"
           aria-current={chapter === id ? "page" : undefined}
@@ -79,7 +80,7 @@ export function SettingsChapters({
           onClick={() => select(id!)}
         >
           {label}
-        </button>
+        </Button>
       ))}
     </nav>
   );

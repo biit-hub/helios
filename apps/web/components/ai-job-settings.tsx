@@ -1,11 +1,21 @@
 "use client";
+import {
+  ActionButton,
+  Switch,
+  Card,
+  Button,
+  FormField,
+  Select,
+  Icon,
+} from "@helios/ui";
+
 import { useCallback, useEffect, useState } from "react";
 import {
   aiJobOutputNames,
   type AiJobSettings,
   type AiJobSetting,
 } from "@helios/contracts";
-import { Icon } from "@helios/ui";
+
 import { jobRequest } from "./ai-job-client";
 import { useNavigationLock, useNavigationLocked } from "./navigation-lock";
 import { InfoTip } from "./ui-help";
@@ -30,10 +40,12 @@ export function AiJobSettingsPanel() {
     return () => clearTimeout(timer);
   }, [load]);
   return (
-    <section className="card" id="ai-delegation">
+    <Card as="section" className="card" id="ai-delegation">
       <div className="panel-heading">
         <h2>KI-Delegation</h2>
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Stand wird aktualisiert …"
           type="button"
           className="secondary"
           disabled={busy || locked}
@@ -41,7 +53,7 @@ export function AiJobSettingsPanel() {
         >
           <Icon name="refresh" />
           Modelle aktualisieren
-        </button>
+        </ActionButton>
       </div>
       <p className="help">
         Pro Ausgabe ein installiertes lokales Modell.{" "}
@@ -71,7 +83,7 @@ export function AiJobSettingsPanel() {
           saved={setData}
         />
       ))}
-    </section>
+    </Card>
   );
 }
 function Setting({
@@ -126,21 +138,18 @@ function Setting({
     >
       <h3>{aiJobOutputNames[value.output]}</h3>
       <div className="ai-job-fields">
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={enabled}
-            disabled={busy}
-            onChange={(e) => {
-              edited();
-              setEnabled(e.target.checked);
-            }}
-          />
-          <span>Ausgabe aktivieren</span>
-        </label>
-        <label>
+        <Switch
+          label="Ausgabe aktivieren"
+          checked={enabled}
+          disabled={busy}
+          onChange={(e) => {
+            edited();
+            setEnabled(e.target.checked);
+          }}
+        />
+        <FormField>
           <span>Lokales Modell für {aiJobOutputNames[value.output]}</span>
-          <select
+          <Select
             value={model}
             disabled={busy}
             onChange={(e) => {
@@ -164,8 +173,8 @@ function Setting({
                 {!m.available ? " · nicht geeignet/verfügbar" : ""}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
       </div>
       {value.enabled && !value.available && (
         <output>
@@ -180,7 +189,9 @@ function Setting({
         </p>
       )}
       <div className="actions">
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Einstellungen werden gespeichert …"
           type="submit"
           disabled={
             busy ||
@@ -191,9 +202,9 @@ function Setting({
           {!dirty && value.enabled && !value.available && selected
             ? "Modellversion bewusst bestätigen"
             : "Einstellungen speichern"}
-        </button>
+        </ActionButton>
         {dirty && (
-          <button
+          <Button
             type="button"
             className="secondary"
             disabled={busy}
@@ -204,7 +215,7 @@ function Setting({
             }}
           >
             Änderungen verwerfen
-          </button>
+          </Button>
         )}
       </div>
     </form>

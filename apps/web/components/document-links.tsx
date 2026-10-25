@@ -1,4 +1,5 @@
 "use client";
+import { Button, FormField, Input } from "@helios/ui";
 import { TaskAccordion } from "./task-accordion";
 import { displayUrl } from "./task-markdown";
 import type { DocumentModel } from "./use-task-document";
@@ -25,7 +26,7 @@ export function DocumentLinks({ model }: Readonly<{ model: DocumentModel }>) {
             <a href={l.url} target="_blank" rel="noopener noreferrer">
               {l.label}
             </a>{" "}
-            <button
+            <Button
               type="button"
               disabled={pending || detail.inspection.task.checked}
               onClick={() => {
@@ -36,31 +37,31 @@ export function DocumentLinks({ model }: Readonly<{ model: DocumentModel }>) {
               }}
             >
               Link bearbeiten
-            </button>
+            </Button>
           </p>
         ))}
         <fieldset disabled={pending || detail.inspection.task.checked}>
-          <label>
+          <FormField>
             <span>Linkbezeichnung</span>
-            <input
+            <Input
               value={linkLabel}
               onChange={(e) => {
                 setLinkLabel(e.target.value);
                 setPreview(null);
               }}
             />
-          </label>
-          <label>
+          </FormField>
+          <FormField>
             <span>Dokumentenadresse (HTTP, HTTPS oder Obsidian)</span>
-            <input
+            <Input
               value={linkUrl}
               onChange={(e) => {
                 setLinkUrl(e.target.value);
                 setPreview(null);
               }}
             />
-          </label>
-          <button
+          </FormField>
+          <Button
             type="button"
             disabled={!linkLabel.trim() || !displayUrl(linkUrl)}
             onClick={() =>
@@ -77,9 +78,9 @@ export function DocumentLinks({ model }: Readonly<{ model: DocumentModel }>) {
             }
           >
             {linkTarget ? "Linkänderung prüfen" : "Neuen Link prüfen"}
-          </button>
+          </Button>
           {linkTarget && (
-            <button
+            <Button
               type="button"
               onClick={() => {
                 setLinkTarget("");
@@ -89,7 +90,7 @@ export function DocumentLinks({ model }: Readonly<{ model: DocumentModel }>) {
               }}
             >
               Neuen Link erfassen
-            </button>
+            </Button>
           )}
         </fieldset>
       </TaskAccordion>

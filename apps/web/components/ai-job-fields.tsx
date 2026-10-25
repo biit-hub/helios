@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, FormField, Textarea, Select } from "@helios/ui";
+
 import Link from "next/link";
 import {
   aiJobOutputs,
@@ -28,9 +30,9 @@ export function AiJobFields({
           Ursprung: <strong>{c.source.task.content}</strong>
         </p>
       )}
-      <label>
+      <FormField>
         <span>Auftrag</span>
-        <textarea
+        <Textarea
           value={c.prompt}
           maxLength={12000}
           rows={7}
@@ -38,11 +40,11 @@ export function AiJobFields({
           disabled={c.locked}
           onChange={(e) => c.setPrompt(e.target.value)}
         />
-      </label>
+      </FormField>
       <div className="ai-job-fields">
-        <label>
+        <FormField>
           <span>Ausgabe</span>
-          <select
+          <Select
             value={c.output}
             disabled={c.locked}
             onChange={(e) =>
@@ -63,12 +65,12 @@ export function AiJobFields({
                   : ""}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
         {c.output === "file" && (
-          <label>
+          <FormField>
             <span>Dateiformat</span>
-            <select
+            <Select
               value={c.format}
               disabled={c.locked}
               onChange={(e) => c.setFormat(e.target.value as typeof c.format)}
@@ -78,8 +80,8 @@ export function AiJobFields({
                   {aiJobFormatNames[f]}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </FormField>
         )}
       </div>
       <p className="help">
@@ -101,9 +103,14 @@ export function AiJobFields({
       {c.unknown ? (
         <UnknownActions capture={c} />
       ) : (
-        <button type="submit" disabled={!c.canSubmit}>
+        <ActionButton
+          busy={c.busy}
+          loadingText="KI-Auftrag wird erstellt …"
+          type="submit"
+          disabled={!c.canSubmit}
+        >
           Auftrag erstellen
-        </button>
+        </ActionButton>
       )}
     </form>
   );
@@ -119,21 +126,25 @@ function UnknownActions({
       </output>
       <p className="ai-job-id">Auftrags-ID: {c.id}</p>
       <div className="actions">
-        <button
+        <ActionButton
+          busy={c.busy}
+          loadingText="Vorgang wird verarbeitet …"
           type="button"
           disabled={c.busy}
           onClick={() => void c.reconcile()}
         >
           Auftragsstatus prüfen
-        </button>
-        <button
+        </ActionButton>
+        <ActionButton
+          busy={c.busy}
+          loadingText="Vorgang wird verarbeitet …"
           type="button"
           className="secondary"
           disabled={c.busy}
           onClick={() => void c.submit()}
         >
           Mit derselben ID erneut senden
-        </button>
+        </ActionButton>
       </div>
       <p className="help">
         Die unveränderte Anfrage wird anhand derselben ID abgeglichen. Ein

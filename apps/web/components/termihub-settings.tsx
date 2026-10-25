@@ -1,4 +1,14 @@
 "use client";
+import {
+  ActionButton,
+  Accordion,
+  Card,
+  FormField,
+  Input,
+  Button,
+  Select,
+} from "@helios/ui";
+
 import { useCallback, useEffect, useState } from "react";
 import type { TermiHubSettings } from "@helios/contracts";
 import { routineRequest as api } from "./routine-http";
@@ -103,7 +113,8 @@ export function TermiHubConnection({
   }
   if (!data)
     return (
-      <section
+      <Card
+        as="section"
         id="termihub-settings"
         className="card settings-panel termihub-settings"
         aria-label="TermiHub-Einstellungen"
@@ -114,7 +125,7 @@ export function TermiHubConnection({
         ) : (
           <output>Kalendereinstellungen werden geladen …</output>
         )}
-      </section>
+      </Card>
     );
   const organizationNames = optionNames(data.organizations, "Organisation");
   const i = data,
@@ -140,7 +151,8 @@ export function TermiHubConnection({
     ]).values(),
   ];
   return (
-    <section
+    <Card
+      as="section"
       id="termihub-settings"
       className="card settings-panel termihub-settings"
       aria-label="TermiHub-Einstellungen"
@@ -194,9 +206,9 @@ export function TermiHubConnection({
         >
           <fieldset className="settings-group">
             <legend>1. Verbindung einrichten</legend>
-            <label>
+            <FormField>
               TermiHub-Serveradresse
-              <input
+              <Input
                 name="baseUrl"
                 type="url"
                 placeholder="https://termihub.example.invalid"
@@ -204,10 +216,10 @@ export function TermiHubConnection({
                 maxLength={2048}
                 required
               />
-            </label>
-            <label>
+            </FormField>
+            <FormField>
               Neuer TermiHub-API-Token
-              <input
+              <Input
                 type="password"
                 autoComplete="off"
                 value={token}
@@ -215,10 +227,15 @@ export function TermiHubConnection({
                 maxLength={4096}
                 required
               />
-            </label>
-            <button type="submit" disabled={busy || !i.keyAvailable}>
+            </FormField>
+            <ActionButton
+              busy={busy}
+              loadingText="Einstellungen werden gespeichert …"
+              type="submit"
+              disabled={busy || !i.keyAvailable}
+            >
               TermiHub-Token verschlüsselt speichern
-            </button>
+            </ActionButton>
           </fieldset>
         </form>
         <p className="help">
@@ -230,15 +247,17 @@ export function TermiHubConnection({
         <div className="settings-group">
           <h3>2. Daten lesen und Verbindung prüfen</h3>
           <div className="button-row">
-            <label>
+            <FormField>
               Referenztag für Arbeitsorganisationen
-              <input
+              <Input
                 type="date"
                 value={day}
                 onChange={(e) => setDay(e.target.value)}
               />
-            </label>
-            <button
+            </FormField>
+            <ActionButton
+              busy={busy}
+              loadingText="Verbindung wird geprüft …"
               type="button"
               disabled={
                 busy ||
@@ -251,18 +270,20 @@ export function TermiHubConnection({
               onClick={() => void act("refresh", day ? { day } : {})}
             >
               Verbindung prüfen & Kalender lesen
-            </button>
-            <button
+            </ActionButton>
+            <Button
               type="button"
               className="secondary"
               disabled={busy}
               onClick={() => void reload().catch((e) => setError(e.message))}
             >
               Gespeicherten Stand neu laden
-            </button>
+            </Button>
             {i.hasToken && (
               <>
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Vorgang wird verarbeitet …"
                   type="button"
                   disabled={busy}
                   onClick={() =>
@@ -272,15 +293,17 @@ export function TermiHubConnection({
                   }
                 >
                   {i.enabled ? "TermiHub deaktivieren" : "TermiHub aktivieren"}
-                </button>
-                <button
+                </ActionButton>
+                <ActionButton
+                  busy={busy}
+                  loadingText="Vorgang wird verarbeitet …"
                   type="button"
                   className="secondary"
                   disabled={busy}
                   onClick={() => void act("remove", { revision: i.revision })}
                 >
                   TermiHub-Token entfernen
-                </button>
+                </ActionButton>
               </>
             )}
           </div>
@@ -337,9 +360,12 @@ export function TermiHubConnection({
             {i.contexts
               .filter((c) => c.active)
               .map((c) => (
-                <label key={c.id} hidden={!!contextId && c.id !== contextId}>
+                <FormField
+                  key={c.id}
+                  hidden={!!contextId && c.id !== contextId}
+                >
                   {c.name} · Arbeitsorganisation
-                  <select
+                  <Select
                     name={"organization:" + c.id}
                     defaultValue={c.organizationId ?? ""}
                   >
@@ -360,14 +386,14 @@ export function TermiHubConnection({
                         {organizationNames.get(o.id)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   {!c.instanceMatches && c.organizationId && (
                     <span className="help">
                       Diese Referenz ist für die aktuelle Verbindung
                       unbestätigt.
                     </span>
                   )}
-                </label>
+                </FormField>
               ))}
           </fieldset>
           <fieldset className="settings-group">
@@ -384,11 +410,11 @@ export function TermiHubConnection({
             {calendars.map((c) => {
               const m = i.mappings.find((v) => v.calendarId === c.id);
               return (
-                <label key={c.id}>
+                <FormField key={c.id}>
                   {c.name} · {c.type}
                   {!c.available || !c.enabled ? " · nicht verfügbar" : ""}
                   {m && !m.verified ? " · unbestätigt" : ""}
-                  <select
+                  <Select
                     name={"calendar:" + c.id}
                     defaultValue={
                       m
@@ -408,14 +434,19 @@ export function TermiHubConnection({
                           {v.name}
                         </option>
                       ))}
-                  </select>
-                </label>
+                  </Select>
+                </FormField>
               );
             })}
           </fieldset>
-          <button type="submit" disabled={busy || i.syncing}>
+          <ActionButton
+            busy={busy}
+            loadingText="Einstellungen werden gespeichert …"
+            type="submit"
+            disabled={busy || i.syncing}
+          >
             TermiHub-Zuordnungen speichern
-          </button>
+          </ActionButton>
         </form>
       )}
       {error && (
@@ -423,8 +454,10 @@ export function TermiHubConnection({
           {error}
         </p>
       )}
-      <details className="technical-details">
-        <summary>Technische Quellenreferenzen</summary>
+      <Accordion
+        className="technical-details"
+        title="Technische Quellenreferenzen"
+      >
         <ul>
           {i.organizations.map((o) => (
             <li key={o.id}>
@@ -448,8 +481,8 @@ export function TermiHubConnection({
             </li>
           ))}
         </ul>
-      </details>
+      </Accordion>
       {notice && <output>{notice}</output>}
-    </section>
+    </Card>
   );
 }

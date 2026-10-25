@@ -484,15 +484,7 @@
   font-size: 12px;
   margin: 10px 0;
 }
-.ux-workspace .task-dialog details {
-  margin-block: 12px;
-}
-.ux-workspace .task-dialog details > summary {
-  cursor: pointer;
-  padding: 9px 0;
-  font-size: 14px;
-  font-weight: 700;
-}
+
 .ux-dialog {
   width: min(680px, calc(100vw - 32px));
   max-height: calc(100dvh - 40px);

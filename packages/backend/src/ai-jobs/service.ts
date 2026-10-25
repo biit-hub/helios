@@ -282,10 +282,18 @@ export function createAiJobService(
           page: z.coerce.number().int().min(1).max(100000).default(1),
           status: z.enum(aiJobStatuses).optional(),
           oldest: z.boolean().default(false),
+          search: z.string().trim().max(200).default(""),
         })
         .parse(raw);
       return identity.withActive(headers, {}, (db, userId) =>
-        listJobs(db, userId, input.page, input.status, input.oldest),
+        listJobs(
+          db,
+          userId,
+          input.page,
+          input.status,
+          input.oldest,
+          input.search,
+        ),
       );
     },
     async handle(action: string, headers: Headers, raw: unknown) {

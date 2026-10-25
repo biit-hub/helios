@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Button } from "@helios/ui";
+
 import { useRef } from "react";
 import { UiDialog } from "./ui-help";
 import { TaskAccordion } from "./task-accordion";
@@ -107,41 +109,50 @@ export function DocumentPreview({
           {model.error && <p role="alert">{model.error}</p>}
           {evidence}
           {model.requestUncertain && (
-            <button
+            <ActionButton
+              busy={model.busy}
+              loadingText="Vorgang wird verarbeitet …"
               type="button"
               disabled={model.busy}
               onClick={() => void checkJournal()}
             >
               Dokumentauftrag im Journal prüfen
-            </button>
+            </ActionButton>
           )}
           <div className="task-action-buttons">
-            <button
+            <Button
               type="button"
               className="secondary"
               disabled={model.busy}
               onClick={() => model.setPreview(null)}
             >
               Zurück zur Aufgabe
-            </button>
-            <button
+            </Button>
+            <ActionButton
+              busy={
+                model.busy ||
+                ["queued", "running"].includes(operation?.status ?? "")
+              }
+              loadingText="Änderungen werden gespeichert …"
               type="button"
               disabled={pending}
               onClick={() => void confirm()}
             >
               Änderung bewusst bestätigen
-            </button>
+            </ActionButton>
           </div>
         </UiDialog>
       )}
       {!preview && model.requestUncertain && (
-        <button
+        <ActionButton
+          busy={model.busy}
+          loadingText="Vorgang wird verarbeitet …"
           type="button"
           disabled={model.busy}
           onClick={() => void checkJournal()}
         >
           Dokumentauftrag im Journal prüfen
-        </button>
+        </ActionButton>
       )}
       {!preview && evidence}
     </>

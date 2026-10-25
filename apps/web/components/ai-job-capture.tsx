@@ -1,7 +1,8 @@
 "use client";
+import { Button, Icon } from "@helios/ui";
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Icon } from "@helios/ui";
+
 import type { AiJobDetail } from "@helios/contracts";
 import { UiDialog } from "./ui-help";
 import { useNavigationLock } from "./navigation-lock";
@@ -14,7 +15,7 @@ export function AiJobCapture({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <Button
         type="button"
         className={origin ? "secondary" : undefined}
         disabled={disabled}
@@ -22,7 +23,7 @@ export function AiJobCapture({
       >
         <Icon name="sparkles" />
         {origin ? "An KI delegieren" : "KI-Auftrag starten"}
-      </button>
+      </Button>
       {open && <CaptureForm origin={origin} close={() => setOpen(false)} />}
     </>
   );
@@ -51,12 +52,12 @@ function CaptureForm({
       <div>
         <p>Ungespeicherten KI-Auftrag verwerfen?</p>
         <div className="actions">
-          <button type="button" onClick={() => setDiscard(false)}>
+          <Button type="button" onClick={() => setDiscard(false)}>
             Weiterbearbeiten
-          </button>
-          <button type="button" className="secondary" onClick={close}>
+          </Button>
+          <Button type="button" className="secondary" onClick={close}>
             Eingaben verwerfen
-          </button>
+          </Button>
         </div>
       </div>
     );

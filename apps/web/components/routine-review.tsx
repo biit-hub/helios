@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Card, Button, FormField, Checkbox } from "@helios/ui";
+
 import { useRoutineResource } from "./routine-resource";
 import { useState } from "react";
 import type {
@@ -160,7 +162,7 @@ export function RoutineReview({
     }
   }
   return (
-    <section className="card routine-step">
+    <Card as="section" className="card routine-step">
       <h2>Ein ruhiger Rückblick · {context.name}</h2>
       {state.reviewPlan ? (
         <p>
@@ -177,18 +179,20 @@ export function RoutineReview({
       {(error || resource.error) && (
         <p role="alert">{error || resource.error}</p>
       )}
-      <button
+      <ActionButton
+        busy={busy}
+        loadingText="Stand wird aktualisiert …"
         className="secondary"
         disabled={busy}
         onClick={() => void load().catch(() => {})}
       >
         Reviewquelle aktualisieren
-      </button>
+      </ActionButton>
       {!loaded && !error && <p role="status">Review wird gelesen …</p>}
       {items.map((item) => (
         <article key={item.entryKey} className="routine-review-card">
-          <label className="check-label">
-            <input
+          <FormField className="check-label">
+            <Checkbox
               aria-label={
                 "Für Sammelrückmeldung auswählen: " + item.entry.source.content
               }
@@ -205,7 +209,7 @@ export function RoutineReview({
               onChange={(e) => choose(item, e.target.checked)}
             />
             <strong>{item.entry.source.content}</strong>
-          </label>
+          </FormField>
           <p>
             {item.feedback?.status === "completed"
               ? "Erledigt – nachgewiesen"
@@ -240,27 +244,31 @@ export function RoutineReview({
             )}
           {item.native === "active" && (
             <div className="routine-actions">
-              <button
+              <Button
                 className="secondary"
                 disabled={busy}
                 onClick={() => setEditing(item)}
               >
                 Fortschritt dokumentieren
-              </button>
-              <button
+              </Button>
+              <ActionButton
+                busy={busy}
+                loadingText="Änderungen werden gespeichert …"
                 className="secondary"
                 disabled={busy}
                 onClick={() => void report("partial", [item.entryKey])}
               >
                 Teilweise erledigt bestätigen
-              </button>
+              </ActionButton>
             </div>
           )}
           {item.feedback?.operationId &&
             ["failed", "partial", "unknown"].includes(
               item.feedback.operationStatus ?? "",
             ) && (
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Abschluss wird nachgewiesen …"
                 disabled={busy}
                 onClick={() => {
                   setBusy(true);
@@ -274,7 +282,7 @@ export function RoutineReview({
                 }}
               >
                 Diesen Abschluss prüfen und bewusst fortsetzen
-              </button>
+              </ActionButton>
             )}
         </article>
       ))}
@@ -282,50 +290,59 @@ export function RoutineReview({
         <p role="alert">
           Die Reviewquelle oder Rückmeldungen wurden zwischenzeitlich geändert.
           Deine Auswahl bleibt sichtbar.{" "}
-          <button
+          <Button
             onClick={() => {
               setChosen([]);
               setSelectionBase(null);
             }}
           >
             Auswahl zurücksetzen und aktuellen Stand prüfen
-          </button>
+          </Button>
         </p>
       )}
       {chosen.length > 0 && (
         <div className="routine-bulk">
-          <button disabled={busy} onClick={() => void report("not_started")}>
+          <ActionButton
+            busy={busy}
+            loadingText="Änderungen werden gespeichert …"
+            disabled={busy}
+            onClick={() => void report("not_started")}
+          >
             Ausgewählte als nicht begonnen bestätigen
-          </button>
-          <label className="check-label">
-            <input
+          </ActionButton>
+          <FormField className="check-label">
+            <Checkbox
               type="checkbox"
               checked={confirm}
               onChange={(e) => setConfirm(e.target.checked)}
             />
             Ausgewählte Aufgaben bewusst abschliessen
-          </label>
-          <label className="check-label">
-            <input
+          </FormField>
+          <FormField className="check-label">
+            <Checkbox
               type="checkbox"
               checked={hierarchy}
               onChange={(e) => setHierarchy(e.target.checked)}
             />
             Erforderliche Auswirkungen auf die Hierarchie ausdrücklich
             bestätigen
-          </label>
-          <button
+          </FormField>
+          <ActionButton
+            busy={busy}
+            loadingText="Vorgang wird verarbeitet …"
             disabled={busy || !confirm || conflict}
             onClick={() => void complete()}
           >
             Abschlüsse einzeln nachweisen
-          </button>
+          </ActionButton>
         </div>
       )}
       {routine.pendingReviews
         ?.filter((d) => d.command.contextId === context.id)
         .map((d) => (
-          <button
+          <ActionButton
+            busy={busy}
+            loadingText="Änderungen werden gespeichert …"
             key={d.key}
             disabled={busy}
             onClick={() => {
@@ -338,7 +355,7 @@ export function RoutineReview({
             }}
           >
             Bestätigte Sammelentscheidung fortsetzen
-          </button>
+          </ActionButton>
         ))}
       {editing && (
         <TaskEditor
@@ -356,6 +373,6 @@ export function RoutineReview({
           }}
         />
       )}
-    </section>
+    </Card>
   );
 }

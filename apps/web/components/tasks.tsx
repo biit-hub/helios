@@ -1,4 +1,18 @@
 "use client";
+import {
+  ActionButton,
+  Switch,
+  Accordion,
+  FormField,
+  Input,
+  Select,
+  Button,
+  DialogSurface,
+  Textarea,
+  Checkbox,
+  Icon,
+} from "@helios/ui";
+
 import { AiJobCapture } from "./ai-job-capture";
 import { documentDraftChanges } from "./document-save";
 import { TaskSaveDialog } from "./task-save-dialog";
@@ -24,7 +38,7 @@ import { type DocumentUiState } from "./task-document";
 import { TaskOperationEvidence } from "./task-operation-evidence";
 import { nativeTaskOrder } from "./task-list-order";
 import { UiDialog, InfoTip } from "./ui-help";
-import { Icon } from "@helios/ui";
+
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   taskSavePreview,
@@ -278,26 +292,28 @@ export function TaskManager({
   return (
     <TaskPlanProvider context={context}>
       <div className="task-filters">
-        <label>
+        <FormField>
           Aufgaben suchen
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </label>
-        <label>
+        </FormField>
+        <FormField>
           Status
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="all">Alle</option>
             {["Offen", "In Arbeit", "Wartet", "Abgeschlossen"].map((s) => (
               <option key={s}>{s}</option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
       </div>
-      <details className="ux-filter-options">
-        <summary>Weitere Filter & Sortierung</summary>
+      <Accordion
+        className="ux-filter-options"
+        title="Weitere Filter & Sortierung"
+      >
         <InfoTip label="Sortierung">
           Die native Reihenfolge berücksichtigt gelesene Geschwisterpositionen;
           die Abschnittsfolge bleibt wie geladen. Fehlen Positionsdaten, bleibt
@@ -305,9 +321,9 @@ export function TaskManager({
           Ansicht. Todoist und bestätigte Tagespläne bleiben unverändert.
         </InfoTip>
         <div className="task-filters">
-          <label>
+          <FormField>
             <span>Priorität</span>
-            <select
+            <Select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
             >
@@ -317,11 +333,11 @@ export function TaskManager({
                   P{5 - p}
                 </option>
               ))}
-            </select>
-          </label>
-          <label>
+            </Select>
+          </FormField>
+          <FormField>
             <span>Label</span>
-            <select
+            <Select
               value={labelFilter}
               onChange={(e) => setLabelFilter(e.target.value)}
             >
@@ -331,42 +347,42 @@ export function TaskManager({
                 .map((l) => (
                   <option key={l}>{l}</option>
                 ))}
-            </select>
-          </label>
-          <label>
+            </Select>
+          </FormField>
+          <FormField>
             <span>Planungsdatum</span>
-            <select
+            <Select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             >
               <option value="all">Alle</option>
               <option value="set">Mit Planungsdatum</option>
               <option value="unset">Ohne Planungsdatum</option>
-            </select>
-          </label>
-          <label>
+            </Select>
+          </FormField>
+          <FormField>
             <span>Deadline</span>
-            <select
+            <Select
               value={deadlineFilter}
               onChange={(e) => setDeadlineFilter(e.target.value)}
             >
               <option value="all">Alle</option>
               <option value="set">Mit Deadline</option>
               <option value="unset">Ohne Deadline</option>
-            </select>
-          </label>
-          <label>
+            </Select>
+          </FormField>
+          <FormField>
             <span>Sortierung</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+            <Select value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="native">Native Todoist-Reihenfolge</option>
               <option value="priority">Priorität</option>
               <option value="title">Titel</option>
               <option value="due">Planungsdatum</option>
               <option value="deadline">Deadline</option>
-            </select>
-          </label>
+            </Select>
+          </FormField>
         </div>
-        <button
+        <Button
           type="button"
           className="secondary"
           onClick={() => {
@@ -380,8 +396,8 @@ export function TaskManager({
           }}
         >
           Filter zurücksetzen
-        </button>
-      </details>
+        </Button>
+      </Accordion>
       {!visible.length && tasks.length > 0 && (
         <p>Keine Aufgaben für diesen Filter.</p>
       )}
@@ -409,7 +425,7 @@ export function TaskManager({
                 origin={{ contextId: context.id, taskId: t.data.id }}
               />
               {(["edit", "close", "delete"] as const).map((kind) => (
-                <button
+                <Button
                   type="button"
                   key={kind}
                   className={
@@ -423,7 +439,7 @@ export function TaskManager({
                 >
                   <Icon name={cardActionIcons[kind]} />
                   {kind === "edit" ? "Bearbeiten" : actionTitles[kind]}
-                </button>
+                </Button>
               ))}
             </div>
             <AddToPlan
@@ -440,22 +456,22 @@ export function TaskManager({
           close={() => setProgressPicking(false)}
         >
           <p>Für welche Aufgabe möchtest du Fortschritt notieren?</p>
-          <label className="progress-task-search">
+          <FormField className="progress-task-search">
             Aufgabe suchen
-            <input
+            <Input
               type="search"
               value={progressSearch}
               onChange={(e) => setProgressSearch(e.target.value)}
               autoComplete="off"
             />
-          </label>
+          </FormField>
           <ul
             className="progress-task-list"
             aria-label="Aufgaben für Fortschritt"
           >
             {progressTasks.map((t) => (
               <li key={t.data.id}>
-                <button
+                <Button
                   type="button"
                   key={t.data.id}
                   onClick={() => {
@@ -467,7 +483,7 @@ export function TaskManager({
                 >
                   <strong>{t.data.content}</strong>
                   <span>{context.name}</span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -505,14 +521,14 @@ export function TaskCapture({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <Button
         type="button"
         className={sidebar ? "sidebar-capture" : "capture-button"}
         disabled={disabled}
         onClick={() => setOpen(true)}
       >
         <Icon name="plus" /> Aufgabe erfassen
-      </button>
+      </Button>
       {open && <TaskEditor snapshot={snapshot} close={() => setOpen(false)} />}
     </>
   );
@@ -554,19 +570,23 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
   );
   return (
     (relevant.length > 0 || readError) && (
-      <details className="card operation-list" open={contextId === undefined}>
-        <summary>
-          Aufgabenänderungen und Einzelergebnisse
-          {readError ? " · Abruf fehlgeschlagen" : ""}
-        </summary>
+      <Accordion
+        className="card operation-list"
+        open={contextId === undefined}
+        title={
+          <>
+            Aufgabenänderungen und Einzelergebnisse
+            {readError ? " · Abruf fehlgeschlagen" : ""}
+          </>
+        }
+      >
         {readError && <p role="alert">{readError}</p>}
         {operationError && <p role="alert">{operationError}</p>}
         {relevant.map((r) => (
           <div key={r.id} id={"operation-" + r.id}>
             <h3>Aufgabenänderung</h3>
             {r.input && (
-              <details>
-                <summary>Bestätigte Originaleingaben</summary>
+              <Accordion title="Bestätigte Originaleingaben">
                 <p>{r.input.fields?.content}</p>
                 <pre>
                   {r.input.document
@@ -584,7 +604,7 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
                     ? "Deadline: " + (r.input.fields.deadline ?? "entfernen")
                     : ""}
                 </p>
-              </details>
+              </Accordion>
             )}
             <p>
               {r.status === "succeeded"
@@ -615,7 +635,7 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
             )}
             <TaskOperationEvidence operation={r} />
             {["unknown", "failed", "partial"].includes(r.status) && (
-              <button
+              <Button
                 type="button"
                 onClick={() =>
                   void api("/api/tasks/resume", { operationId: r.id }).catch(
@@ -624,11 +644,11 @@ export function TaskOperations({ contextId }: { contextId?: string }) {
                 }
               >
                 Stand prüfen und bewusst fortsetzen
-              </button>
+              </Button>
             )}
           </div>
         ))}
-      </details>
+      </Accordion>
     )
   );
 }
@@ -1239,7 +1259,7 @@ export function TaskEditor({
   }
   return (
     <div className="task-dialog-backdrop">
-      <section
+      <DialogSurface
         className="task-dialog card task-editor"
         ref={dialogRoot}
         tabIndex={-1}
@@ -1290,32 +1310,32 @@ export function TaskEditor({
             disabled={pending}
             aria-label="Bearbeitungsmodus"
           >
-            <button
+            <Button
               type="button"
               aria-pressed={aiMode === "form"}
               onClick={() => setAiMode("form")}
             >
               Formular
-            </button>
+            </Button>
             {!taskId ? (
-              <button
+              <Button
                 type="button"
                 aria-pressed={aiMode === "capture"}
                 onClick={() => setAiMode("capture")}
               >
                 KI-Modus
-              </button>
+              </Button>
             ) : (
               <>
-                <button type="button" onClick={() => setAiMode("progress")}>
+                <Button type="button" onClick={() => setAiMode("progress")}>
                   Fortschritt dokumentieren
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => setAiMode("clarification")}
                 >
                   Aufgabenklärung
-                </button>
+                </Button>
               </>
             )}
           </fieldset>
@@ -1378,7 +1398,9 @@ export function TaskEditor({
             <TaskOperationEvidence operation={operation} />
           )}
           {requestUncertain && !savePreview && (
-            <button
+            <ActionButton
+              busy={busy}
+              loadingText="Vorgang wird verarbeitet …"
               type="button"
               className="secondary"
               disabled={busy}
@@ -1386,11 +1408,11 @@ export function TaskEditor({
             >
               <Icon name="refresh" />
               Schreibauftrag im Journal prüfen
-            </button>
+            </ActionButton>
           )}
           {operation &&
             ["unknown", "failed", "partial"].includes(operation.status) && (
-              <button
+              <Button
                 type="button"
                 disabled={busy}
                 onClick={() => {
@@ -1404,7 +1426,7 @@ export function TaskEditor({
                 }}
               >
                 Originale Änderung prüfen und bewusst fortsetzen
-              </button>
+              </Button>
             )}
           <fieldset
             hidden={aiMode !== "form"}
@@ -1417,26 +1439,26 @@ export function TaskEditor({
                 void requestSave();
               }}
             >
-              <label>
+              <FormField>
                 Titel
-                <input
+                <Input
                   required
                   maxLength={500}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
-              </label>
-              <label>
+              </FormField>
+              <FormField>
                 Beschreibung
-                <textarea
+                <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
-              </label>
+              </FormField>
               <div className="task-fields">
-                <label>
+                <FormField>
                   <span>Priorität</span>
-                  <select
+                  <Select
                     value={priority}
                     onChange={(e) => setPriority(Number(e.target.value))}
                   >
@@ -1445,8 +1467,8 @@ export function TaskEditor({
                         P{5 - v}
                       </option>
                     ))}
-                  </select>
-                </label>
+                  </Select>
+                </FormField>
                 <LabelPicker
                   value={labels}
                   onChange={(next) => {
@@ -1463,81 +1485,76 @@ export function TaskEditor({
               )}
               <section className="task-planning-fields" aria-label="Planung">
                 <div className="task-fields">
-                  <label>
+                  <FormField>
                     Geplantes Datum
-                    <input
+                    <Input
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                     />
-                  </label>
-                  <label>
+                  </FormField>
+                  <FormField>
                     Geplante Uhrzeit ({snapshot.timezone ?? "Europe/Zurich"})
-                    <input
+                    <Input
                       type="time"
                       disabled={!date}
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
                     />
-                  </label>
+                  </FormField>
                   {taskId && (
-                    <label>
+                    <FormField>
                       Neue Wiederholung (vollständiger Todoist-Text, Englisch)
-                      <input
+                      <Input
                         value={recurring}
                         placeholder="every week starting 2026-11-01"
                         onChange={(e) => setRecurring(e.target.value)}
                       />
-                    </label>
+                    </FormField>
                   )}
                   {inspection?.task.due?.is_recurring && (
-                    <label className="check-label">
-                      <input
+                    <FormField className="check-label">
+                      <Checkbox
                         type="checkbox"
                         checked={removeRecurrence}
                         onChange={(e) => setRemoveRecurrence(e.target.checked)}
                       />
                       Wiederholung entfernen: geändertes oder geleertes
                       Planungsdatum ausdrücklich bestätigen
-                    </label>
+                    </FormField>
                   )}
-                  <label>
+                  <FormField>
                     Echte Deadline
-                    <input
+                    <Input
                       type="date"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
                     />
-                  </label>
-                  <label>
+                  </FormField>
+                  <FormField>
                     Dauer in Minuten
-                    <input
+                    <Input
                       type="number"
                       min={1}
                       max={14400}
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                     />
-                  </label>
+                  </FormField>
                 </div>
               </section>
               {selectedContext?.kind === "private" && (
-                <label className="task-fun-switch">
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={fun}
-                    onChange={(e) => setFun(e.target.checked)}
-                  />
-                  <span className="task-switch-track" aria-hidden="true" />
-                  <span>Freiwillig / Spass</span>
-                </label>
+                <Switch
+                  label="Freiwillig / Spass"
+                  checked={fun}
+                  onChange={(e) => setFun(e.target.checked)}
+                />
               )}
               {!taskId && (
                 <>
-                  <label>
+                  <FormField>
                     Todoist-Projekt
-                    <select
+                    <Select
                       value={project}
                       onChange={(e) => {
                         setProject(e.target.value);
@@ -1556,13 +1573,13 @@ export function TaskEditor({
                             {p.name}
                           </option>
                         ))}
-                    </select>
-                  </label>
+                    </Select>
+                  </FormField>
                   {project && (
                     <>
-                      <label>
+                      <FormField>
                         Abschnitt (optional)
-                        <select
+                        <Select
                           value={section}
                           disabled={!!parent}
                           onChange={(e) => setSection(e.target.value)}
@@ -1573,11 +1590,11 @@ export function TaskEditor({
                               {s.name}
                             </option>
                           ))}
-                        </select>
-                      </label>
-                      <label>
+                        </Select>
+                      </FormField>
+                      <FormField>
                         Oberaufgabe (optional)
-                        <select
+                        <Select
                           value={parent}
                           onChange={(e) => {
                             setParent(e.target.value);
@@ -1590,18 +1607,18 @@ export function TaskEditor({
                               {p.content}
                             </option>
                           ))}
-                        </select>
-                      </label>
+                        </Select>
+                      </FormField>
                     </>
                   )}
-                  <label>
+                  <FormField>
                     Wiederholung (Todoist-Text, Englisch, optional)
-                    <input
+                    <Input
                       placeholder="every week"
                       value={recurring}
                       onChange={(e) => setRecurring(e.target.value)}
                     />
-                  </label>
+                  </FormField>
                 </>
               )}
             </form>
@@ -1632,7 +1649,7 @@ export function TaskEditor({
                 {inspection.task.parent_id && (
                   <p>Oberaufgaben-ID: {inspection.task.parent_id}</p>
                 )}
-                <button
+                <Button
                   type="button"
                   className="secondary"
                   disabled={pending}
@@ -1648,18 +1665,29 @@ export function TaskEditor({
                   }}
                 >
                   Aktuelle Quelle neu laden und Entwurf ersetzen
-                </button>
+                </Button>
               </TaskAccordion>
             )}
           </fieldset>
         </div>
         <footer className="task-editor-toolbar" aria-label="Aufgabenaktionen">
-          <button type="button" className="secondary" onClick={requestClose}>
+          <Button type="button" className="secondary" onClick={requestClose}>
             <Icon name="close" />
             Abbrechen
-          </button>
+          </Button>
           {
-            <button
+            <ActionButton
+              busy={
+                busy ||
+                (!savePreview &&
+                  !actionDialog &&
+                  ["queued", "running"].includes(operation?.status ?? ""))
+              }
+              loadingText={
+                taskId
+                  ? "Änderungen werden gespeichert …"
+                  : "Aufgabe wird erstellt …"
+              }
               type="submit"
               form={formId}
               disabled={
@@ -1668,12 +1696,12 @@ export function TaskEditor({
             >
               <Icon name="save" />
               {taskId ? "Speichern" : "Aufgabe erstellen"}
-            </button>
+            </ActionButton>
           }
           {taskId &&
             (["close", "delete", "move", "wait", "comment"] as const).map(
               (kind) => (
-                <button
+                <Button
                   type="button"
                   key={kind}
                   className={
@@ -1697,7 +1725,7 @@ export function TaskEditor({
                 >
                   <Icon name={actionIcons[kind]} />
                   {actionTitles[kind]}
-                </button>
+                </Button>
               ),
             )}
         </footer>
@@ -1763,7 +1791,7 @@ export function TaskEditor({
             confirm={(ack) => void submit(actionDialog, true, ack)}
           />
         )}
-      </section>
+      </DialogSurface>
     </div>
   );
 }

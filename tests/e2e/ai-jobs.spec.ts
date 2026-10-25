@@ -5,7 +5,7 @@ async function configure(page: Page, output: "Text" | "Datei") {
   const form = page
     .locator(".ai-job-setting")
     .filter({ has: page.getByRole("heading", { name: output, exact: true }) });
-  await form.getByRole("checkbox", { name: "Ausgabe aktivieren" }).check();
+  await form.getByRole("switch", { name: "Ausgabe aktivieren" }).check();
   await form
     .getByRole("combobox", { name: "Lokales Modell für " + output })
     .selectOption("synthetic-local");
@@ -25,7 +25,7 @@ async function configure(page: Page, output: "Text" | "Datei") {
 test.afterEach(async () => {
   await fetch(new URL("/control", process.env.TODOIST_TEST_ORIGIN!), {
     method: "POST",
-    body: JSON.stringify({ releaseGpu: true }),
+    body: JSON.stringify({ mode: "ok", releaseGpu: true }),
   });
 });
 test("F-001.1 local jobs, loss recovery, queue actions, native reference and responsive authenticated UI", async ({
@@ -85,7 +85,7 @@ test("F-001.1 local jobs, loss recovery, queue actions, native reference and res
   // admission/queue contracts stay deterministic with the F-001.2 worker enabled.
   await fetch(new URL("/control", process.env.TODOIST_TEST_ORIGIN!), {
     method: "POST",
-    body: JSON.stringify({ holdGpu: true }),
+    body: JSON.stringify({ mode: "ok", holdGpu: true }),
   });
   const prompt = "Synthetischer lokaler Bericht. ".repeat(15);
   await capture

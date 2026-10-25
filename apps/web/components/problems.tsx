@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Card } from "@helios/ui";
+
 import Link from "next/link";
 import { aiJobErrorMessages, problemMessages } from "@helios/contracts";
 import type { WorkSnapshot } from "@helios/contracts";
@@ -15,7 +17,7 @@ export function Problems({
   action: Action;
 }>) {
   return (
-    <section className="card settings-panel">
+    <Card as="section" className="card settings-panel">
       <h2>Verbindungen & Probleme</h2>
       {!!snapshot.aiJobProblems?.length && (
         <div>
@@ -53,7 +55,9 @@ export function Problems({
               {p.code} · {at(p.lastSeenAt)}
             </p>
             {p.status === "open" && (
-              <button
+              <ActionButton
+                busy={busy}
+                loadingText="Vorgang wird verarbeitet …"
                 type="button"
                 disabled={busy}
                 className="secondary"
@@ -65,11 +69,11 @@ export function Problems({
                 }
               >
                 Als geprüft markieren
-              </button>
+              </ActionButton>
             )}
           </article>
         ))
       )}
-    </section>
+    </Card>
   );
 }

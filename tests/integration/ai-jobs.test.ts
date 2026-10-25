@@ -598,3 +598,102 @@ it("keeps verified references out of delegation and E6 after a conscious native 
   ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
   expect(h.f.control.calls).toHaveLength(1);
 });
+it("searches the full original prompt case-insensitively rather than its shortened overview", async () => {
+  await configure();
+  const item = await create(
+    command({ prompt: "X".repeat(600) + " Übersicht am Ende" }),
+  );
+  const found = await service().list(h.headers(), { search: "übersICHT" });
+  expect(found.total).toBe(1);
+  expect(found.jobs[0]!.id).toBe(item.id);
+  expect(found.jobs[0]!.prompt).not.toContain("Übersicht");
+  expect(
+    (await service().list(h.headers(), { search: "Kein Treffer" })).total,
+  ).toBe(0);
+});
+it("treats wildcard characters and SQL-looking search text literally", async () => {
+  await configure();
+  await create(command({ prompt: "Kennung_% und 100%" }));
+  await create(command({ prompt: "KennungAB und 1000" }));
+  expect((await service().list(h.headers(), { search: "_%" })).total).toBe(1);
+  expect((await service().list(h.headers(), { search: "100%" })).total).toBe(1);
+  expect(
+    (await service().list(h.headers(), { search: "' OR 1=1 --" })).total,
+  ).toBe(0);
+  expect((await service().list(h.headers())).total).toBe(2);
+});
+it("combines search, status and date sorting without mutating jobs or queue order", async () => {
+  await configure();
+  const first = await create(command({ prompt: "Sortierziel zuerst" }));
+  const second = await create(command({ prompt: "Sortierziel zuletzt" }));
+  await change("stop", first);
+  const oldest = await service().list(h.headers(), {
+    search: "sortierziel",
+    oldest: true,
+  });
+  const newest = await service().list(h.headers(), {
+    search: "sortierziel",
+    oldest: false,
+  });
+  expect(oldest.jobs.map((j) => j.id)).toEqual([first.id, second.id]);
+  expect(newest.jobs.map((j) => j.id)).toEqual([second.id, first.id]);
+  const stopped = await service().list(h.headers(), {
+    search: "SORTIER",
+    status: "stopped",
+    oldest: true,
+  });
+  expect(stopped.jobs.map((j) => j.id)).toEqual([first.id]);
+  expect((await service().detail(h.headers(), second.id)).queuePosition).toBe(
+    1,
+  );
+});
+it("paginates matching prompts with a stable twenty-row bound and keeps owner and session guards", async () => {
+  await configure();
+  await Promise.all(
+    Array.from({ length: 25 }, (_, i) =>
+      create(command({ prompt: "Paginationsziel " + i })),
+    ),
+  );
+  const first = await service().list(h.headers(), {
+    search: "paginations",
+    page: 1,
+  });
+  const second = await service().list(h.headers(), {
+    search: "paginations",
+    page: 2,
+  });
+  expect(first.total).toBe(25);
+  expect(first.jobs).toHaveLength(20);
+  expect(second.jobs).toHaveLength(5);
+  expect(new Set([...first.jobs, ...second.jobs].map((j) => j.id)).size).toBe(
+    25,
+  );
+  const { listJobs } = await import("../../packages/backend/src/ai-jobs/store");
+  expect(
+    (
+      await listJobs(
+        h.db.db,
+        "synthetic-unrelated-owner",
+        1,
+        undefined,
+        false,
+        "paginations",
+      )
+    ).total,
+  ).toBe(0);
+  await expect(
+    service().list(h.headers(""), { search: "paginations" }),
+  ).rejects.toThrow();
+});
+it("rejects overlong search terms and invalid pagination before issuing an unbounded read", async () => {
+  await configure();
+  await expect(
+    service().list(h.headers(), { search: "x".repeat(201) }),
+  ).rejects.toThrow();
+  await expect(
+    service().list(h.headers(), { page: 0, search: "test" }),
+  ).rejects.toThrow();
+  expect(
+    (await service().list(h.headers(), { search: "  " })).jobs,
+  ).toHaveLength(0);
+});

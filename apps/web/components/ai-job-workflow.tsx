@@ -1,4 +1,6 @@
 "use client";
+import { Card, ActionButton, Button, FormField, Textarea } from "@helios/ui";
+
 import { useEffect, useState } from "react";
 import type { AiJobDetail } from "@helios/contracts";
 import { jobRequest, AiJobRequestError } from "./ai-job-client";
@@ -163,125 +165,154 @@ export function AiJobWorkflow({
             und derselbe Auftragsschlüssel bleiben erhalten.
           </p>
           <div className="actions">
-            <button
+            <ActionButton
+              busy={busy}
+              loadingText="Änderungen werden gespeichert …"
               type="button"
               disabled={busy}
               onClick={() => void reconcile()}
             >
               Gespeicherten Stand prüfen
-            </button>
-            <button
+            </ActionButton>
+            <ActionButton
+              busy={busy}
+              loadingText="Vorgang wird verarbeitet …"
               type="button"
               className="secondary"
               disabled={busy}
               onClick={() => void submit(pending.action, pending)}
             >
               Dieselbe Anfrage abgleichen
-            </button>
+            </ActionButton>
           </div>
         </fieldset>
       ) : (
         <>
           {(job.status === "awaiting_input" || job.status === "ready") && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void submit(
-                  job.status === "awaiting_input" ? "answer" : "refine",
-                );
-              }}
+            <Card
+              as="section"
+              className="ai-job-followup"
+              aria-label={
+                job.status === "awaiting_input"
+                  ? "Antwort auf die Rückfrage"
+                  : "Nachbearbeitung"
+              }
             >
-              {job.status === "awaiting_input" && (
-                <p className="ai-job-text">
-                  <strong>Rückfrage:</strong> {question?.text}
-                </p>
-              )}
-              <label>
-                <span>
-                  {job.status === "awaiting_input"
-                    ? "Deine Antwort"
-                    : "Nachbearbeitung anfordern"}
-                </span>
-                <textarea
-                  rows={3}
-                  maxLength={12000}
-                  required
-                  value={text}
-                  disabled={busy}
-                  onChange={(e) => setText(e.target.value)}
-                />
-              </label>
-              <div className="actions">
-                <button
-                  type="submit"
-                  disabled={
-                    busy ||
-                    !text.trim() ||
-                    (job.status === "awaiting_input" && !question)
-                  }
-                >
-                  {job.status === "awaiting_input"
-                    ? "Antwort speichern & fortsetzen"
-                    : "Nachbearbeitung einreihen"}
-                </button>
-              </div>
-            </form>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void submit(
+                    job.status === "awaiting_input" ? "answer" : "refine",
+                  );
+                }}
+              >
+                {job.status === "awaiting_input" && (
+                  <p className="ai-job-text">
+                    <strong>Rückfrage:</strong> {question?.text}
+                  </p>
+                )}
+                <FormField>
+                  <span>
+                    {job.status === "awaiting_input"
+                      ? "Deine Antwort"
+                      : "Nachbearbeitung anfordern"}
+                  </span>
+                  <Textarea
+                    rows={3}
+                    maxLength={12000}
+                    required
+                    value={text}
+                    disabled={busy}
+                    onChange={(e) => setText(e.target.value)}
+                  />
+                </FormField>
+                <div className="actions">
+                  <ActionButton
+                    busy={busy}
+                    loadingText={
+                      job.status === "awaiting_input"
+                        ? "Antwort wird gespeichert …"
+                        : "Nachbearbeitung wird eingereicht …"
+                    }
+                    type="submit"
+                    disabled={
+                      busy ||
+                      !text.trim() ||
+                      (job.status === "awaiting_input" && !question)
+                    }
+                  >
+                    {job.status === "awaiting_input"
+                      ? "Antwort speichern & fortsetzen"
+                      : "Nachbearbeitung einreichen"}
+                  </ActionButton>
+                </div>
+              </form>
+            </Card>
           )}
-          <div className="actions">
+          <div className="actions ai-job-main-actions">
             {job.status === "ready" && (
-              <button
+              <Button
                 type="button"
                 disabled={busy || !!text}
                 onClick={() => setConfirm("close")}
               >
                 Auftrag abschliessen
-              </button>
+              </Button>
             )}
             {job.status === "error" &&
               (!job.reference || job.reference.state === "verified") && (
-                <button
+                <Button
                   type="button"
                   disabled={busy}
                   onClick={() => setConfirm("retry")}
                 >
                   Bewusst erneut bearbeiten
-                </button>
+                </Button>
               )}
             {incompleteClose && (
-              <button type="button" disabled={busy} onClick={finishClose}>
+              <ActionButton
+                busy={busy}
+                loadingText="Abschluss wird nachgewiesen …"
+                type="button"
+                disabled={busy}
+                onClick={finishClose}
+              >
                 Todoist-Abschluss vorbereiten
-              </button>
+              </ActionButton>
             )}
             {!["queued", "running", "linking"].includes(job.status) && (
-              <button
+              <Button
                 type="button"
                 className="secondary"
                 disabled={busy || !!text}
                 onClick={() => setConfirm("delete")}
               >
                 Auftrag löschen
-              </button>
+              </Button>
             )}
           </div>
           {confirm && (
             <fieldset aria-label="Auftragsaktion bestätigen">
               <p>{confirmationText[confirm]}</p>
               <div className="actions">
-                <button
+                <ActionButton
+                  busy={busy}
+                  loadingText="Änderungen werden gespeichert …"
                   type="button"
                   disabled={busy}
+                  variant={confirm === "delete" ? "danger" : "primary"}
                   onClick={() => void submit(confirm)}
                 >
                   Bestätigen
-                </button>
-                <button
+                </ActionButton>
+                <Button
                   type="button"
                   className="secondary"
                   disabled={busy}
                   onClick={() => setConfirm(null)}
                 >
                   Abbrechen
-                </button>
+                </Button>
               </div>
             </fieldset>
           )}

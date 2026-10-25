@@ -76,3 +76,72 @@ Keine neue Gestaltung: umrandete Karten, warme Palette, feste Seitenleiste und z
 ## E9.5 – Aufgabeninformationen und Aktionen
 
 Die bestehende warme Gestaltung bleibt. `task-detail.css` ist auf Aufgabenkomponenten begrenzt: responsive Eigenschaftsfelder, eigenständiger Beschreibungsbereich, native Accordions mit durchgehendem Header/Chevron sowie getrennt scrollender Formularinhalt und dauerhaft sichtbare untere Leiste. Auf kleinen Fenstern umbrechende Icon-Buttons verdecken keine Felder. Der private fun-Schalter ist eine native Checkbox mit Switch-Semantik und sichtbarem Tastaturfokus. Abschluss ist eine normale bestätigte Aktion; Löschen besitzt einen eigenen kontrastreichen Gefahrenbutton und Dialog. Technischer Quell-Reload bleibt sekundär im Detailsbereich und schützt offene Eingaben. [Verifikation](../development/e9.5-verification.md).
+
+## UX-034 / UX-035 – Gemeinsame React-Primitives
+
+Die aktuelle Konsolidierung führt das bestätigte E9.3–E9.6-Bild weiter. Die [Audit-Matrix](ui-consistency-audit.md) hält Ausgangsbefunde und Zuständigkeiten fest. Keine neue UI-Bibliothek und keine andere Fach- oder Schreibpipeline.
+
+### Komponenten und Zuständigkeiten
+
+Alle Primitives werden aus `@helios/ui` importiert. Neue Funktionen sollen diese Bausteine wiederverwenden; native HTML-Semantik, Formularwerte, Eventhandler und Refs bleiben erhalten.
+
+| Komponente                                 | Verwendung                                                                                                                              |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                                   | Primär-, Sekundär-, Gefahren- und Icon-Aktionen; optional kontrollierter Ladezustand                                                    |
+| `ActionButton`                             | Dünner Adapter desselben Buttons für vorhandene gemeinsame Busy-Flags; nur die tatsächlich aktivierte Aktion animiert                   |
+| `Input`, `Textarea`, `Select`, `FormField` | Native Felder mit einheitlichen Klassen; Labels weiterhin explizit oder einschliessend zuordnen                                         |
+| `Switch`                                   | Binäre Einstellungen; insbesondere Freiwillig / Spass, Kontext aktiv und KI-Ausgabe aktivieren                                          |
+| `Checkbox`                                 | Checklisten, Mehrfachauswahl und ausdrückliche Sicherheitsbestätigungen                                                                 |
+| `Accordion`                                | Natives details/summary, gemeinsamer Chevron, voller Header, Fokus/Hover und eingerückter Inhalt                                        |
+| `Card`                                     | Umrandete Fläche mit passendem semantischem Element über `as`                                                                           |
+| `Badge`, `StatusMessage`                   | Beschriftete Zustände, optionale Symbole beziehungsweise Status-/Fehlertexte; Farbe nie allein                                          |
+| `Dialog`, `DialogSurface`                  | Gemeinsame Modaloberfläche; `DialogSurface` erhält den vorhandenen Fokusfang und die feste Aktionsleiste des speziellen Aufgabeneditors |
+| `HeliosSphereLoader`                       | Ausschliesslich die bereitgestellte Originalanimation mit unveränderter Zeichengeometrie                                                |
+
+`TaskAccordion` ist nur noch ein kompatibler Adapter des gemeinsamen Accordion. Native Toggle-Ereignisse aus verschachtelten Details werden nicht als erneutes Öffnen des Elternabschnitts behandelt. Besondere Aufgabenlisten behalten ihren fachlich passenden Kartenkopf; Klickfläche, Chevron, Hover und Fokus folgen denselben Regeln. Noch ungeklärte Operationsnachweise bleiben unmittelbar sichtbar und werden nicht hinter einem geschlossenen Erfolgs-Accordion versteckt.
+
+### Buttonvarianten und Loading-API
+
+```tsx
+import { Button } from "@helios/ui";
+
+<Button
+  type="submit"
+  loading={isSaving}
+  loadingText="Aufgabe wird gespeichert …"
+>
+  Speichern
+</Button>
+<Button type="button" variant="secondary">Abbrechen</Button>
+<Button type="button" variant="danger">Aufgabe löschen</Button>
+```
+
+Icon-Buttons verwenden `variant="icon"`, ein vorhandenes dekoratives `Icon` und ein eindeutiges `aria-label`. Neue Buttons in Formularen erhalten einen bewussten `type`.
+
+Ein Ladebutton zeigt die originale 24-Pixel-Sphäre, konkreten lesbaren Text, `disabled` und `aria-busy`. Die höfliche Live-Region liegt ausserhalb des busy-Bereichs. Der hellere Ladehintergrund behält volle Deckkraft und kontrastreiche Schrift. Gewöhnliches `disabled` zeichnet keinen Canvas.
+
+Besteht bereits ein gemeinsames Busy-Flag für mehrere Aktionen, verwendet `ActionButton busy={busy}` denselben Button und merkt nur die aktivierte Schaltfläche beziehungsweise den nativen Form-Submitter. Andere wegen derselben Anfrage gesperrte Aktionen zeigen keine Animation. Der Adapter sendet keine Requests, erfindet keinen Erfolg und erzeugt keine Idempotenzschlüssel. HTTP-/Journalzustände bleiben vollständig beim vorhandenen Fachworkflow.
+
+Für native Aufgabenaktionen umfasst der tatsächliche laufende Zustand Anfrage und nachzuweisende queued/running-Schritte. Unknown/Partial/Fehler beenden die Animation und behalten ihre bestehenden Schutzsperren, Eingaben und Nachweise. Allgemeines `pending`, das auch ungeklärte Ergebnisse umfasst, darf nicht ungeprüft als endloser Ladezustand verwendet werden. KI-Auftragsanlage endet nach persistenter Annahme; die minutenlange Verarbeitung bleibt anschliessend als Auftragsstatus sichtbar und blockiert keine weitere Anlage.
+
+### Originalanimation und Lifecycle
+
+Die bereitgestellte Datei hat SHA-256 `e2a00404d374eb80568d4ade3afacdaad832d105554d1548cd5baeb0ecb894c4`. Integriert unter `packages/ui/src/helios-sphere-loader.tsx`: 32 Kurven, 360 Stützstellen, 5200 ms, Radius-/Phasen-/Wellenform unverändert. Der mathematische Zeichenausdruck wurde zusätzlich über einen normalisierten TypeScript-Syntaxbaum abgeglichen. Die ursprünglichen Props für Grösse, Farbe, Linienzahl, Zyklus, Strichbreite, Klasse und zugängliche Beschriftung bleiben erhalten.
+
+Technische Anpassungen betreffen sichere Ref-Typisierung und Lifecycle: jeweils höchstens ein RAF-Loop, Cleanup bei Unmount und Propwechsel, statische Original-Sphäre bei reduzierter Bewegung, Pause im verborgenen Dokument und sichere Fortsetzung. Keine permanent animierten Platzhalter für normale Navigation und keine Animationen auf bloss gesperrten Aktionen.
+
+### Tokens, Dialoge und Responsive-Regeln
+
+`ui-primitives.css` fasst die gemeinsamen Regeln nach den historischen E9-Stilen zusammen. Es verwendet bestehende Farb-/Abstandstokens und ergänzt `--ui-radius`, `--ui-control-radius`, `--ui-control-height`, `--ui-content-gap`, `--ui-inset`, `--ui-hover`, `--ui-focus` sowie semantische Lade-, Fehler-, Erfolgs-, Hinweis- und Warnfarben. Feature-CSS bleibt für Anordnung und besondere Karteninhalte zuständig. Neue Ausnahmen für einzelne Spinner, Switches und Standard-Accordions sind zu vermeiden.
+
+Ein Formularfeld hält Beschriftung und Eingabe zusammen. Switch-Zeile und Checkbox-Mehrfachwahl sind bewusst andere Semantiken. Echte Switches besitzen tastaturbedienbare native Inputs, sichtbare Fokusspur, ausreichende Touch-Zeile und Namen. Kleine Fenster lassen Felder und Aktionszeilen umbrechen; Textareas bleiben in der verfügbaren Breite.
+
+Dialoge haben Titel, optional Beschreibung, Inhalt und klaren Aktionsbereich. Lange Inhalte bleiben scrollbar; der Aufgabeneditor behält die dauerhaft erreichbare Leiste. Schliessen während laufender Änderungen bleibt gesperrt. Entwurfsschutz, Escape, Fokus-Rückgabe, Kontextwechsel und Unknown-Nachweise werden nicht durch das Designsystem ersetzt.
+
+### KI-Aufträge – Präsentation und Suche
+
+Status-Badges verbinden verständliche Beschriftung mit Symbol und semantischem Farbton. Erledigt ist ein prüfbares Ergebnis, Abgeschlossen eine bewusste Nutzerentscheidung. Abgeschlossene Karten bleiben öffnbar, erhalten eine dezente graue Fläche und zeigen keine Ergebnisvorschau; sämtliche Daten bleiben unverändert gespeichert.
+
+Ergebnisse stehen als versionierte umrahmte Karten bereit. Lesbare Inhalte verwenden den vorhandenen sicheren Markdown-Renderer ohne ausführbares HTML oder externe Medien. Kopieren verwendet weiterhin den unveränderten Ergebnistext. Nachbearbeitung hat einen eigenen Formularbereich mit Beschriftung über der breiten Textarea und Einreichen darunter; Abschluss und Löschen stehen getrennt.
+
+Die Originalpromptsuche ist serverseitig, auf 200 Zeichen begrenzt, ohne Gross-/Kleinschreibung und als wörtlicher Teiltext umgesetzt. `%` und `_` sind keine Wildcards. Status, Datumssortierung, stabile Zweitsortierung und bestehende 20er-Pagination wirken auf dieselbe Owner-geprüfte Ergebnismenge. Zurücksetzen der Suche erhält bewusst die übrigen Filter. Die Suche durchsucht keine fremden Aufträge und ändert weder Queue, Aufträge noch Ergebnisse.

@@ -1,4 +1,6 @@
 "use client";
+import { ActionButton, Accordion, FormField, Checkbox } from "@helios/ui";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type {
@@ -91,8 +93,7 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
           aktuelle Planungsgrundlage.
         </p>
       )}
-      <details>
-        <summary>Arbeitsfenster, Belegungen und Hinweise</summary>
+      <Accordion title="Arbeitsfenster, Belegungen und Hinweise">
         <p className="help">
           Die Orientierung umfasst den ganzen gemeldeten Plantag,
           einschliesslich vergangener Zeit. Sie weist Aufgaben keine Uhrzeiten
@@ -137,7 +138,7 @@ function Summary({ value: v }: Readonly<{ value: CalendarOrientation }>) {
             ))}
           </ul>
         )}
-      </details>
+      </Accordion>
     </>
   );
 }
@@ -230,29 +231,31 @@ export function CalendarContextPanel({
             entsteht nur auf deinen Auftrag.
           </output>
         )}
-      <details
+      <Accordion
         className="card calendar-context"
         aria-label="Kalenderorientierung"
+        title={
+          <>
+            <strong>Arbeitszeit & Kalender</strong>
+            <span>
+              {shown
+                .map((c) =>
+                  c.orientation.reliable && c.orientation.budget
+                    ? budget(c.orientation.budget) + " frei"
+                    : (labels[c.orientation.state] ?? "Kalenderstand prüfen"),
+                )
+                .join(" · ")}
+            </span>
+          </>
+        }
       >
-        <summary>
-          <strong>Arbeitszeit & Kalender</strong>
-          <span>
-            {shown
-              .map((c) =>
-                c.orientation.reliable && c.orientation.budget
-                  ? budget(c.orientation.budget) + " frei"
-                  : (labels[c.orientation.state] ?? "Kalenderstand prüfen"),
-              )
-              .join(" · ")}
-          </span>
-        </summary>
         {shown.map((c) => (
           <div key={c.contextId}>
             <h3>{c.name}</h3>
             <Summary value={c.orientation} />
             {contextId && data.isToday && !c.orientation.work.length && (
-              <label className="check">
-                <input
+              <FormField className="check">
+                <Checkbox
                   type="checkbox"
                   checked={c.orientation.noWorkConfirmed}
                   disabled={busy}
@@ -268,17 +271,19 @@ export function CalendarContextPanel({
                 />
                 Für diesen Kontext ist heute bewusst keine Arbeitszeit
                 vorgesehen.
-              </label>
+              </FormField>
             )}
           </div>
         ))}
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Stand wird aktualisiert …"
           type="button"
           disabled={busy}
           onClick={() => void act("refresh", { day: data.day })}
         >
           Kalenderstand aktualisieren
-        </button>
+        </ActionButton>
         <Link href="/settings/contexts#termihub-settings">
           Zuordnungen prüfen
         </Link>
@@ -286,7 +291,7 @@ export function CalendarContextPanel({
           Neue Kalenderdaten ändern deine Auswahl und bestätigte Tagespläne
           nicht automatisch.
         </p>
-      </details>
+      </Accordion>
       {error && <p role="alert">{error}</p>}
     </>
   );

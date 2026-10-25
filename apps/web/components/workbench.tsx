@@ -1,4 +1,17 @@
 "use client";
+import {
+  ActionButton,
+  Switch,
+  Accordion,
+  Button,
+  Card,
+  FormField,
+  Select,
+  Input,
+  Brand,
+  Icon,
+} from "@helios/ui";
+
 import { AiJobs } from "./ai-jobs";
 import { AiJobCapture } from "./ai-job-capture";
 import { AiJobSettingsPanel } from "./ai-job-settings";
@@ -22,7 +35,7 @@ import { MorningRoutine } from "./morning-routine";
 import { Problems } from "./problems";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Brand, Icon } from "@helios/ui";
+
 import { WorkbenchNavigation, SettingsChapters } from "./workbench-navigation";
 import { themes, problemMessages } from "@helios/contracts";
 import type {
@@ -334,7 +347,7 @@ export function Workbench({
                 {snapshot?.contexts
                   .filter((c) => c.active)
                   .map((c) => (
-                    <button
+                    <Button
                       type="button"
                       key={c.id}
                       className="context-pill"
@@ -356,7 +369,7 @@ export function Workbench({
                     >
                       <span className="context-dot" />
                       {c.name}
-                    </button>
+                    </Button>
                   ))}
               </div>
             </div>
@@ -395,14 +408,14 @@ export function Workbench({
             <h1>{pageTitle[view]}</h1>
           </div>
           {contextual && !current && snapshot && (
-            <section className="card">
+            <Card as="section" className="card">
               <h2>Kontext bewusst auswählen</h2>
               <p>
                 Wähle einen aktiven Kontext in der Seitenleiste. Eine fehlende
                 oder deaktivierte Auswahl wird nicht automatisch durch Privat
                 ersetzt.
               </p>
-            </section>
+            </Card>
           )}
           {error && (
             <p role="alert" className="form-error">
@@ -429,7 +442,7 @@ export function Workbench({
                     aria-label="Kontexttyp"
                   >
                     {["private", "employer"].map((tab) => (
-                      <button
+                      <Button
                         type="button"
                         key={tab}
                         role="tab"
@@ -438,10 +451,11 @@ export function Workbench({
                         onClick={() => setSettingTab(tab)}
                       >
                         {tab === "private" ? "Privat" : "Arbeitgeber"}
-                      </button>
+                      </Button>
                     ))}
                   </div>
-                  <section
+                  <Card
+                    as="section"
                     id="contexts-settings"
                     className="card settings-panel"
                   >
@@ -452,7 +466,7 @@ export function Workbench({
                           : "Arbeitgeberkontext"}
                       </h2>
                       {settingTab === "employer" && (
-                        <button
+                        <Button
                           type="button"
                           disabled={busy || navigationLocked}
                           onClick={() => {
@@ -463,13 +477,13 @@ export function Workbench({
                         >
                           <Icon name="plus" />
                           Arbeitgeber hinzufügen
-                        </button>
+                        </Button>
                       )}
                     </div>
                     {settingTab === "employer" && (
-                      <label>
+                      <FormField>
                         <span>Arbeitgeber</span>
-                        <select
+                        <Select
                           value={
                             settingEmployer ||
                             snapshot.contexts.find((c) => c.kind !== "private")
@@ -493,8 +507,8 @@ export function Workbench({
                                 {!c.active ? " · inaktiv" : ""}
                               </option>
                             ))}
-                        </select>
-                      </label>
+                        </Select>
+                      </FormField>
                     )}
                     {settingTab === "employer" && newEmployer && (
                       <UiDialog
@@ -508,19 +522,19 @@ export function Workbench({
                         {discardEmployer && (
                           <div>
                             <p>Ungespeicherte Eingaben verwerfen?</p>
-                            <button
+                            <Button
                               type="button"
                               onClick={() => setDiscardEmployer(false)}
                             >
                               Weiterbearbeiten
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
                               className="danger"
                               onClick={() => setNewEmployer(false)}
                             >
                               Eingaben verwerfen
-                            </button>
+                            </Button>
                           </div>
                         )}
                         <div hidden={discardEmployer}>
@@ -562,7 +576,7 @@ export function Workbench({
                         />
                       </div>
                     ))}
-                  </section>
+                  </Card>
                 </div>
                 <div hidden={chapter !== "connections"}>
                   <Connection
@@ -643,7 +657,7 @@ export function Workbench({
               />
             )}
           {mobile && snapshot && (
-            <section className="card">
+            <Card as="section" className="card">
               <h2>{current?.name}</h2>
               <p>
                 {current?.configured
@@ -651,7 +665,7 @@ export function Workbench({
                   : "Die Projektzuordnung kann in den Desktop-Einstellungen eingerichtet werden."}
               </p>
               <p>Dein Zugang ist geschützt.</p>
-            </section>
+            </Card>
           )}
         </main>
 
@@ -675,7 +689,11 @@ function StepUp({
     [ok, setOk] = useState(false),
     [localError, setLocalError] = useState("");
   return (
-    <section id="sensitive-changes" className="card settings-panel auth-card">
+    <Card
+      as="section"
+      id="sensitive-changes"
+      className="card settings-panel auth-card"
+    >
       <p>
         Tokenwechsel sowie Projekt- und Kalenderzuordnungen benötigen Passwort
         und einen neuen Authenticator-Code. Die Bestätigung gilt höchstens fünf
@@ -705,9 +723,9 @@ function StepUp({
           }
         }}
       >
-        <label>
+        <FormField>
           Aktuelles Passwort
-          <input
+          <Input
             disabled={busy}
             maxLength={128}
             type="password"
@@ -716,10 +734,10 @@ function StepUp({
             onChange={(e) => setPwd(e.target.value)}
             required
           />
-        </label>
-        <label>
+        </FormField>
+        <FormField>
           Neuer Authenticator-Code
-          <input
+          <Input
             disabled={busy}
             maxLength={6}
             autoComplete="one-time-code"
@@ -729,15 +747,20 @@ function StepUp({
             onChange={(e) => setCode(e.target.value)}
             required
           />
-        </label>
-        <button type="submit" disabled={busy}>
+        </FormField>
+        <ActionButton
+          busy={busy}
+          loadingText="Änderungen werden gespeichert …"
+          type="submit"
+          disabled={busy}
+        >
           Änderungen bestätigen
-        </button>
+        </ActionButton>
         {ok && (
           <p role="status">Bestätigung für maximal fünf Minuten gültig.</p>
         )}
       </form>
-    </section>
+    </Card>
   );
 }
 type Action = (name: string, body: unknown) => Promise<unknown>;
@@ -757,7 +780,11 @@ function Connection({
     [tokenSaved, setTokenSaved] = useState(false);
   const i = data.integration;
   return (
-    <section id="todoist-settings" className="card settings-panel auth-card">
+    <Card
+      as="section"
+      id="todoist-settings"
+      className="card settings-panel auth-card"
+    >
       <h2>Todoist verbinden</h2>
       <p>
         Der Token wird verschlüsselt gespeichert. Inhaltliche Änderungen
@@ -809,9 +836,9 @@ function Connection({
           }
         }}
       >
-        <label>
+        <FormField>
           Neuer Todoist-API-Token
-          <input
+          <Input
             type="password"
             autoComplete="off"
             value={token}
@@ -820,10 +847,15 @@ function Connection({
             required
             onChange={(e) => setToken(e.target.value)}
           />
-        </label>
-        <button type="submit" disabled={busy || !i.keyAvailable}>
+        </FormField>
+        <ActionButton
+          busy={busy}
+          loadingText="Einstellungen werden gespeichert …"
+          type="submit"
+          disabled={busy || !i.keyAvailable}
+        >
           Token verschlüsselt speichern
-        </button>
+        </ActionButton>
         <div id="token-feedback">
           {tokenError && (
             <p role="alert" className="form-error">
@@ -844,16 +876,20 @@ function Connection({
           : "Kein Token hinterlegt."}{" "}
         In Todoist: Einstellungen → Integrationen → Entwickler → API-Token.
       </p>
-      <button
+      <ActionButton
+        busy={busy}
+        loadingText="Verbindung wird geprüft …"
         type="button"
         disabled={busy || pause || !i.enabled || !i.hasToken}
         onClick={() => void action("catalog-refresh", {}).catch(() => {})}
       >
         Verbindung prüfen & Projekte laden
-      </button>
+      </ActionButton>
       {i.hasToken && (
         <>
-          <button
+          <ActionButton
+            busy={busy}
+            loadingText="Vorgang wird verarbeitet …"
             type="button"
             className="secondary"
             disabled={busy}
@@ -865,8 +901,10 @@ function Connection({
             }
           >
             {i.enabled ? "Verbindung deaktivieren" : "Verbindung aktivieren"}
-          </button>
-          <button
+          </ActionButton>
+          <ActionButton
+            busy={busy}
+            loadingText="Vorgang wird verarbeitet …"
             type="button"
             className="secondary"
             disabled={busy}
@@ -877,7 +915,7 @@ function Connection({
             }
           >
             Token entfernen
-          </button>
+          </ActionButton>
         </>
       )}
       {pause && <p className="help">Abrufpause bis {at(i.nextAllowedAt)}.</p>}
@@ -885,7 +923,7 @@ function Connection({
         TermiHub-Kalender und Arbeitsorganisationen werden unten bewusst
         zugeordnet.
       </p>
-    </section>
+    </Card>
   );
 }
 function ContextEditor({
@@ -942,20 +980,20 @@ function ContextEditor({
           });
         }}
       >
-        <label>
+        <FormField>
           Anzeigename
-          <input
+          <Input
             disabled={busy}
             required
             maxLength={100}
             value={data.name}
             onChange={(e) => field({ name: e.target.value })}
           />
-        </label>
-        <label>
+        </FormField>
+        <FormField>
           Kontextfarbe
           <div className="ux-color-picker">
-            <select
+            <Select
               disabled={busy}
               aria-label="Kontextfarbe"
               value={data.theme}
@@ -968,7 +1006,7 @@ function ContextEditor({
                   {name}
                 </option>
               ))}
-            </select>
+            </Select>
             <svg
               viewBox="0 0 38 38"
               role="img"
@@ -980,10 +1018,10 @@ function ContextEditor({
               <rect width="38" height="38" rx="8" fill="var(--accent)" />
             </svg>
           </div>
-        </label>
-        <label>
+        </FormField>
+        <FormField>
           Todoist-Projekt
-          <select
+          <Select
             disabled={busy}
             value={data.projectId ?? ""}
             onChange={(e) => field({ projectId: e.target.value || null })}
@@ -1015,23 +1053,20 @@ function ContextEditor({
                       : ""}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
         <p className="help">
           TermiHub-Referenzen werden im Kalenderbereich anhand verifizierter IDs
           zugeordnet.
         </p>
 
         {context?.kind !== "private" && (
-          <label className="check">
-            <input
-              disabled={busy}
-              type="checkbox"
-              checked={data.active}
-              onChange={(e) => field({ active: e.target.checked })}
-            />
-            Kontext aktiv
-          </label>
+          <Switch
+            label="Kontext aktiv"
+            disabled={busy}
+            checked={data.active}
+            onChange={(e) => field({ active: e.target.checked })}
+          />
         )}
         <p className="help">
           {context?.configured
@@ -1045,8 +1080,10 @@ function ContextEditor({
             {saveError}
           </p>
         )}
-        <details className="technical-details">
-          <summary>Technische Projektzuordnung</summary>
+        <Accordion
+          className="technical-details"
+          title="Technische Projektzuordnung"
+        >
           <ul>
             {snapshot.projects.map((project) => (
               <li key={project.id}>
@@ -1058,10 +1095,15 @@ function ContextEditor({
             !snapshot.projects.some(
               (project) => project.id === data.projectId,
             ) && <p>Bestehende Referenz: {data.projectId}</p>}
-        </details>
-        <button type="submit" disabled={busy}>
+        </Accordion>
+        <ActionButton
+          busy={busy}
+          loadingText="Einstellungen werden gespeichert …"
+          type="submit"
+          disabled={busy}
+        >
           Kontext speichern
-        </button>
+        </ActionButton>
       </form>
       {context?.active && context.configured && context.projectId && (
         <KanbanSetup context={context} />
@@ -1099,7 +1141,7 @@ function TaskCard({
   snapshotZone?: string;
 }>) {
   const t = task.data;
-  const Details = compact ? "div" : "details";
+  const Details = compact ? "div" : Accordion;
   const parent = tasks.find((p) => p.data.id === t.parent_id);
   return (
     <article
@@ -1115,8 +1157,7 @@ function TaskCard({
         timezone={snapshotZone}
         status={taskStateLabel(task)}
       />
-      <Details>
-        {!compact && <summary>Aufgabendetails</summary>}
+      <Details title={compact ? undefined : "Aufgabendetails"}>
         <TaskAccordion
           title="Technische Aufgabendetails"
           className="technical-details"
@@ -1177,7 +1218,9 @@ function TaskOverview({
             Letzter vollständiger Abruf: {at(list?.lastSyncAt ?? null)}
           </p>
         </div>
-        <button
+        <ActionButton
+          busy={busy}
+          loadingText="Stand wird aktualisiert …"
           type="button"
           disabled={busy || pause || !current?.configured}
           onClick={() =>
@@ -1187,7 +1230,7 @@ function TaskOverview({
           }
         >
           {busy ? "Aufgaben werden aktualisiert …" : "Aufgaben aktualisieren"}
-        </button>
+        </ActionButton>
       </div>
       {pause && (
         <p className="help">
@@ -1196,14 +1239,14 @@ function TaskOverview({
       )}
       {!current?.configured ||
       (list && (!list.configured || !list.connected)) ? (
-        <section className="card">
+        <Card as="section" className="card">
           <h2>Deinen Kontext verbinden.</h2>
           <p>
             In den Einstellungen Todoist verbinden und ein bestehendes Projekt
             bewusst auswählen.
           </p>
           <Link href="/settings/contexts">Kontext einrichten →</Link>
-        </section>
+        </Card>
       ) : !list ? (
         <p role="status">Aufgaben werden geladen …</p>
       ) : (
@@ -1217,7 +1260,7 @@ function TaskOverview({
             </p>
           )}
           {!list.tasks.length && (
-            <section className="card">
+            <Card as="section" className="card">
               <h2>
                 {list.lastSyncAt
                   ? "Hier ist gerade Platz."
@@ -1230,11 +1273,13 @@ function TaskOverview({
                     : "Keine aktuellen aktiven Aufgaben für dieses Projekt nachgewiesen."
                   : "Aufgaben über die Schaltfläche bewusst laden."}
               </p>
-            </section>
+            </Card>
           )}
           {!!list.historicalTasks?.length && (
-            <details className="card historical-tasks">
-              <summary>Historische und extern ungeklärte Aufgaben</summary>
+            <Accordion
+              className="card historical-tasks"
+              title="Historische und extern ungeklärte Aufgaben"
+            >
               <p>
                 Diese gespeicherten Nachweise gehören nicht zum bestätigten
                 aktuellen Aufgabenbestand. Hier sind keine Schreibaktionen
@@ -1251,7 +1296,7 @@ function TaskOverview({
                   action={action}
                 />
               ))}
-            </details>
+            </Accordion>
           )}
           <TaskManager
             key={selected}

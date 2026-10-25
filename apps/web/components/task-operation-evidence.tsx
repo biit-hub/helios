@@ -1,4 +1,5 @@
 import type { TaskOperationView } from "@helios/contracts";
+import { Accordion } from "@helios/ui";
 const labels: Record<string, string> = {
   due_date: "Geplantes Datum",
   due_datetime: "Datum und Uhrzeit",
@@ -80,8 +81,10 @@ export function TaskOperationEvidence({
           )}
         </>
       )}
-      <details className="technical-details">
-        <summary>Technischer Operationsnachweis</summary>
+      <Accordion
+        className="technical-details"
+        title="Technischer Operationsnachweis"
+      >
         <dl>
           <dt>Operation</dt>
           <dd>{operation.id}</dd>
@@ -118,7 +121,7 @@ export function TaskOperationEvidence({
             </>
           )}
         </dl>
-      </details>
+      </Accordion>
     </section>
   );
 }
