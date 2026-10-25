@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
-import { openTaskEditor } from "../fixtures/task-detail";
+import { openTaskEditor, confirmTaskSave } from "../fixtures/task-detail";
 import { closeTaskDialog } from "../fixtures/task-dialog";
 import { projects } from "../fixtures/todoist";
 
@@ -115,13 +115,9 @@ test("E9.5 compact task properties, flat sections, draft protection, persistent 
   await docs
     .getByRole("button", { name: "Checklistenänderung prüfen", exact: true })
     .click();
-  await docs
-    .getByRole("button", { name: "Änderung bewusst bestätigen", exact: true })
-    .click();
-  await expect(docs.getByRole("status")).toContainText(
-    "In Todoist nachgewiesen",
-    { timeout: 20000 },
-  );
+  await confirmTaskSave(page);
+  await expect(editor).toBeHidden({ timeout: 20000 });
+  editor = await openTaskEditor(page, title);
   await expect(
     editor.getByRole("textbox", { name: "Beschreibung", exact: true }),
   ).toHaveValue(/Zusätzlich prüfen/);
@@ -143,8 +139,12 @@ test("E9.5 compact task properties, flat sections, draft protection, persistent 
   await docs
     .getByRole("button", { name: "Neuen Link prüfen", exact: true })
     .click();
+  await confirmTaskSave(page);
+  await expect(editor).toBeHidden({ timeout: 20000 });
+  editor = await openTaskEditor(page, title);
   await docs
-    .getByRole("button", { name: "Änderung bewusst bestätigen", exact: true })
+    .locator("summary")
+    .filter({ hasText: /^Dokumentenlinks$/ })
     .click();
   await expect(
     docs.getByRole("link", { name: "Neue Dokumentation", exact: true }),
@@ -190,6 +190,7 @@ test("E9.5 compact task properties, flat sections, draft protection, persistent 
   await page.keyboard.press("Space");
   await expect(fun).toBeChecked();
   await editor.getByRole("button", { name: "Speichern", exact: true }).click();
+  await confirmTaskSave(page);
   await expect(editor).toBeHidden({ timeout: 20000 });
   editor = await openTaskEditor(page, title);
   await expect(
@@ -333,6 +334,7 @@ test("E9.5 unknown and partial field evidence blocks replay and retains the orig
     await editor
       .getByRole("button", { name: "Speichern", exact: true })
       .click();
+    await confirmTaskSave(page);
     await expect(
       editor.getByRole("button", { name: "Speichern", exact: true }),
     ).toBeDisabled();

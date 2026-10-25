@@ -1,5 +1,12 @@
 # Changelog
 
+## E9.6 – Gemeinsames Speichern und gezielter UI-Feinschliff (Prüfung und Abnahme offen)
+
+- Speichern berücksichtigt Grundinformationen, Ziel, Checkliste und Dokumentenlinks in einem kompakten Bestätigungsdialog; Vorher/Nachher bleibt optional aufklappbar.
+- Serverseitige AST-Ableitung und Quellenprüfung erzeugen einen gemeinsamen nativen Patch über das bestehende E4-Journal. Überschneidungen mit manuellen Beschreibungsänderungen werden abgewiesen; feldgenaue Unknown-/Partial-Nachweise bleiben erhalten.
+- Vollflächige Accordion-Kopfzeilen, ausgerichtete Kartenaktionen und konsistente SMART-Innenabstände.
+- Keine Migration, keine automatische Änderung von Datum, Deadline oder Dauer; E10 bleibt unverändert.
+
 ## E9.5 – Aufgabenansicht und Bearbeitung (menschliche Abnahme offen)
 
 - Beschriftete Eigenschaftsfelder im responsiven Grid, eigener Beschreibungsbereich und aufklappbare Kommentare statt Lesebutton. Technische Kennungen bleiben verborgen.

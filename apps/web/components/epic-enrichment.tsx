@@ -1,5 +1,6 @@
 "use client";
 import type { DocumentModel } from "./use-task-document";
+import { TaskAccordion } from "./task-accordion";
 import { useState } from "react";
 import { AiDraftPanel } from "./ai-drafts";
 import { epicRequest as request } from "./epic-http";
@@ -31,12 +32,10 @@ export function EpicEnrichment({
       {" "}
       {!detail.inspection.task.checked && (
         <>
-          <details
-            onToggle={(e) => {
-              if (e.currentTarget.open) setSmartOpen(true);
-            }}
+          <TaskAccordion
+            title="SMART-Ziel prüfen und verbessern"
+            onOpen={() => setSmartOpen(true)}
           >
-            <summary>SMART-Ziel prüfen und verbessern</summary>
             {smartOpen && (
               <AiDraftPanel
                 kind="smart"
@@ -45,15 +44,11 @@ export function EpicEnrichment({
                 snapshot={snapshot}
               />
             )}
-          </details>
-          <details
-            onToggle={(e) => {
-              if (e.currentTarget.open) setDecompositionOpen(true);
-            }}
+          </TaskAccordion>
+          <TaskAccordion
+            title="Checkliste oder eigenständig planbare Unteraufgaben vorschlagen"
+            onOpen={() => setDecompositionOpen(true)}
           >
-            <summary>
-              Checkliste oder eigenständig planbare Unteraufgaben vorschlagen
-            </summary>
             {decompositionOpen && (
               <AiDraftPanel
                 kind="decomposition"
@@ -62,7 +57,7 @@ export function EpicEnrichment({
                 snapshot={snapshot}
               />
             )}
-          </details>
+          </TaskAccordion>
         </>
       )}
       {detail.inspection.task.labels.includes("epic") && (

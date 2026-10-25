@@ -1,3 +1,4 @@
+import { prepareTaskSave } from "./save";
 import { validateUserLabels } from "./labels";
 import { verifyEpicDetach } from "../epics/close";
 import {
@@ -635,7 +636,19 @@ export function createTaskExecutor(
                 command.fields?.labels,
                 t.labels,
               );
-            await mutate(token, "update", path, fieldPatch(command.fields!));
+            await mutate(
+              token,
+              "update",
+              path,
+              fieldPatch(
+                prepareTaskSave(
+                  t,
+                  command.fields ?? {},
+                  command.documents,
+                  command.acknowledgeRecurrenceChange,
+                ),
+              ),
+            );
           }
           if (command.action === "comment")
             await mutate(token, "comment", "comments", {

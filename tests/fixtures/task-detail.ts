@@ -13,3 +13,14 @@ export async function openTaskEditor(page: Page, title: string) {
   await expect(editor.getByLabel("Titel", { exact: true })).toHaveValue(title);
   return editor;
 }
+
+export async function confirmTaskSave(page: Page) {
+  const confirmation = page.getByRole("dialog", {
+    name: "Änderungen speichern",
+    exact: true,
+  });
+  await expect(confirmation).toBeVisible();
+  await confirmation
+    .getByRole("button", { name: "Änderungen speichern", exact: true })
+    .click();
+}

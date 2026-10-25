@@ -49,6 +49,7 @@ export function useTaskDocument(context: ContextView, taskId: string) {
       newItem,
     };
   });
+  const [requestUncertain, setRequestUncertain] = useState(false);
   const key = useRef(crypto.randomUUID());
   const path =
     "/api/epics?" + new URLSearchParams({ contextId: context.id, taskId });
@@ -172,6 +173,7 @@ export function useTaskDocument(context: ContextView, taskId: string) {
   }, [operationId, operationStatus, load]);
   const pending =
     busy ||
+    requestUncertain ||
     (!!operation &&
       ["queued", "running", "unknown", "partial"].includes(operation.status));
   useNavigationLock(pending);
@@ -209,6 +211,8 @@ export function useTaskDocument(context: ContextView, taskId: string) {
     setPreview(null);
   }
   return {
+    requestUncertain,
+    setRequestUncertain,
     detail,
     newItem,
     setNewItem,

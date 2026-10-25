@@ -1,3 +1,4 @@
+import { prepareTaskSave } from "./save";
 import { validateUserLabels } from "./labels";
 import { descendants } from "./hierarchy";
 import { prepareEpicClosure } from "../epics/close";
@@ -8,7 +9,12 @@ import { descriptionLinks } from "./document";
 import { randomUUID } from "node:crypto";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { and, eq, desc, inArray } from "drizzle-orm";
-import { kanbanSections, taskCommand, taskFields } from "@helios/contracts";
+import {
+  kanbanSections,
+  taskCommand,
+  taskFields,
+  taskSaveInput,
+} from "@helios/contracts";
 import type {
   TaskCommand,
   TaskInspection,
@@ -163,6 +169,8 @@ export function createTaskService(
     routineLink?: RoutineLink,
   ) {
     const command = taskCommand.parse(raw);
+    if (command.documents && command.action !== "update")
+      throw new WorkFault("INVALID_REQUEST");
     if (command.fields?.recurring && command.fields.due !== undefined)
       throw new WorkFault("INVALID_REQUEST");
     if (command.action === "plan-select" && !planLink)
@@ -291,9 +299,17 @@ export function createTaskService(
       throw new WorkFault("INVALID_REQUEST");
     if (
       command.action === "update" &&
-      (!command.fields || Object.keys(command.fields).length === 0)
+      (!command.fields || Object.keys(command.fields).length === 0) &&
+      !command.documents?.length
     )
       throw new WorkFault("INVALID_REQUEST");
+    if (command.action === "update")
+      prepareTaskSave(
+        source!,
+        command.fields ?? {},
+        command.documents,
+        command.acknowledgeRecurrenceChange,
+      );
     if (command.action === "wait" && !command.waiting)
       throw new WorkFault("INVALID_REQUEST");
     if (
@@ -536,6 +552,24 @@ export function createTaskService(
     operations,
     async handle(action: string, h: Headers, input: unknown) {
       await identity.withActive(h, { mutation: true }, async () => {});
+      if (action === "preview") {
+        const value = taskSaveInput.parse(input);
+        const current = await inspect(h, value.contextId, value.taskId);
+        if (current.basis !== value.basis)
+          throw new WorkFault("TASK_SOURCE_CONFLICT", 409);
+        if (current.task.checked || current.task.is_deleted)
+          throw new WorkFault("TASK_ALREADY_CLOSED", 409);
+        return {
+          basis: current.basis,
+          before: current.task,
+          fields: prepareTaskSave(
+            current.task,
+            value.fields,
+            value.documents,
+            value.acknowledgeRecurrenceChange,
+          ),
+        };
+      }
       if (action === "submit") return enqueue(h, input);
       if (action === "resume") {
         const id = (input as { operationId?: unknown })?.operationId;

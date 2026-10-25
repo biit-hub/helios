@@ -1,4 +1,8 @@
 "use client";
+import { taskSavePreview } from "@helios/contracts";
+import { documentDraftChanges } from "./document-save";
+import { TaskSaveDialog } from "./task-save-dialog";
+import type { DocumentController } from "./use-task-document";
 import { useSearchParams } from "next/navigation";
 import {
   dateLabel,
@@ -28,6 +32,8 @@ import type {
   TaskView,
   TaskInspection,
   TaskCommand,
+  TaskSavePreview,
+  DocumentChange,
   TaskOperationView,
 } from "@helios/contracts";
 import type { ReactNode } from "react";
@@ -84,7 +90,8 @@ class TaskApiFailure extends Error {
     super(message);
   }
 }
-async function api(path: string, body?: unknown) {
+async function api(path: string, body?: unknown, readOnly = false) {
+  const writing = body !== undefined && !readOnly;
   let response: Response;
   try {
     response = await fetch(path, {
@@ -95,10 +102,10 @@ async function api(path: string, body?: unknown) {
     });
   } catch {
     throw new TaskApiFailure(
-      body === undefined
+      !writing
         ? "Verbindung unterbrochen. Die Daten konnten nicht geladen werden; vorhandene Eingaben bleiben erhalten."
         : "Verbindung unterbrochen. Der Schreibauftrag ist möglicherweise angekommen; zuerst das Journal prüfen und nicht erneut senden.",
-      body !== undefined,
+      writing,
     );
   }
   let data;
@@ -106,16 +113,16 @@ async function api(path: string, body?: unknown) {
     data = await response.json();
   } catch {
     throw new TaskApiFailure(
-      body === undefined
+      !writing
         ? "Antwort nicht sicher lesbar. Quelle erneut laden; vorhandene Eingaben bleiben erhalten."
         : "Antwort nicht sicher lesbar. Den Auftragsnachweis im Journal prüfen.",
-      body !== undefined,
+      writing,
     );
   }
   if (!response.ok)
     throw new TaskApiFailure(
       data.error?.message ?? "Die Anfrage ist fehlgeschlagen.",
-      body !== undefined && response.status >= 500,
+      writing && response.status >= 500,
     );
   return data;
 }
@@ -130,6 +137,8 @@ const taskError: Record<string, string> = {
     "Todoist hat die Anfrage beantwortet, aber nicht alle angeforderten Felder gespeichert. Nachweise unten prüfen; es wird nicht automatisch erneut geschrieben. Berechtigungen können einzelne Felder einschränken.",
   TODOIST_REJECTED:
     "Todoist hat die Änderung abgewiesen. Eingaben und Datums-/Dauerwerte prüfen.",
+  TASK_SAVE_OVERLAP:
+    "Beschreibung und strukturierte Felder ändern denselben Abschnitt. Bitte die überschneidenden Eingaben zuerst abgleichen; alle Eingaben bleiben erhalten.",
   TASK_SOURCE_CONFLICT:
     "Todoist wurde zwischenzeitlich geändert. Die Eingaben bleiben erhalten. Quelle neu laden und Änderungen erneut prüfen.",
   TODOIST_AUTH:
@@ -678,6 +687,12 @@ export function TaskEditor({
     dirty: false,
     pending: false,
   });
+  const documentRef = useRef<DocumentController | null>(null);
+  const [savePreview, setSavePreview] = useState<{
+    preview: TaskSavePreview;
+    body: Record<string, unknown>;
+    documents: DocumentChange[];
+  } | null>(null);
   const [documentEpoch, setDocumentEpoch] = useState(0);
   const [requestUncertain, setRequestUncertain] = useState(false);
   const [aiTouched, setAiTouched] = useState(false);
@@ -902,7 +917,11 @@ export function TaskEditor({
   }
   function canSubmit(action: TaskCommand["action"], confirmed: boolean) {
     if (["close", "delete"].includes(action) && !confirmed) return false;
-    if ((action === "update" || action === "create") && documentState.dirty) {
+    if (
+      (action === "update" || action === "create") &&
+      documentState.dirty &&
+      !confirmed
+    ) {
       setError(
         "Ziel, Checkliste oder Dokumentenlinks enthalten ungespeicherte Eingaben. Bitte deren Vorschau prüfen und ausdrücklich bestätigen, bevor das Grundformular gespeichert wird.",
       );
@@ -1007,17 +1026,95 @@ export function TaskEditor({
       body.waiting = { who, subject, followUp: followUp || null };
     return body;
   }
+  async function checkSubmittedJournal() {
+    setBusy(true);
+    try {
+      const rows: TaskOperationView[] = await api("/api/tasks");
+      const row = rows.find(
+        (r) => !!attempt.current?.key && r.input?.key === attempt.current.key,
+      );
+      if (row) {
+        setRequestUncertain(false);
+        acceptOperation(row);
+      } else
+        setError(
+          "Noch kein eindeutig zuordenbarer Journalnachweis verfügbar. Eingaben und Auftrag bleiben ungeklärt; nicht erneut senden.",
+        );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Journal nicht verfügbar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function requestSave() {
+    if (pending || submitLock.current) return;
+    if (!taskId) {
+      await submit("create");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const documents = documentDraftChanges(documentRef.current);
+      if (
+        documents.length &&
+        documentRef.current?.detail?.inspection.basis !== inspection?.basis
+      )
+        throw new Error(
+          "Die Dokumententwürfe beruhen auf einer anderen Quellfassung. Bitte Quelle und Eingaben abgleichen; alle Eingaben bleiben erhalten.",
+        );
+      const body = buildSubmission("update", false);
+      if (documents.length) body.documents = documents;
+      const fields = body.fields as Record<string, unknown>;
+      if (!documents.length && !Object.keys(fields).length) {
+        setError("Keine geänderten Aufgabeninformationen vorhanden.");
+        return;
+      }
+      const response = await api(
+        "/api/tasks/preview",
+        {
+          contextId: body.contextId,
+          taskId,
+          basis: body.basis,
+          fields,
+          documents,
+          acknowledgeRecurrenceChange: removeRecurrence,
+        },
+        true,
+      );
+      const parsed = taskSavePreview.safeParse(response);
+      if (
+        !parsed.success ||
+        parsed.data.basis !== body.basis ||
+        parsed.data.before.id !== taskId
+      )
+        throw new Error(
+          "Die Änderungsvorschau ist nicht vollständig oder passt nicht zur Aufgabe. Deine Eingaben bleiben erhalten.",
+        );
+      setSavePreview({ preview: parsed.data, body, documents });
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Änderungen konnten nicht geprüft werden.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(
     action: TaskCommand["action"],
     confirmed = false,
     acknowledgements?: ActionAcknowledgement,
+    preparedBody?: Record<string, unknown>,
   ) {
     if (submitLock.current || pending || !canSubmit(action, confirmed)) return;
     submitLock.current = true;
     setError("");
     setBusy(true);
     try {
-      const body = buildSubmission(action, confirmed, acknowledgements);
+      const body =
+        preparedBody ?? buildSubmission(action, confirmed, acknowledgements);
       const hash = JSON.stringify(body);
       if (attempt.current?.hash !== hash)
         attempt.current = { hash, key: crypto.randomUUID() };
@@ -1263,46 +1360,25 @@ export function TaskEditor({
           {taskId && !inspection && (
             <p role="status">Aktuelle Todoist-Quelle wird geladen …</p>
           )}
-          {error && (
+          {error && !savePreview && (
             <p role="alert" className="form-error">
               {error}
             </p>
           )}
-          {operation && (
+          {operation && !savePreview && (
             <p>
               <output>{operationStatus(operation)}</output>
             </p>
           )}
-          {operation && <TaskOperationEvidence operation={operation} />}
-          {requestUncertain && (
+          {operation && !savePreview && (
+            <TaskOperationEvidence operation={operation} />
+          )}
+          {requestUncertain && !savePreview && (
             <button
               type="button"
               className="secondary"
               disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  const rows: TaskOperationView[] = await api("/api/tasks");
-                  const row = rows.find(
-                    (r) =>
-                      !!attempt.current?.key &&
-                      r.input?.key === attempt.current.key,
-                  );
-                  if (row) {
-                    setRequestUncertain(false);
-                    acceptOperation(row);
-                  } else
-                    setError(
-                      "Noch kein eindeutig zuordenbarer Journalnachweis verfügbar. Eingaben und Auftrag bleiben ungeklärt; nicht erneut senden.",
-                    );
-                } catch (e) {
-                  setError(
-                    e instanceof Error ? e.message : "Journal nicht verfügbar.",
-                  );
-                } finally {
-                  setBusy(false);
-                }
-              }}
+              onClick={() => void checkSubmittedJournal()}
             >
               <Icon name="refresh" />
               Schreibauftrag im Journal prüfen
@@ -1334,7 +1410,7 @@ export function TaskEditor({
               id={formId}
               onSubmit={(e) => {
                 e.preventDefault();
-                void submit(taskId ? "update" : "create");
+                void requestSave();
               }}
             >
               <label>
@@ -1531,6 +1607,8 @@ export function TaskEditor({
                 context={context}
                 taskId={inspection.task.id}
                 snapshot={snapshot}
+                controllerRef={documentRef}
+                onRequestSave={() => void requestSave()}
                 onStateChange={setDocumentState}
                 onVerified={refreshDocumentSource}
                 sourceControls={false}
@@ -1619,6 +1697,25 @@ export function TaskEditor({
               ),
             )}
         </footer>
+        {savePreview && (
+          <TaskSaveDialog
+            preview={savePreview.preview}
+            checkJournal={
+              requestUncertain ? () => void checkSubmittedJournal() : undefined
+            }
+            documents={savePreview.documents}
+            pending={pending}
+            processing={
+              busy || ["queued", "running"].includes(operation?.status ?? "")
+            }
+            error={error}
+            operation={operation}
+            close={() => setSavePreview(null)}
+            confirm={() =>
+              void submit("update", true, undefined, savePreview.body)
+            }
+          />
+        )}
         {actionDialog && inspection && (
           <TaskActionDialog
             key={actionDialog}

@@ -145,3 +145,7 @@ Der bestätigte E9.3-Stil bleibt erhalten. Einmalige Fortschrittsaktionen werden
 ## E9.5 – Aufgaben lesen und bearbeiten
 
 Aufgeklappte Aufgaben zeigen kompakte Eigenschaftsfelder, Beschreibung, Kommentare und getrennte technische Details. Bearbeiten öffnet das Grundformular mit dauerhaft sichtbarer Aktionsleiste. Abschluss, Löschen, Verschieben, Warten und Kommentare haben eigene Dialoge. Ziel, Checkliste und Dokumentenlinks behalten ihre ausdrückliche Vorschau-/Speicherentscheidung. Bestehende Entwürfe, native Hierarchien und ungeklärte Operationen bleiben geschützt. [Prüfbericht und manuelle Nachprüfung](docs/development/e9.5-verification.md). Die menschliche Abnahme erfolgt separat.
+
+## E9.6 – Gemeinsam speichern
+
+Speichern sammelt Grundinformationen, Ziel, Checkliste und Dokumentenlinks in einem kompakten Bestätigungsdialog. Die bestehende Quellen- und Journalprüfung weist den gesamten nativen Patch nach; ungeklärte Ergebnisse bleiben gesperrt. [Vertrag](docs/architecture/task-save.md), [Prüfstand und menschliche Nachprüfung](docs/development/e9.6-verification.md).
