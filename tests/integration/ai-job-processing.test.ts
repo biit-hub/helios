@@ -1,3 +1,4 @@
+import { assertOrdinaryAiTask } from "../../packages/backend/src/ai-jobs/reference";
 import { createTaskService } from "../../packages/backend/src/tasks/service";
 import { createPlanExecutor } from "@helios/backend";
 import { createTodoistMover } from "../../packages/backend/src/planning/todoist";
@@ -398,7 +399,11 @@ it("rejects child completion after parent changes and preserves both tasks", asy
   expect(h.f.control.calls).toHaveLength(1);
 });
 it("deletes only a consciously selected owned aggregate and retains the E4 journal while blocking its later resume", async () => {
-  const { job } = await delegated();
+  const { job, contextId } = await delegated();
+  const [owner] = await h.db.db
+    .select({ userId: aiJobs.userId })
+    .from(aiJobs)
+    .where(eq(aiJobs.id, job.id));
   await service().handle("close", h.headers(), command(job));
   let current = await detail(job.id);
   await expect(
@@ -410,6 +415,14 @@ it("deletes only a consciously selected owned aggregate and retains the E4 journ
   const op = current.reference!.closeOperationId!;
   await service().handle("delete", h.headers(), command(current));
   await expect(detail(job.id)).rejects.toThrow("AI_JOB_NOT_FOUND");
+  await expect(
+    assertOrdinaryAiTask(
+      h.db.db,
+      owner!.userId,
+      contextId,
+      h.f.state.tasks[1]!,
+    ),
+  ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
   await expect(
     createTaskService(h.db, h.config, reader()).handle("resume", h.headers(), {
       operationId: op,

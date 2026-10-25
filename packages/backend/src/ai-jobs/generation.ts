@@ -9,12 +9,20 @@ import {
   type ModelDiscovery,
 } from "./models";
 
-const content = z.string().min(1).max(12000);
+const content = z
+  .string()
+  .min(1)
+  .max(12000)
+  .refine((text) => !!text.trim());
 export const jobAnswer = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("question"), text: content }),
   z.strictObject({
     kind: z.literal("result"),
-    text: z.string().min(1).max(32000),
+    text: z
+      .string()
+      .min(1)
+      .max(32000)
+      .refine((text) => !!text.trim()),
     uncertainties: z.array(z.string().max(1000)).max(12),
     document: z
       .strictObject({

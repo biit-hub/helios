@@ -319,7 +319,9 @@ export function AiJobDetails({
             <p>
               Ursprung: {job.reference.title} · Todoist-Verknüpfung:{" "}
               {referenceNames[job.reference.state]}
-              {["unknown", "error"].includes(job.reference.state) && (
+              {["unknown", "error", "closing"].includes(
+                job.reference.state,
+              ) && (
                 <>
                   {" "}
                   · <Link href="/problems">Operationsjournal prüfen</Link>

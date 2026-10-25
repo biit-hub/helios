@@ -373,3 +373,10 @@ it("extracts bounded source text without scripts and rejects private destination
     readPublicPage("http://169.254.169.254/", new AbortController().signal),
   ).rejects.toThrow("AI_JOB_RESEARCH_BLOCKED");
 });
+
+it.each([
+  { kind: "question", text: "   " },
+  { kind: "result", text: "\n", document: null, uncertainties: [] },
+])("rejects whitespace-only questions and results %#", (answer) => {
+  expect(() => validateJobAnswer(answer, "text")).toThrow();
+});

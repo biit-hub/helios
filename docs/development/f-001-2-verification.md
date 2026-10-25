@@ -14,11 +14,12 @@ Die [Architektur und Grenzen](../architecture/ai-jobs.md) dokumentieren Hintergr
 
 Die endgültigen Ergebnisse werden vor Integration für denselben Quellstand im PR nachgewiesen. Bis alle Gates bestanden sind, ist diese Etappe nicht technisch abgeschlossen.
 
-- Vollständige lokale Unit-/UI-Regression: 334 Tests in 32 Dateien bestanden. Vollständige PostgreSQL-Regression: 297 Tests in 16 Dateien bestanden. Lint, Workspace-Typprüfung, Build, Secretprüfung und Produktionsabhängigkeitsprüfung erfolgreich.
+- Vollständige lokale Unit-/UI-Regression: 337 Tests in 32 Dateien bestanden. Vollständige PostgreSQL-Regression: 297 Tests in 16 Dateien bestanden. Lint, Workspace-Typprüfung, Build, Secretprüfung und Produktionsabhängigkeitsprüfung erfolgreich.
 - Bereits gezielt geprüft: 16 synthetische PostgreSQL-Verträge für Verarbeitung, Serialisierung, Fragezyklen, Sitzungsablauf, Revisionen, Wiederaufnahme, Ergebnisse/Dateien, nativen Abschluss, Unknown-Abgleich, Elternkonflikte und Löschschutz bestanden.
-- Gezielte Unit-/UI-Prüfung: 26 Datei-/Recherche-/Modellverträge und 16 bisherige KI-UI-Verträge bestanden; vier neue Workflow-UI-Fälle bestanden.
-- Image-/Layerscans, isolierter Compose-Smoke, verschlüsselte Restore-Probe und finale CI-/Sonar-Gates bleiben vor Integration erforderlich.
-- Gezielte Browserverträge für bisherige Verwaltung und neue Rückfrage/Antwort, verlorene Rückmeldung, automatische Fortsetzung, zwei Ergebnisversionen, bewussten Abschluss, echten Word-Download und globale Probleme auf Desktop und Mobil erfolgreich: vier Fälle ohne Fehler. Der vollständige Browserlauf bleibt vor PR-Erstellung erforderlich.
+- Gezielte Unit-/UI-Prüfung: 28 Datei-/Recherche-/Modellverträge und 16 bisherige KI-UI-Verträge bestanden; fünf neue Workflow-UI-Fälle bestanden.
+- Verschlüsselte isolierte Restore-Probe mit 17 SQL-Migrationen und 26 fachlichen Tabellen erfolgreich: alte E1–E9-/F-001.1-Daten, zwei Ergebnis-/Dateiversionen, Frage/Antwort, Prioritätssequenz und ungeklärter nativer Close erhalten. Restaurierte Single-Running-/Single-Answer- und Historienguards erneut geprüft; kein Worker, kein externer Aufruf und keine Klartext-Dumpdatei.
+- Erste exakte Image-/Layerscans ohne behebbare HIGH/CRITICAL- oder Secretbefunde; alle fünf Renderer samt Fontintegrität im tatsächlichen Worker-Image ohne Netzwerk erfolgreich. Die abschliessenden Images und der Compose-Smoke werden nach der letzten HTTP-Guard-Korrektur erneut geprüft und im PR nachgewiesen. Finale CI-/Sonar-Gates bleiben vor Integration erforderlich.
+- Gezielte Browserverträge für bisherige Verwaltung und neue Rückfrage/Antwort, verlorene Rückmeldung, automatische Fortsetzung, zwei Ergebnisversionen, bewussten Abschluss, echten Word-Download und globale Probleme auf Desktop und Mobil erfolgreich: vier Fälle ohne Fehler. Vollständige Browserregression: 31 bestanden, 13 bestehende bewusste Skips, keine Fehler. Danach vier betroffene Desktop-/Mobilfälle mit dem abschliessenden Download-Guard erneut bestanden.
 
 Alle automatisierten Todoist-Verträge verwenden isolierte `_test`-Datenbanken und synthetische Quellen. Keine produktiven Aufgaben, Zugangsdaten oder Prompts. Reale Ollama-Prüfungen dürfen ausschliesslich Metadaten oder ausdrücklich synthetische Inferenz verwenden, ohne Modellinstallation oder Downloads. Verschlüsselte Restore-Prüfungen starten keinen Worker und führen keine externen Aktionen aus.
 
@@ -33,3 +34,5 @@ Die menschliche Funktionsabnahme wird nicht automatisch als bestanden markiert. 
 Kein Main-Commit, Release, Docker-Hub-Push, Produktivdeployment oder Start von E10. Die abschliessende lokale Installation erfolgt erst nach erfolgreichen Gates, frischem geprüftem verschlüsseltem Backup und Nachweis des Datenerhalts.
 
 Ein direkter kontrollierter Webseiten-Lesetest gegen die öffentliche IANA-Beispieldokumentation war erfolgreich (1263 Zeichen, keine Zugangsdaten, kein Suchquery und kein privater Prompt). Dies ersetzt nicht die offene Live-Abnahme des noch unkonfigurierten Suchgateways.
+
+Reales lokales Ollama: Windows und isolierter Worker sehen denselben Katalog (sieben installierte, sechs geeignete lokale Modelle). Ein einzelner synthetischer strukturierter Textauftrag auf dem vorhandenen konfigurierten Modell war in 4,5 Sekunden erfolgreich. Keine Modellinstallation, kein Download, keine Einstellungsänderung und kein Todoist-Aufruf.

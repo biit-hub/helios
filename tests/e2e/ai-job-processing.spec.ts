@@ -35,7 +35,15 @@ async function create(
 test("F-001.2 questions, automatic continuation, immutable refinement, conscious completion, real file download and global failures", async ({
   page,
   baseURL,
+  playwright,
 }, info) => {
+  const anonymous = await playwright.request.newContext({ baseURL });
+  expect(
+    (
+      await anonymous.get("/api/ai-jobs/artifact?job=invalid&id=invalid")
+    ).status(),
+  ).toBe(401);
+  await anonymous.dispose();
   const { errors } = await bootstrapWorkSettings(page, baseURL);
   await page
     .getByRole("button", { name: "KI-Delegation", exact: true })

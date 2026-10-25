@@ -47,7 +47,7 @@ const server = createServer(async (req, res) => {
       for await (const chunk of req) raw += chunk;
       const data = JSON.parse(raw);
       if (data.holdGpu === true && !gpuClient) {
-        gpuClient = await gpuDatabase.pool.connect();
+        gpuClient = await connectGpu();
         await gpuClient.query("select pg_advisory_lock(1748014)");
       }
       if (data.releaseGpu === true || data.reset === true) await releaseGpu();

@@ -102,6 +102,14 @@ export function AiJobWorkflow({
       }
       accepted(value, request);
     } catch (e) {
+      if (
+        request.action === "delete" &&
+        e instanceof AiJobRequestError &&
+        e.status === 404
+      ) {
+        deleted();
+        return;
+      }
       setError((e as Error).message);
       if (
         e instanceof AiJobRequestError &&

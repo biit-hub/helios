@@ -1,3 +1,4 @@
+import { identity } from "../../../../lib/identity";
 import { aiJobs } from "../../../../lib/ai-jobs";
 import { publicWorkError } from "@helios/backend";
 export const runtime = "nodejs";
@@ -8,6 +9,7 @@ export async function GET(request: Request) {
     "X-Content-Type-Options": "nosniff",
   };
   try {
+    await identity().requireActive(request.headers);
     const params = new URL(request.url).searchParams;
     const file = await aiJobs().artifact(
       request.headers,
