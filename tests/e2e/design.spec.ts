@@ -23,6 +23,17 @@ async function capture(page: Page, name: string) {
       await expect(
         page.locator('.context-picker [aria-pressed="true"]'),
       ).toBeVisible();
+    if (name === "plan-preview") {
+      const choice = page
+        .getByRole("checkbox", { name: "Einplanen", exact: true })
+        .first();
+      await expect(choice).toBeVisible();
+      const row = await choice.evaluate((input) => {
+        const style = getComputedStyle(input.closest("label")!);
+        return { display: style.display, direction: style.flexDirection };
+      });
+      expect(row).toEqual({ display: "flex", direction: "row" });
+    }
     if (name === "epics")
       await expect(page.locator(".epic-grid h3").first()).toBeVisible();
     if (name === "agenda" || name === "focus")

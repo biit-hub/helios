@@ -304,7 +304,9 @@
     padding: 10px;
   }
 }
-.ui-form-field:not(.check):not(.check-label):not(.task-fun-switch) {
+.ui-form-field:not(.check):not(.check-label):not(.task-fun-switch):not(
+    :has(> .ui-checkbox)
+  ) {
   display: grid;
   gap: 6px;
 }
@@ -386,8 +388,9 @@
   border-color: #b58046;
 }
 
-.ui-form-field:has(> .ui-checkbox) {
+label.ui-form-field:has(> .ui-checkbox) {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: var(--ui-control-gap);
 }
