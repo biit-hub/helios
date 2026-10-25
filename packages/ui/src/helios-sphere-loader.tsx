@@ -170,6 +170,7 @@ export function HeliosSphereLoader({
         ref={canvasRef}
         className={className}
         aria-hidden="true"
+        tabIndex={-1}
         width={size}
         height={size}
         style={{
