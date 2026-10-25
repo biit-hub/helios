@@ -1002,6 +1002,11 @@ export function TaskEditor({
         ...body,
         key: attempt.current!.key,
       });
+      if (typeof result?.operationId !== "string" || !result.operationId.trim())
+        throw new TaskApiFailure(
+          "Auftragsantwort nicht sicher auswertbar. Den ursprünglichen Auftrag im Journal prüfen; nicht erneut senden.",
+          true,
+        );
       setOperation({
         id: result.operationId,
         status: "queued",
@@ -1346,6 +1351,13 @@ export function TaskEditor({
                   }}
                 />
               </div>
+              {inspection?.task.due?.is_recurring && (
+                <p className="help">
+                  Aktuelle Wiederholung:{" "}
+                  {inspection.task.due.string ??
+                    "Von Todoist als wiederholend gemeldet"}
+                </p>
+              )}
               <section className="task-planning-fields" aria-label="Planung">
                 <div className="task-fields">
                   <label>

@@ -219,7 +219,10 @@ test("E9.1 synthetic desktop design evidence: Epic and SMART editor", async ({
   ).toBeVisible();
   await capture(page, "epics");
   await page.getByRole("button", { name: "Epic öffnen", exact: true }).click();
-  await page.locator(".task-document summary").first().click();
+  await page
+    .locator(".task-document summary")
+    .filter({ hasText: /^Ziel$/ })
+    .click();
   await expect(
     page.getByRole("textbox", { name: "Ziel", exact: true }),
   ).toHaveValue("Handbuch veröffentlichen");

@@ -384,7 +384,7 @@ it("waits for an existing read pause to end before loading an already open comme
   ).toBeVisible();
   expect(load).toHaveBeenCalledOnce();
 });
-it.each(["transport", "server"])(
+it.each(["transport", "server", "acknowledgement"])(
   "blocks changed requests after a %s submit failure and recovers only by reading the same journal key",
   async (kind) => {
     const posts: TaskCommand[] = [];
@@ -394,6 +394,7 @@ it.each(["transport", "server"])(
         if (url === "/api/tasks/submit") {
           posts.push(JSON.parse(init!.body as string));
           if (kind === "transport") throw new TypeError("synthetic lost reply");
+          if (kind === "acknowledgement") return Response.json({});
           return Response.json(
             { error: { message: "Synthetic server response" } },
             { status: 500 },
@@ -590,6 +591,7 @@ it("does not adopt another recurrence instance when refreshing after a document 
     />,
   );
   await screen.findByDisplayValue(source.task.content);
+  expect(screen.getByText("Aktuelle Wiederholung: every week")).toBeVisible();
   fireEvent.click(
     screen.getByRole("button", { name: "Dokumentnachweis nachlesen" }),
   );
