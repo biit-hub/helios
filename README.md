@@ -141,3 +141,7 @@ Einstellungen: links das Kapitel wählen, rechts Privat oder Arbeitgeber bearbei
 ## E9.4 – Stabilisierung und gezielter Feinschliff
 
 Der bestätigte E9.3-Stil bleibt erhalten. Einmalige Fortschrittsaktionen werden nach dem Öffnen aus der URL konsumiert; Kontextwechsel und Reload öffnen keine Dialoge von selbst. Die Aufgabenwahl ist durchsuchbar. Headerdatum, Farbfelder, verständliche Zuordnungsnamen und Tagesauswahl-Aktionen sind gezielt überarbeitet. Das bestehende Journal zeigt feldgenaue Nachweise und Übertragungsfehler, ohne Unknown-Operationen zu wiederholen. Im separaten Free-Testkonto wird Dauer trotz HTTP 200 nicht gespeichert; positive berechtigungspflichtige Dauer-/Deadline-Liveabnahmen und die menschliche Fachabnahme bleiben offen. [Ursachen, Prüfstand und manuelle Nachprüfung](docs/development/e9.4-verification.md). Kein Release oder E10.
+
+## E9.5 – Aufgaben lesen und bearbeiten
+
+Aufgeklappte Aufgaben zeigen kompakte Eigenschaftsfelder, Beschreibung, Kommentare und getrennte technische Details. Bearbeiten öffnet das Grundformular mit dauerhaft sichtbarer Aktionsleiste. Abschluss, Löschen, Verschieben, Warten und Kommentare haben eigene Dialoge. Ziel, Checkliste und Dokumentenlinks behalten ihre ausdrückliche Vorschau-/Speicherentscheidung. Bestehende Entwürfe, native Hierarchien und ungeklärte Operationen bleiben geschützt. [Prüfbericht und manuelle Nachprüfung](docs/development/e9.5-verification.md). Die menschliche Abnahme erfolgt separat.
