@@ -1,4 +1,5 @@
 "use client";
+import { AiJobCapture } from "./ai-job-capture";
 import { documentDraftChanges } from "./document-save";
 import { TaskSaveDialog } from "./task-save-dialog";
 import type { DocumentController } from "./use-task-document";
@@ -404,6 +405,9 @@ export function TaskManager({
             </summary>
             {renderTask(t)}
             <div className="task-card-actions">
+              <AiJobCapture
+                origin={{ contextId: context.id, taskId: t.data.id }}
+              />
               {(["edit", "close", "delete"] as const).map((kind) => (
                 <button
                   type="button"

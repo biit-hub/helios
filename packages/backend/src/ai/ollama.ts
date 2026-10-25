@@ -125,3 +125,4 @@ export function createOllama(
     }
   };
 }
+export { boundedText as boundedOllamaText };

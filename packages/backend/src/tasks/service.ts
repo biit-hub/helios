@@ -1,4 +1,10 @@
 import { prepareTaskSave } from "./save";
+import {
+  assertJobParent,
+  linkJob,
+  type JobDelegation,
+  type JobLink,
+} from "../ai-jobs/journal";
 import { validateUserLabels } from "./labels";
 import { descendants } from "./hierarchy";
 import { prepareEpicClosure } from "../epics/close";
@@ -37,6 +43,7 @@ import { linkDraft, resumeDraftLink, type DraftLink } from "../ai/store";
 import { readWaiting } from "./waiting";
 import { linkPlan, type PlanLink } from "../planning/agenda-store";
 export type TaskPayload = {
+  jobLink?: JobLink;
   epicClosure?: import("../epics/close").EpicClosure;
   routineLink?: RoutineLink;
   analysisLink?: import("../ai/status-policy").AnalysisLink;
@@ -167,6 +174,7 @@ export function createTaskService(
     planLink?: PlanLink,
     draftLink?: DraftLink,
     routineLink?: RoutineLink,
+    delegation?: JobDelegation,
   ) {
     const command = taskCommand.parse(raw);
     if (command.documents && command.action !== "update")
@@ -176,13 +184,15 @@ export function createTaskService(
     if (command.action === "plan-select" && !planLink)
       throw new WorkFault("INVALID_REQUEST");
     const hash = fingerprint(
-      routineLink
-        ? { command, routineLink }
-        : draftLink
-          ? { command, draftLink }
-          : planLink
-            ? { command, planLink }
-            : command,
+      delegation
+        ? { command, jobLink: delegation.link }
+        : routineLink
+          ? { command, routineLink }
+          : draftLink
+            ? { command, draftLink }
+            : planLink
+              ? { command, planLink }
+              : command,
     );
     const base = await identity.withActive(
       h,
@@ -251,6 +261,12 @@ export function createTaskService(
     const project = await reader.project(token, projectId);
     if (project.is_archived || project.is_deleted)
       throw new WorkFault("PROJECT_NOT_ASSIGNABLE", 409);
+    if (delegation)
+      assertJobParent(
+        delegation.link,
+        { projectId },
+        await reader.task(token, delegation.link.parentId),
+      );
     if (routineLink?.kind === "inbox" && !project.inbox_project)
       throw new WorkFault("ROUTINE_SCOPE_DENIED", 409);
     let source: TodoistTask | null = null,
@@ -332,6 +348,7 @@ export function createTaskService(
       children,
     );
     const payload: TaskPayload = {
+      ...(delegation ? { jobLink: delegation.link } : {}),
       ...(epicClosure ? { epicClosure } : {}),
       ...(planLink ? { planLink } : {}),
       ...(draftLink ? { draftLink } : {}),
@@ -394,6 +411,7 @@ export function createTaskService(
           status: "queued",
           intentExpiresAt: new Date(Date.now() + 600000),
         });
+        if (delegation) await linkJob(db, user, delegation, id, payload);
         await db.insert(planSteps).values({
           id: randomUUID(),
           operationId: id,
@@ -447,6 +465,14 @@ export function createTaskService(
     });
   }
   return {
+    async enqueueDelegation(
+      h: Headers,
+      input: unknown,
+      delegation: JobDelegation,
+    ) {
+      await identity.withActive(h, { mutation: true }, async () => {});
+      return enqueue(h, input, undefined, undefined, undefined, delegation);
+    },
     async enqueueDraft(h: Headers, input: unknown, link: DraftLink) {
       await identity.withActive(h, { mutation: true }, async () => {});
       return enqueue(h, input, undefined, link);

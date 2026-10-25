@@ -41,7 +41,12 @@ E1.2 ergänzt AUTH_SECRET und die Authentifizierungstabellen als geschützte Sic
 
 E2 ergänzt INTEGRATION_KEY als separat geschützten Sicherungsbestandteil sowie Kontexte/Integration/Catalog/Taskprojektionen/Probleme. Ohne den passenden Schlüssel kann ein gesicherter Todoist-Token nicht entschlüsselt werden. Nach isoliertem Restore erst Auth-Recovery, dann bewusst Token/Projektzuordnung lesend prüfen; keine alten Queuejobs oder Testorigins automatisch übernehmen.
 
-
 ## E9-Snapshotdaten
 
 Sicherung umfasst Integrationen, Quellenkatalog, Zuordnungen, Tagesentscheidungen und die noch aufbewahrten Snapshots. Planhistorien enthalten ihre unabhängige aggregierte Grundlage und bleiben nach Snapshotablauf lesbar. RESTORE_MODE blockiert TermiHub-Jobs und Snapshotbereinigung. E9-Testdatenbanken/Volumes werden gemäss Ressourcenauftrag erhalten; kein automatisches DROP oder Volume-Prune. Lokale age-Backups und isolierte Restore-Proben bleiben freigegeben, Synology erst bei Produktivinstallation.
+
+## F-001-KI-Aufträge
+
+Die additive F-001-Migration nimmt Aufträge, Modelleinstellungen, optionale Todoist-Referenzen, Queue-/Prioritätspositionen, Fragen/Antworten, Ausführungsversuche, unveränderliche Ergebnisversionen und Binärdateien in PostgreSQL auf. Der vollständige Custom-Dump umfasst diese Daten und die Queue-Sequenz. Es ist kein öffentliches Dateiverzeichnis zu sichern. Ergebnisse und Dateien haben keine automatische E6-30-Tage-Bereinigung.
+
+Eine Restore-Probe muss neben E1–E9 insbesondere Originalprompts, Gespräch, Modell-/Parameterbindung, Dateiinhalt und dessen Hash, Queue-Reihenfolge sowie unbekannte native Journale vergleichen. Historien-/Scope-Trigger danach erneut prüfen. Restore-Modus beibehalten; kein automatischer Replay ungeklärter Inferenz oder nativer Creates. Worker erst nach kontrollierter Freigabe starten. Lokale verschlüsselte Entwicklungsbackups bleiben zulässig; spätere NAS-Zielkonfiguration wird dadurch nicht vorweggenommen.

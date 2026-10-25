@@ -1,5 +1,14 @@
 # Changelog
 
+## F-001.1 – Lokale KI-Auftragsverwaltung (menschliche Abnahme offen)
+
+- Globale KI-Aufträge mit lokalem Originalprompt, Statusfilter, Datumssortierung, vollständiger Detailhistorie und geschützten Eingaben.
+- Dynamische private Ollama-Modellabfrage, bewusste Konfiguration je Ausgabe und keine stillen Ersatzmodelle.
+- Persistente FIFO-Warteschlange, einmalige FIFO-Priorisierung und Stoppen wartender Aufträge; acht additive Tabellen mit Historien- und Scope-Schutz.
+- Spontane Aufträge bleiben lokal; delegierte Aufgaben erhalten ausschliesslich eine reine Unteraufgabenreferenz über das E4-Journal. Originalaufgabe, Unknown-/Partial-Schutz und bestehende Fachregeln bleiben erhalten.
+- F-001-Ausführung und Ergebnisse folgen separat in F-001.2; E10 bleibt gesperrt.
+
+
 ## E9.6 – Gemeinsames Speichern und gezielter UI-Feinschliff (menschliche Abnahme offen)
 
 - Speichern berücksichtigt Grundinformationen, Ziel, Checkliste und Dokumentenlinks in einem kompakten Bestätigungsdialog; Vorher/Nachher bleibt optional aufklappbar.

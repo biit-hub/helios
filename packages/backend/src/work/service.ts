@@ -5,7 +5,12 @@ import { randomUUID, createHash } from "node:crypto";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { symmetricEncrypt, symmetricDecrypt } from "better-auth/crypto";
-import { contextInput, externalId, problemMessages } from "@helios/contracts";
+import {
+  contextInput,
+  externalId,
+  problemMessages,
+  aiJobErrorMessages,
+} from "@helios/contracts";
 import type {
   ContextInput,
   ProblemCode,
@@ -869,6 +874,7 @@ export function createWorkService(
   };
 }
 const workErrorMessages: Record<string, string> = {
+  ...aiJobErrorMessages,
   AI_SOURCE_TOO_LARGE:
     "Die KI-Quelle ist zu umfangreich. Ziele und Checklisten bleiben manuell bearbeitbar; bitte die Aufgabe oder einen kleineren Teilbaum gezielt prüfen.",
   MARKDOWN_AMBIGUOUS:

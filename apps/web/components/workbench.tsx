@@ -1,4 +1,7 @@
 "use client";
+import { AiJobs } from "./ai-jobs";
+import { AiJobCapture } from "./ai-job-capture";
+import { AiJobSettingsPanel } from "./ai-job-settings";
 import { TaskAccordion } from "./task-accordion";
 import { TaskComments } from "./task-comments";
 import { TaskProperties } from "./task-properties";
@@ -56,6 +59,7 @@ export function Workbench({
   mobile = false,
   problems = false,
   security = false,
+  aiJobs = false,
 }: Readonly<{
   planning?: "focus" | "plan";
   routine?: boolean;
@@ -64,6 +68,7 @@ export function Workbench({
   mobile?: boolean;
   problems?: boolean;
   security?: boolean;
+  aiJobs?: boolean;
 }>) {
   const navigationLocked = useNavigationLocked();
   const [chapter, setChapter] = useState(security ? "security" : "contexts"),
@@ -71,7 +76,7 @@ export function Workbench({
     [settingEmployer, setSettingEmployer] = useState(""),
     [stepUpOpen, setStepUpOpen] = useState(false),
     [stepUpBusy, setStepUpBusy] = useState(false);
-  const contextual = !settings && !routine && !problems;
+  const contextual = !settings && !routine && !problems && !aiJobs;
   const [snapshot, setSnapshot] = useState<WorkSnapshot | null>(null),
     [selected, setSelected] = useState(""),
     [loaded, setLoaded] = useState<{
@@ -88,6 +93,7 @@ export function Workbench({
     [refreshId, setRefreshId] = useState(0);
   const current = snapshot?.contexts.find((c) => c.id === selected);
   const pageTitle = {
+    "ai-jobs": "KI-Aufträge",
     problems: "Probleme",
     settings: "Einstellungen",
     morning: "Morgenroutine",
@@ -98,6 +104,7 @@ export function Workbench({
     tasks: "Aufgaben",
   };
   const view =
+    (aiJobs && "ai-jobs") ||
     (problems && "problems") ||
     (settings && "settings") ||
     (routine && "morning") ||
@@ -115,6 +122,7 @@ export function Workbench({
     const followHash = () => {
       const hash = window.location.hash;
       if (hash === "#termihub-settings") setChapter("hours");
+      if (hash === "#ai-delegation") setChapter("delegation");
       if (hash === "#todoist-settings") setChapter("connections");
       if (hash === "#sensitive-changes") setStepUpOpen(true);
     };
@@ -172,6 +180,7 @@ export function Workbench({
       planning ||
       routine ||
       epics ||
+      aiJobs ||
       problems
     )
       return;
@@ -218,6 +227,7 @@ export function Workbench({
     current?.revision,
     current?.projectId,
     problems,
+    aiJobs,
   ]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -373,13 +383,7 @@ export function Workbench({
               <Icon name="morning" />
               Morgenroutine starten
             </Link>
-            <div className="ux-future">
-              <button type="button" disabled>
-                <Icon name="sparkles" />
-                KI-Auftrag starten
-              </button>
-              <small>Noch nicht verfügbar</small>
-            </div>
+            <AiJobCapture disabled={busy || navigationLocked} />
           </div>
           <div className="ux-sidebar-footer">
             <span>Ein Schritt nach dem anderen.</span>
@@ -585,6 +589,7 @@ export function Workbench({
                   />
                 </div>
                 {chapter === "security" && <SecurityForm embedded />}
+                {chapter === "delegation" && <AiJobSettingsPanel />}
               </div>
             </div>
           )}
@@ -598,6 +603,7 @@ export function Workbench({
               />
             </>
           )}
+          {aiJobs && <AiJobs />}
           {stepUpOpen && (
             <UiDialog
               title="Sensible Änderungen bestätigen"
@@ -624,6 +630,7 @@ export function Workbench({
             !routine &&
             !epics &&
             !problems &&
+            !aiJobs &&
             current && (
               <TaskOverview
                 snapshot={snapshot}

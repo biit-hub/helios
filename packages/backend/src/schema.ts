@@ -20,3 +20,5 @@ export * from "./ai/schema";
 export * from "./routine/schema";
 
 export * from "./termihub/schema";
+
+export * from "./ai-jobs/schema";

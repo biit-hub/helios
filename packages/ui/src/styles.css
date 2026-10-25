@@ -162,3 +162,89 @@ footer {
     font-size: 16px;
   }
 }
+
+/* F-001: local AI jobs use the existing warm, compact workbench. */
+.ai-job-form,
+.ai-job-detail {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.ai-job-form label,
+.ai-job-setting label {
+  display: grid;
+  gap: 0.35rem;
+}
+.ai-job-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+.ai-job-setting {
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.65rem;
+}
+.ai-job-setting .check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ai-job-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+.ai-job-card {
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 0.9rem;
+  min-width: 0;
+}
+.ai-job-card h3,
+.ai-job-card p {
+  overflow-wrap: anywhere;
+}
+.ai-job-card h3 {
+  font-size: 1rem;
+  margin: 0.65rem 0 0.35rem;
+}
+.ai-job-card p {
+  margin: 0.4rem 0;
+}
+.ai-job-id {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.ai-job-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.ai-job-detail dl {
+  margin: 0.5rem 0;
+}
+.ai-job-detail dd {
+  margin: 0.2rem 0 0.65rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .ai-job-card .panel-heading {
+    flex-wrap: wrap;
+  }
+}
+.ai-job-detail > p,
+.ai-job-form > p,
+.ai-job-setting > p,
+.ai-job-setting > h3 {
+  margin: 0;
+}
+.ai-job-detail > h3 {
+  margin: 0.45rem 0 0;
+}
+.workspace .ai-job-card h3 {
+  font-size: 1rem;
+}
