@@ -1,3 +1,6 @@
+import { jobArtifact, deleteJob } from "./access";
+import { jobClosure } from "./closure";
+import { mutateJob, jobLifecycleCommand } from "./lifecycle";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -257,6 +260,13 @@ export function createAiJobService(
     );
   }
   return {
+    async artifact(headers: Headers, jobId: string, id: string) {
+      z.uuid().parse(jobId);
+      z.uuid().parse(id);
+      return identity.withActive(headers, {}, (db, user) =>
+        jobArtifact(db, user, jobId, id),
+      );
+    },
     async reference(headers: Headers, contextId: string, taskId: string) {
       z.uuid().parse(contextId);
       z.string().min(1).max(200).parse(taskId);
@@ -280,7 +290,28 @@ export function createAiJobService(
     },
     async handle(action: string, headers: Headers, raw: unknown) {
       if (action === "create") return create(headers, raw);
+      if (action === "close") {
+        mutable();
+        await jobClosure(database, config, tasks)(headers, raw);
+        return detail(headers, aiJobQueueCommand.parse(raw).id);
+      }
+      if (action === "delete") {
+        mutable();
+        const input = aiJobQueueCommand.parse(raw);
+        await identity.withActive(headers, { mutation: true }, (db, user) =>
+          deleteJob(db, user, input),
+        );
+        return { deleted: true };
+      }
       if (action === "settings") return saveSetting(headers, raw);
+      if (action === "answer" || action === "refine" || action === "retry") {
+        mutable();
+        const input = jobLifecycleCommand.parse(raw);
+        await identity.withActive(headers, { mutation: true }, (db, userId) =>
+          mutateJob(db, userId, input, action),
+        );
+        return detail(headers, input.id);
+      }
       if (action === "prioritize" || action === "stop") {
         mutable();
         const input = aiJobQueueCommand.parse(raw);

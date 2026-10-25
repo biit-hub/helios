@@ -1,5 +1,13 @@
 # Changelog
 
+## F-001.2 – Lokale Verarbeitung und Ergebnisse (menschliche Abnahme offen)
+
+- Serieller lokaler Ollama-Worker, persistente Claims, bewusstes Recovery und nachvollziehbare Ausführungsversuche.
+- Rückfragen mit automatischer Fortsetzung, Nachbearbeitung derselben ID und unveränderliche Ergebnisversionen.
+- Text, kontrollierte Recherche über einen optionalen privaten Suchgateway und echte lokale Word-/Excel-/CSV-/PDF-/Markdown-Dateien mit geschütztem Download.
+- Bewusster lokaler Abschluss, ausschliesslicher Referenzkind-Abschluss über E4 ohne Hierarchieverlust, getrennte Unknown-/Partial-Nachweise und globale KI-Probleme.
+- Bewusste lokale Löschung mit laufendem Operationsschutz; keine automatische F-001-Bereinigung, keine aktiven Benachrichtigungen oder externen KI-Aktionen. E10 bleibt gesperrt.
+
 ## F-001.1 – Lokale KI-Auftragsverwaltung (menschliche Abnahme offen)
 
 - Globale KI-Aufträge mit lokalem Originalprompt, Statusfilter, Datumssortierung, vollständiger Detailhistorie und geschützten Eingaben.
@@ -7,7 +15,6 @@
 - Persistente FIFO-Warteschlange, einmalige FIFO-Priorisierung und Stoppen wartender Aufträge; acht additive Tabellen mit Historien- und Scope-Schutz.
 - Spontane Aufträge bleiben lokal; delegierte Aufgaben erhalten ausschliesslich eine reine Unteraufgabenreferenz über das E4-Journal. Originalaufgabe, Unknown-/Partial-Schutz und bestehende Fachregeln bleiben erhalten.
 - F-001-Ausführung und Ergebnisse folgen separat in F-001.2; E10 bleibt gesperrt.
-
 
 ## E9.6 – Gemeinsames Speichern und gezielter UI-Feinschliff (menschliche Abnahme offen)
 

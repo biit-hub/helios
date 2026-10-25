@@ -1,3 +1,11 @@
+import {
+  assertCloseChild,
+  assertCloseParent,
+  linkJobClose,
+  authorizeJobClose,
+  type JobCloseLink,
+} from "../ai-jobs/closure";
+import { assertJobLinkExists } from "../ai-jobs/journal";
 import { prepareTaskSave } from "./save";
 import {
   assertJobParent,
@@ -44,6 +52,7 @@ import { readWaiting } from "./waiting";
 import { linkPlan, type PlanLink } from "../planning/agenda-store";
 export type TaskPayload = {
   jobLink?: JobLink;
+  jobClose?: JobCloseLink;
   epicClosure?: import("../epics/close").EpicClosure;
   routineLink?: RoutineLink;
   analysisLink?: import("../ai/status-policy").AnalysisLink;
@@ -63,11 +72,13 @@ function taskRequest(
   command: TaskCommand,
   links: {
     delegation?: JobDelegation;
+    jobClose?: JobCloseLink;
     routineLink?: RoutineLink;
     draftLink?: DraftLink;
     planLink?: PlanLink;
   },
 ) {
+  if (links.jobClose) return { command, jobClose: links.jobClose };
   if (links.delegation) return { command, jobLink: links.delegation.link };
   if (links.routineLink) return { command, routineLink: links.routineLink };
   if (links.draftLink) return { command, draftLink: links.draftLink };
@@ -190,6 +201,7 @@ export function createTaskService(
     draftLink?: DraftLink,
     routineLink?: RoutineLink,
     delegation?: JobDelegation,
+    jobClose?: JobCloseLink,
   ) {
     const command = taskCommand.parse(raw);
     if (command.documents && command.action !== "update")
@@ -199,7 +211,13 @@ export function createTaskService(
     if (command.action === "plan-select" && !planLink)
       throw new WorkFault("INVALID_REQUEST");
     const hash = fingerprint(
-      taskRequest(command, { delegation, routineLink, draftLink, planLink }),
+      taskRequest(command, {
+        delegation,
+        routineLink,
+        draftLink,
+        planLink,
+        jobClose,
+      }),
     );
     const base = await identity.withActive(
       h,
@@ -294,6 +312,16 @@ export function createTaskService(
       if (source.checked && command.action !== "delete")
         throw new WorkFault("TASK_ALREADY_CLOSED", 409);
     }
+    if (jobClose) {
+      if (command.action !== "close" || !source)
+        throw new WorkFault("INVALID_REQUEST");
+      assertCloseChild(jobClose, projectId, source, children);
+      assertCloseParent(
+        jobClose,
+        projectId,
+        await reader.task(token, jobClose.parentId),
+      );
+    }
     await validateUserLabels(
       reader,
       token,
@@ -356,6 +384,7 @@ export function createTaskService(
     );
     const payload: TaskPayload = {
       ...(delegation ? { jobLink: delegation.link } : {}),
+      ...(jobClose ? { jobClose } : {}),
       ...(epicClosure ? { epicClosure } : {}),
       ...(planLink ? { planLink } : {}),
       ...(draftLink ? { draftLink } : {}),
@@ -419,6 +448,7 @@ export function createTaskService(
           intentExpiresAt: new Date(Date.now() + 600000),
         });
         if (delegation) await linkJob(db, user, delegation, id, payload);
+        if (jobClose) await linkJobClose(db, user, jobClose, command.key, id);
         await db.insert(planSteps).values({
           id: randomUUID(),
           operationId: id,
@@ -472,6 +502,18 @@ export function createTaskService(
     });
   }
   return {
+    async enqueueJobClose(h: Headers, input: unknown, link: JobCloseLink) {
+      await identity.withActive(h, { mutation: true }, async () => {});
+      return enqueue(
+        h,
+        input,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        link,
+      );
+    },
     async enqueueDelegation(
       h: Headers,
       input: unknown,
@@ -626,7 +668,12 @@ export function createTaskService(
               throw new WorkFault("REVISION_CONFLICT", 409);
             if (op.retryAt && op.retryAt > new Date())
               throw new WorkFault("RETRY_LATER", 429);
-            const draftLink = (op.payload as unknown as TaskPayload)?.draftLink;
+            const payload = op.payload as unknown as TaskPayload;
+            if (payload.jobClose)
+              await authorizeJobClose(db, user, payload.jobClose, op.id);
+            if (payload.jobLink)
+              await assertJobLinkExists(db, user, payload.jobLink, op.id);
+            const draftLink = payload?.draftLink;
             if (draftLink) await resumeDraftLink(db, draftLink, op.id);
             await db
               .update(planOperations)

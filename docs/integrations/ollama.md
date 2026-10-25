@@ -23,3 +23,7 @@ Offizielle Grundlagen: [Chat](https://docs.ollama.com/api/chat), [strukturierte 
 Netzprüfung zuerst vom Windows-PC, danach im Worker durchführen. /api/version und /api/tags sind lesend; /api/show prüft die vorhandenen lokalen Gewichte. Ein synthetischer Chat ist ein Inferenztest und kein Modell-Download. Fehlermeldungen und öffentliche Diagnoseausgaben dürfen keine privaten Aufgaben oder Konfiguration enthalten.
 
 Vor jedem Aufruf wird das gewählte installierte Modell samt Digest nachgewiesen; der Digest wird im Entwurf protokolliert. Die finale synthetische Messung verwendet Prompt helios-e6-v4. Windows und der laufende Helios-Worker wurden am 15.10.2026 erneut lesend über /api/version geprüft.
+
+## F-001.2
+
+Die eigenständige KI-Auftragsverarbeitung verwendet die pro Ausgabe bestätigten lokalen Modelle und das vorhandene `OLLAMA_BASE_URL`. Hintergrundautorisierung, serieller GPU-Lock, Rechercheanschluss, Ausführungsgrenzen, Dateien und Recovery sind im [F-001-Vertrag](../architecture/ai-jobs.md#f-0012-verarbeitung-und-ergebnisworkflow) beschrieben. `OLLAMA_MODEL` bleibt das separate E6-Profil. Kein Cloud-Fallback oder Download. Die optionale `RESEARCH_SEARXNG_BASE_URL` ist ein vorhandener privater Suchgateway; ohne ihn ist eine positive Rechercheabnahme offen.

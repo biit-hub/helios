@@ -37,6 +37,51 @@ export async function ollamaFixture(
   const body = JSON.parse(raw);
   const data = JSON.parse(body.messages[1].content);
   const system = body.messages[0].content as string;
+  if (system.startsWith("Helios F-001.")) {
+    const answer =
+      data.prompt.includes("Synthetische Rückfrage") &&
+      !data.turns.some((t: { kind: string }) => t.kind === "answer")
+        ? { kind: "question", text: "Welche synthetische Zielgruppe?" }
+        : {
+            kind: "result",
+            text: data.turns.some(
+              (t: { kind: string }) => t.kind === "refinement",
+            )
+              ? "Synthetisch nachbearbeitetes Ergebnis"
+              : "Synthetisches geprüf tes Ergebnis".replace(
+                  "geprüf tes",
+                  "geprüftes",
+                ),
+            uncertainties: [],
+            document:
+              data.output === "file"
+                ? {
+                    title: "Synthetische Datei",
+                    paragraphs: [
+                      "Grüsse aus Zürich. Nur lokale synthetische Daten.",
+                    ],
+                    columns: ["Name", "Wert"],
+                    rows: [["Synthetisch", "12"]],
+                  }
+                : null,
+          };
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        model: "synthetic-local",
+        done: true,
+        done_reason: "stop",
+        message: {
+          role: "assistant",
+          content: data.prompt.includes("Synthetischer Modellfehler")
+            ? "not-json"
+            : JSON.stringify(answer),
+        },
+        eval_count: 12,
+      }),
+    );
+    return true;
+  }
   const input = data.originalInput as string;
   if (control.mode === "unavailable") {
     res.writeHead(503);

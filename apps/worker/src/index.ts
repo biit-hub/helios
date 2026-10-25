@@ -8,6 +8,7 @@ import {
   loadWorkConfig,
   createPlanExecutor,
   createAiWorker,
+  createAiJobWorker,
   AI_DISPATCH_INTERVAL_MS,
   createTermiHubWorker,
   log,
@@ -22,6 +23,7 @@ const boss = createQueue(config.DATABASE_URL);
 const id = randomUUID();
 const executor = createPlanExecutor(database, config);
 const ai = createAiWorker(database, config, boss);
+const aiJobs = createAiJobWorker(database, config, boss);
 const calendar = createTermiHubWorker(database, config, boss);
 let calendarTimer: ReturnType<typeof setInterval> | undefined;
 let calendarBusy = false;
@@ -63,6 +65,7 @@ async function shutdown(code = 0) {
   clearInterval(cleanupTimer);
   clearInterval(scanTimer);
   ai.stop();
+  aiJobs.stop();
   await boss.stop({ graceful: true, timeout: 10000 });
   await database.close();
   process.exit(code);
@@ -71,6 +74,7 @@ try {
   await prepareQueue(boss);
   await registerSmokeHandler(boss, database);
   await ai.register();
+  await aiJobs.register();
   await calendar.register();
   calendarTimer = setInterval(() => {
     if (calendarBusy) return;
@@ -97,6 +101,7 @@ try {
     aiBusy = true;
     void ai
       .dispatch()
+      .then(() => aiJobs.dispatch())
       .catch(() => log("error", "ai_dispatch_failed"))
       .finally(() => {
         aiBusy = false;

@@ -1,3 +1,4 @@
+import { jobProblems } from "../ai-jobs/access";
 import { TermiHubFault } from "../termihub/transport";
 import { runtimeProblems } from "./runtime-problems";
 import { readWaiting } from "../tasks/waiting";
@@ -783,6 +784,7 @@ export function createWorkService(
               cs.find((c) => c.active && c.projectId === p.projectId)?.id ??
               null,
           })),
+          aiJobProblems: await jobProblems(db, userId),
           problems: issues.map((p) => ({
             id: p.id,
             code: p.code as ProblemCode,

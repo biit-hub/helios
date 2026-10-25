@@ -13,14 +13,15 @@ import {
 } from "@helios/contracts";
 import { jobRequest, jobDate } from "./ai-job-client";
 import { UiDialog } from "./ui-help";
-import { useNavigationLocked } from "./navigation-lock";
+import { AiJobWorkflow } from "./ai-job-workflow";
+import { useNavigationLock, useNavigationLocked } from "./navigation-lock";
 const referenceNames = {
   verified: "nachgewiesen",
   pending: "wird geprüft",
   unknown: "nicht bestätigt",
   error: "nicht bestätigt",
   closing: "nicht bestätigt",
-  closed: "nicht bestätigt",
+  closed: "abgeschlossen",
 };
 const turnNames = {
   prompt: "Originalauftrag",
@@ -219,6 +220,9 @@ export function AiJobDetails({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [stop, setStop] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [discard, setDiscard] = useState(false);
+  useNavigationLock(dirty || busy);
   const reads = useRef(0);
   const load = useCallback(async () => {
     const read = ++reads.current;
@@ -264,7 +268,27 @@ export function AiJobDetails({
     }
   }
   return (
-    <UiDialog title="KI-Auftrag" busy={busy} close={close}>
+    <UiDialog
+      title="KI-Auftrag"
+      busy={busy}
+      close={() => (dirty ? setDiscard(true) : close())}
+    >
+      {discard && (
+        <fieldset aria-label="Eingaben verwerfen">
+          <p>
+            Ungespeicherte Eingaben oder eine ungeklärte Rückmeldung sind noch
+            vorhanden. Dialog trotzdem schliessen?
+          </p>
+          <div className="actions">
+            <button type="button" onClick={() => setDiscard(false)}>
+              Weiterbearbeiten
+            </button>
+            <button type="button" className="secondary" onClick={close}>
+              Dialog schliessen
+            </button>
+          </div>
+        </fieldset>
+      )}
       {error && (
         <p role="alert" className="form-error">
           {error}
@@ -303,8 +327,10 @@ export function AiJobDetails({
               )}
             </p>
           )}
-          <h3>Originalauftrag</h3>
-          <p className="ai-job-text">{job.originalPrompt}</p>
+          <details>
+            <summary>Originalauftrag</summary>
+            <p className="ai-job-text">{job.originalPrompt}</p>
+          </details>
           <h3>Verlauf</h3>
           {job.turns
             .filter((t) => t.kind !== "prompt")
@@ -324,13 +350,76 @@ export function AiJobDetails({
             <p className="help">Noch kein Ergebnis vorhanden.</p>
           )}
           {job.results.map((r) => (
-            <details key={r.id}>
+            <details key={r.id} open={r.id === job.results.at(-1)?.id}>
               <summary>
                 Ergebnisversion {r.version} · {jobDate(r.createdAt)}
               </summary>
               <p className="ai-job-text">{r.text}</p>
+              <div className="actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(r.text)
+                      .catch(() =>
+                        setError(
+                          "Kopieren ist in diesem Browser nicht verfügbar. Bitte den Text markieren und kopieren.",
+                        ),
+                      );
+                  }}
+                >
+                  Ergebnis kopieren
+                </button>
+                {r.artifact && (
+                  <a
+                    className="button secondary"
+                    href={
+                      "/api/ai-jobs/artifact?" +
+                      new URLSearchParams({ job: job.id, id: r.artifact.id })
+                    }
+                    download={r.artifact.filename}
+                  >
+                    Datei herunterladen (.{r.artifact.format})
+                  </a>
+                )}
+              </div>
+              {r.sources.length > 0 && (
+                <div>
+                  <h4>Quellen</h4>
+                  {r.sources.map((s) => (
+                    <p key={s.url}>
+                      <a href={s.url} target="_blank" rel="noreferrer noopener">
+                        {s.title}
+                      </a>{" "}
+                      · abgerufen {jobDate(s.retrievedAt)}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {r.uncertainties.length > 0 && (
+                <div>
+                  <h4>Unsicherheiten</h4>
+                  {r.uncertainties.map((s) => (
+                    <p key={s}>{s}</p>
+                  ))}
+                </div>
+              )}
             </details>
           ))}
+          <AiJobWorkflow
+            job={job}
+            updated={(value) => {
+              reads.current++;
+              setJob(value);
+              void changed();
+            }}
+            deleted={() => {
+              void changed();
+              close();
+            }}
+            dirty={setDirty}
+          />
           {job.status === "queued" && (
             <div className="actions">
               <button
@@ -385,6 +474,24 @@ export function AiJobDetails({
               <dt>Zuletzt geändert</dt>
               <dd>{jobDate(job.updatedAt)}</dd>
             </dl>
+            {job.attempts.map((attempt) => (
+              <details key={attempt.id}>
+                <summary>
+                  Versuch {attempt.number} · {attempt.status}
+                </summary>
+                <p>
+                  {attempt.model} · {jobDate(attempt.startedAt)}
+                  {attempt.finishedAt
+                    ? " bis " + jobDate(attempt.finishedAt)
+                    : ""}
+                </p>
+                <p className="ai-job-id">{attempt.digest}</p>
+                <p className="ai-job-id">
+                  {JSON.stringify(attempt.parameters)}
+                </p>
+                {attempt.code && <p>{attempt.code}</p>}
+              </details>
+            ))}
             {job.events.map((e) => (
               <p key={e.id}>
                 {jobDate(e.createdAt)} · {e.kind} · Revision {e.revision}
