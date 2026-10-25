@@ -19,11 +19,17 @@ const fieldNames: Record<string, string> = {
   duration: "Dauer",
   recurring: "Wiederholung",
 };
-function display(value: unknown) {
+function display(value: unknown): string {
   if (value === null || value === undefined || value === "")
     return "Nicht gesetzt";
-  if (Array.isArray(value)) return value.join(", ") || "Keine";
-  return String(value);
+  if (Array.isArray(value)) return value.map(display).join(", ") || "Keine";
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  )
+    return String(value);
+  return "Unbekannter Wert";
 }
 function fieldValue(key: string, value: unknown) {
   if (key === "description") return "Text geändert";

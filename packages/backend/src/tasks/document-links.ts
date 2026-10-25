@@ -46,11 +46,11 @@ function escapeLabel(text: string) {
 }
 function appendLink(text: string, link: string) {
   if (!text) return link;
-  const lastHeading = fromMarkdown(text)
-    .children.filter((node) => node.type === "heading" && node.depth <= 2)
-    .at(-1);
-  const protectedTail =
-    !!lastHeading && ["Ziel", "Checkliste"].includes(nodeText(lastHeading));
+  let lastHeadingText = "";
+  for (const node of fromMarkdown(text).children)
+    if (node.type === "heading" && node.depth <= 2)
+      lastHeadingText = nodeText(node);
+  const protectedTail = ["Ziel", "Checkliste"].includes(lastHeadingText);
   const newline = text.includes("\r\n") ? "\r\n" : "\n";
   const heading = protectedTail ? "## Dokumentenlinks" + newline : "";
   return text + newline + newline + heading + link;

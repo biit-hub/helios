@@ -3,12 +3,12 @@ const statement =
 
 // A PostgreSQL deadlock rolls back this one fixture-reset statement completely.
 // Never retry bootstrap or application/remote operations here.
-export async function resetBrowserFixture(
+export function resetBrowserFixture(
   query: (sql: string) => Promise<unknown>,
   wait: (milliseconds: number) => Promise<void> = (milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds)),
-) {
-  for (let attempt = 0; ; attempt++) {
+): Promise<void> {
+  async function reset(attempt: number): Promise<void> {
     try {
       await query(statement);
       return;
@@ -22,6 +22,8 @@ export async function resetBrowserFixture(
       )
         throw error;
       await wait((attempt + 1) * 100);
+      return reset(attempt + 1);
     }
   }
+  return reset(0);
 }

@@ -130,7 +130,9 @@ function DocumentBody({
   const model = {
       ...controller,
       detail: controller.detail!,
-      propose: onRequestSave ? async () => onRequestSave() : controller.propose,
+      propose: onRequestSave
+        ? () => Promise.resolve(onRequestSave())
+        : controller.propose,
     } as DocumentModel,
     { detail, pending, setBusy, setError, load } = model;
   return (

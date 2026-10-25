@@ -1,5 +1,4 @@
 "use client";
-import { taskSavePreview } from "@helios/contracts";
 import { documentDraftChanges } from "./document-save";
 import { TaskSaveDialog } from "./task-save-dialog";
 import type { DocumentController } from "./use-task-document";
@@ -26,18 +25,19 @@ import { nativeTaskOrder } from "./task-list-order";
 import { UiDialog, InfoTip } from "./ui-help";
 import { Icon } from "@helios/ui";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type {
-  ContextView,
-  WorkSnapshot,
-  TaskView,
-  TaskInspection,
-  TaskCommand,
-  TaskSavePreview,
-  DocumentChange,
-  TaskOperationView,
+import {
+  taskSavePreview,
+  entryKey,
+  type ContextView,
+  type WorkSnapshot,
+  type TaskView,
+  type TaskInspection,
+  type TaskCommand,
+  type TaskSavePreview,
+  type DocumentChange,
+  type TaskOperationView,
 } from "@helios/contracts";
 import type { ReactNode } from "react";
-import { entryKey } from "@helios/contracts";
 import { LabelPicker } from "./label-picker";
 import { useNavigationLock } from "./navigation-lock";
 import {
