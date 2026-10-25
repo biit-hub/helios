@@ -44,6 +44,11 @@ const turnNames = {
   refinement: "Nachbearbeitung",
 };
 
+function emptyJobMessage(search: string, status: string) {
+  if (search) return "Keine KI-Aufträge für diese Suche gefunden.";
+  if (status) return "Keine KI-Aufträge für diesen Filter vorhanden.";
+  return "Keine KI-Aufträge vorhanden. Neue Aufträge über die Schnellaktion erstellen.";
+}
 export function AiJobs() {
   const query = useSearchParams();
   const [list, setList] = useState<AiJobList | null>(null);
@@ -193,13 +198,7 @@ export function AiJobs() {
           <StatusMessage loading>Aufträge werden geladen …</StatusMessage>
         )}
         {list && !list.jobs.length && (
-          <StatusMessage>
-            {search
-              ? "Keine KI-Aufträge für diese Suche gefunden."
-              : status
-                ? "Keine KI-Aufträge für diesen Filter vorhanden."
-                : "Keine KI-Aufträge vorhanden. Neue Aufträge über die Schnellaktion erstellen."}
-          </StatusMessage>
+          <StatusMessage>{emptyJobMessage(search, status)}</StatusMessage>
         )}
         <div className="ai-job-list">
           {list?.jobs.map((job) => (

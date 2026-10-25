@@ -29,6 +29,9 @@ function lastQuestion(turns: AiJobDetail["turns"]) {
   }
   return question;
 }
+function confirmationVariant(action: string) {
+  return action === "delete" ? "danger" : "primary";
+}
 export function AiJobWorkflow({
   job,
   updated,
@@ -300,7 +303,7 @@ export function AiJobWorkflow({
                   loadingText="Änderungen werden gespeichert …"
                   type="button"
                   disabled={busy}
-                  variant={confirm === "delete" ? "danger" : "primary"}
+                  variant={confirmationVariant(confirm)}
                   onClick={() => void submit(confirm)}
                 >
                   Bestätigen

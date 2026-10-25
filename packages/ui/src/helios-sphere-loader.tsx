@@ -20,7 +20,7 @@ export function HeliosSphereLoader({
   lineWidth = 1.15,
   className,
   ariaLabel = "Helios lädt",
-}: HeliosSphereLoaderProps) {
+}: Readonly<HeliosSphereLoaderProps>) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -164,7 +164,7 @@ export function HeliosSphereLoader({
     <canvas
       ref={canvasRef}
       className={className}
-      role="img"
+      role="status"
       aria-label={ariaLabel}
       width={size}
       height={size}

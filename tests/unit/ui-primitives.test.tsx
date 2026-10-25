@@ -106,7 +106,7 @@ it("keeps the original 32 curves, 360 samples, transparent clearing and 5200 ms 
 it("renders the static original sphere for reduced motion and switches between exactly one loop and no loop", () => {
   const env = canvasEnvironment(true);
   const view = render(<HeliosSphereLoader size={24} ariaLabel="Teststatus" />);
-  expect(screen.getByRole("img", { name: "Teststatus" })).toHaveStyle({
+  expect(screen.getByRole("status", { name: "Teststatus" })).toHaveStyle({
     width: "24px",
     height: "24px",
   });
