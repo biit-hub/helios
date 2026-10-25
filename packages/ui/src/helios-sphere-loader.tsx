@@ -161,19 +161,24 @@ export function HeliosSphereLoader({
   }, [size, color, lineCount, cycleMs, lineWidth]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={className}
-      role="status"
+    <output
       aria-label={ariaLabel}
-      width={size}
-      height={size}
-      style={{
-        display: "block",
-        width: size,
-        height: size,
-      }}
-    />
+      aria-hidden={ariaLabel ? undefined : true}
+      style={{ display: "block", width: size, height: size }}
+    >
+      <canvas
+        ref={canvasRef}
+        className={className}
+        aria-hidden="true"
+        width={size}
+        height={size}
+        style={{
+          display: "block",
+          width: size,
+          height: size,
+        }}
+      />
+    </output>
   );
 }
 
