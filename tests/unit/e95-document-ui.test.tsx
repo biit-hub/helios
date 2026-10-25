@@ -61,6 +61,94 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+it.each(["network", "malformed"])(
+  "reconciles a %s document-submit reply by its original key without replay",
+  async (failure) => {
+    const posts: Record<string, unknown>[] = [];
+    let found = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string, init?: RequestInit) => {
+        if (path === "/api/epics/preview")
+          return Response.json({
+            before: "vorher",
+            after: "nachher",
+            basis: "b".repeat(64),
+            change: { kind: "goal", value: "Bewusster Entwurf" },
+          });
+        if (path === "/api/tasks/submit") {
+          posts.push(JSON.parse(init!.body as string));
+          if (failure === "network")
+            throw new TypeError("Synthetic lost reply");
+          return Response.json({});
+        }
+        if (path === "/api/tasks")
+          return Response.json(
+            found
+              ? [
+                  {
+                    id: "original-op",
+                    input: { key: posts[0]!.key },
+                    status: "unknown",
+                    code: "OUTCOME_UNKNOWN",
+                    result: null,
+                    retryAt: null,
+                  },
+                ]
+              : [],
+          );
+        return Response.json(source());
+      }),
+    );
+    render(
+      <TaskDocument
+        context={context}
+        taskId={tasks[0]!.id}
+        snapshot={snapshot}
+      />,
+    );
+    await screen.findByLabelText("Ziel", { exact: true });
+    fireEvent.click(screen.getByText("Ziel", { selector: "summary span" }));
+    fireEvent.change(screen.getByLabelText("Ziel", { exact: true }), {
+      target: { value: "Bewusster Entwurf" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Zieländerung prüfen" }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: "Änderungen speichern",
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Änderung bewusst bestätigen",
+      }),
+    );
+    const check = await within(dialog).findByRole("button", {
+      name: "Dokumentauftrag im Journal prüfen",
+    });
+    expect(
+      within(dialog).getByRole("button", {
+        name: "Änderung bewusst bestätigen",
+      }),
+    ).toBeDisabled();
+    fireEvent.click(check);
+    await within(dialog).findByText(
+      "Noch kein eindeutig zuordenbarer Journalnachweis. Nicht erneut senden.",
+    );
+    found = true;
+    fireEvent.click(check);
+    await within(dialog).findByText(/Operationsstand: unknown/);
+    expect(posts).toHaveLength(1);
+    expect(screen.getByLabelText("Ziel", { exact: true })).toHaveValue(
+      "Bewusster Entwurf",
+    );
+    expect(
+      within(dialog).getByRole("button", {
+        name: "Änderung bewusst bestätigen",
+      }),
+    ).toBeDisabled();
+  },
+);
 it("offers flat sections, counts checklist changes, supports plus/Enter and keeps links validated", async () => {
   vi.stubGlobal(
     "fetch",
@@ -176,7 +264,7 @@ it.each(["succeeded", "unknown", "partial"])(
     fireEvent.click(
       screen.getByRole("button", { name: "Zieländerung prüfen" }),
     );
-    await screen.findByRole("heading", { name: "Änderungsvorschau" });
+    await screen.findByRole("dialog", { name: "Änderungen speichern" });
     vi.useFakeTimers();
     fireEvent.click(
       screen.getByRole("button", { name: "Änderung bewusst bestätigen" }),

@@ -1,4 +1,4 @@
-import { openTaskEditor } from "../fixtures/task-detail";
+import { openTaskEditor, confirmTaskSave } from "../fixtures/task-detail";
 import { expect, test } from "@playwright/test";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
 import type { TaskOperationView } from "@helios/contracts";
@@ -112,6 +112,7 @@ test("E4 verified create/edit refresh without F5; comments, waiting, labels, clo
   await dialog.getByLabel("Dauer in Minuten", { exact: true }).fill("45");
   await dialog.getByLabel("Echte Deadline", { exact: true }).fill("2026-10-23");
   await dialog.getByRole("button", { name: "Speichern", exact: true }).click();
+  await confirmTaskSave(page);
   await expect(dialog).toBeHidden({ timeout: 20000 });
   await expect(
     page.getByRole("heading", {

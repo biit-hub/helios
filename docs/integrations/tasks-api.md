@@ -35,3 +35,9 @@ GET /api/work?contextId=UUID enthält projectId/contextRevision, aktuelle tasks 
 ## E9.4 – Feldgenauer Nachweis
 
 Das bestehende Journal speichert beim Nachlesen `verification` mit bestätigten und nicht bestätigten Feldnamen sowie Zeit und Antwortnachweis. Ein HTTP-Erfolg mit abweichenden Feldern bleibt `unknown`; der neue Code `TODOIST_FIELDS_UNCONFIRMED` unterscheidet diesen Fall von einer verlorenen Antwort. Der gespeicherte Pending-Schritt und seine Request-ID bleiben erhalten. Bewusstes Fortsetzen liest zuerst; es sendet den ungeklärten Schritt nicht erneut. Kein Zurücksetzen bestehender Journale. Datum ohne Uhrzeit wird nur bestätigt, wenn die Uhrzeit tatsächlich entfernt wurde; Dauern werden samt Einheit geprüft.
+
+## E9.6 – Gemeinsamer Save
+
+`POST /api/tasks/preview` verwendet dieselben aktiven MFA-, Origin-, JSON-, Grössen- und Fristguards wie die Aufgabenmutationen. Eingabe: `contextId`, `taskId`, `basis`, `fields`, optional `documents` (maximal 22 bestehende E8-Dokumentänderungen) und `acknowledgeRecurrenceChange`. Die serverseitig frisch geprüfte Antwort `{basis,before,fields}` hat HTTP 200 und erzeugt weder Journal noch Todoist-Write.
+
+Nach ausdrücklicher Bestätigung nimmt `submit` ein gewöhnliches `update` mit ursprünglicher Basis und additivem `documents` entgegen. Nur `update` darf diese Sammlung enthalten. Alte Kommandos bleiben unverändert kompatibel. Der bestehende Worker leitet genau einen nativen Patch ab und verifiziert sämtliche Felder; Konflikte zwischen freiem Beschreibungstext und demselben strukturierten Abschnitt ergeben `TASK_SAVE_OVERLAP`. Unknown/Partial und verlorene Submit-Antworten erlauben keinen blinden Retry. [Ableitung und Sicherheitsregeln](../architecture/task-save.md).

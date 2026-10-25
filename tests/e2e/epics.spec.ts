@@ -62,7 +62,9 @@ test("E8 native Epic, reviewed goal/checklist/link edits, reload and safe manual
   await doc
     .getByRole("button", { name: "Zieländerung prüfen", exact: true })
     .click();
-  await expect(doc.getByText(/Quellfassung/)).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "Änderungen speichern", exact: true }),
+  ).toBeVisible();
   await doc
     .getByRole("button", { name: "Änderung bewusst bestätigen", exact: true })
     .click();

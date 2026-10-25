@@ -55,6 +55,10 @@
 }
 .workspace .task-accordion > summary,
 .workspace .task-editor-scroll details > summary {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 9px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -367,4 +371,28 @@
 }
 .task-entry[open] > summary .task-entry-chevron {
   transform: rotate(180deg);
+}
+
+/* E9.6: the visible accordion header is the entire hit area. */
+.workspace .task-accordion > summary:is(:hover, :focus-visible),
+.workspace .task-editor-scroll details > summary:is(:hover, :focus-visible) {
+  background: #faf0df;
+}
+.workspace .task-entry > .task-card-actions {
+  padding-inline: 16px;
+  box-sizing: border-box;
+}
+.workspace .task-editor-scroll .task-accordion-body {
+  padding: 12px;
+}
+.task-save-changes {
+  padding-left: 20px;
+}
+.task-save-changes li {
+  margin-block: 6px;
+  overflow-wrap: anywhere;
+}
+.task-save-changes + .task-accordion pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

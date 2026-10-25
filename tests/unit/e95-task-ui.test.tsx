@@ -91,6 +91,14 @@ function provision(status = "queued", source = inspection) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/tasks/preview") {
+        const body = JSON.parse(init!.body as string);
+        return Response.json({
+          basis: inspection.basis,
+          before: inspection.task,
+          fields: body.fields,
+        });
+      }
       if (url === "/api/tasks/submit") {
         calls.push(JSON.parse(init!.body as string));
         return Response.json({ operationId: "op" });
@@ -133,6 +141,15 @@ async function editor() {
   );
   await screen.findByDisplayValue(inspection.task.content);
   return close;
+}
+async function saveTask() {
+  fireEvent.click(screen.getByRole("button", { name: "Speichern" }));
+  await act(async () => {});
+  const dialog = screen.getByRole("dialog", { name: "Änderungen speichern" });
+  fireEvent.click(
+    within(dialog).getByRole("button", { name: "Änderungen speichern" }),
+  );
+  await act(async () => {});
 }
 it("labels properties, separates waiting details and keeps native source untouched", () => {
   const waiting = {
@@ -239,7 +256,7 @@ it("saves through the existing journal and changes only fun without losing other
   const toggle = screen.getByRole("switch", { name: "Freiwillig / Spass" });
   fireEvent.click(toggle);
   expect(toggle).toBeChecked();
-  fireEvent.click(screen.getByRole("button", { name: "Speichern" }));
+  await saveTask();
   await act(async () => {});
   expect(calls).toHaveLength(1);
   expect(calls[0]).toMatchObject({
@@ -349,7 +366,7 @@ it.each(["unknown", "partial"])(
     fireEvent.change(screen.getByLabelText("Titel", { exact: true }), {
       target: { value: "Nicht verlieren" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Speichern" }));
+    await saveTask();
     await act(async () => {});
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
@@ -396,6 +413,14 @@ it.each(["transport", "server", "acknowledgement"])(
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === "/api/tasks/preview") {
+          const body = JSON.parse(init!.body as string);
+          return Response.json({
+            basis: inspection.basis,
+            before: inspection.task,
+            fields: body.fields,
+          });
+        }
         if (url === "/api/tasks/submit") {
           posts.push(JSON.parse(init!.body as string));
           if (kind === "transport") throw new TypeError("synthetic lost reply");
@@ -423,7 +448,7 @@ it.each(["transport", "server", "acknowledgement"])(
     fireEvent.change(screen.getByLabelText("Titel", { exact: true }), {
       target: { value: "Originaleingabe erhalten" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Speichern" }));
+    await saveTask();
     await act(async () => {});
     expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
     expect(screen.getByLabelText("Titel", { exact: true })).toHaveValue(

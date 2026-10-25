@@ -911,6 +911,8 @@ const workErrorMessages: Record<string, string> = {
   ...problemMessages,
   RECURRENCE_CONFIRMATION_REQUIRED:
     "Die Datumsänderung würde die Wiederholung entfernen. Dies ausdrücklich bestätigen oder einen vollständigen neuen Wiederholungstext verwenden.",
+  TASK_SAVE_OVERLAP:
+    "Beschreibung und strukturierte Felder ändern denselben Abschnitt. Bitte die überschneidenden Eingaben abgleichen; deine Eingaben bleiben erhalten.",
   TASK_SOURCE_CONFLICT:
     "Todoist wurde zwischenzeitlich geändert. Eingaben erhalten und die aktuelle Quelle prüfen.",
   TASK_SCOPE_CONFLICT:

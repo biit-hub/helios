@@ -15,6 +15,7 @@ export const taskFields = z.strictObject({
   recurring: z.string().trim().min(1).max(200).optional(),
 });
 export const taskPatch = taskFields.partial();
+export type TaskPatch = z.infer<typeof taskPatch>;
 export const waitingInput = z.strictObject({
   who: z.string().trim().min(1).max(300),
   subject: z.string().trim().min(1).max(1000),
@@ -88,6 +89,7 @@ export const taskCommand = z.strictObject({
   parentId: externalId.nullable().optional(),
   fields: taskPatch.optional(),
   document: documentChange.optional(),
+  documents: z.array(documentChange).min(1).max(22).optional(),
   epicClosePolicy: z.literal("detach").optional(),
   comment: z.string().trim().min(1).max(12000).optional(),
   waiting: waitingInput.optional(),
@@ -95,6 +97,20 @@ export const taskCommand = z.strictObject({
   acknowledgeDestructive: z.boolean().default(false),
   acknowledgeRecurrenceChange: z.boolean().default(false),
 });
+export const taskSaveInput = z.strictObject({
+  contextId: z.uuid(),
+  taskId: externalId,
+  basis: z.string().length(64),
+  fields: taskPatch,
+  documents: z.array(documentChange).max(22).default([]),
+  acknowledgeRecurrenceChange: z.boolean().default(false),
+});
+export const taskSavePreview = z.strictObject({
+  basis: z.string().length(64),
+  before: todoistTaskSchema,
+  fields: taskPatch.refine((value) => Object.keys(value).length > 0),
+});
+export type TaskSavePreview = z.infer<typeof taskSavePreview>;
 export type TaskCommand = z.infer<typeof taskCommand>;
 export type TaskFields = z.infer<typeof taskFields>;
 export type WaitingDetails = z.infer<typeof waitingInput>;

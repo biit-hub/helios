@@ -1,4 +1,4 @@
-import { openTaskEditor } from "../fixtures/task-detail";
+import { openTaskEditor, confirmTaskSave } from "../fixtures/task-detail";
 import { test, expect } from "@playwright/test";
 import type { WorkSnapshot } from "@helios/contracts";
 import { bootstrapWorkSettings } from "../fixtures/browser-work";
@@ -167,6 +167,7 @@ test("E9.2 central context, settings-only Kanban, preserved unknown history, two
     await route.continue();
   });
   await editor.getByRole("button", { name: "Speichern", exact: true }).click();
+  await confirmTaskSave(page);
   await expect(
     page.getByRole("button", { name: "Atelier Test", exact: true }),
   ).toBeDisabled();

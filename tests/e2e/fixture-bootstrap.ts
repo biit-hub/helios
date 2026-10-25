@@ -1,3 +1,4 @@
+import { resetBrowserFixture } from "../fixtures/browser-reset";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
@@ -7,7 +8,10 @@ import {
   loadIdentityConfig,
 } from "@helios/backend";
 const config = loadIdentityConfig();
-if (config.HELIOS_ENV !== "test")
+if (
+  config.HELIOS_ENV !== "test" ||
+  !new URL(config.DATABASE_URL).pathname.endsWith("_test")
+)
   throw new Error("Browser fixtures require isolated test environment");
 const db = createDatabase(config.DATABASE_URL);
 try {
@@ -16,9 +20,7 @@ try {
       new URL("../../packages/backend/migrations", import.meta.url),
     ),
   });
-  await db.pool.query(
-    "TRUNCATE auth_user,auth_flows,auth_limits,auth_rate_limit,auth_verification,auth_totp_uses,security_events CASCADE",
-  );
+  await resetBrowserFixture((sql) => db.pool.query(sql));
   const result = await bootstrapIdentity(
     db,
     config,

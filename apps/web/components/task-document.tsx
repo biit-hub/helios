@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { announceTaskChange } from "./task-events";
 import { TaskAccordion } from "./task-accordion";
 import type { ContextView, WorkSnapshot } from "@helios/contracts";
@@ -26,6 +26,8 @@ export function TaskDocument({
   onStateChange,
   onVerified,
   sourceControls = true,
+  controllerRef,
+  onRequestSave,
 }: Readonly<{
   context: ContextView;
   taskId: string;
@@ -33,9 +35,14 @@ export function TaskDocument({
   onStateChange?: (state: DocumentUiState) => void;
   onVerified?: () => void;
   sourceControls?: boolean;
+  controllerRef?: RefObject<DocumentController | null>;
+  onRequestSave?: () => void;
 }>) {
   const controller = useTaskDocument(context, taskId),
     { detail, error } = controller;
+  useEffect(() => {
+    if (controllerRef) controllerRef.current = controller;
+  });
   const dirty =
     !!detail &&
     (controller.goal !== detail.goal ||
@@ -53,15 +60,16 @@ export function TaskDocument({
       running:
         controller.busy ||
         ["queued", "running"].includes(controller.operation?.status ?? ""),
-      uncertain: ["unknown", "partial"].includes(
-        controller.operation?.status ?? "",
-      ),
+      uncertain:
+        controller.requestUncertain ||
+        ["unknown", "partial"].includes(controller.operation?.status ?? ""),
     });
   }, [
     dirty,
     controller.pending,
     controller.busy,
     controller.operation?.status,
+    controller.requestUncertain,
     onStateChange,
   ]);
   const verifiedRef = useRef(onVerified);
@@ -98,6 +106,7 @@ export function TaskDocument({
           taskId={taskId}
           snapshot={snapshot}
           sourceControls={sourceControls}
+          onRequestSave={onRequestSave}
         />
       )}
     </section>
@@ -109,14 +118,22 @@ function DocumentBody({
   taskId,
   snapshot,
   sourceControls,
+  onRequestSave,
 }: Readonly<{
   controller: DocumentController;
   context: ContextView;
   taskId: string;
   snapshot: WorkSnapshot;
   sourceControls: boolean;
+  onRequestSave?: () => void;
 }>) {
-  const model = { ...controller, detail: controller.detail! } as DocumentModel,
+  const model = {
+      ...controller,
+      detail: controller.detail!,
+      propose: onRequestSave
+        ? () => Promise.resolve(onRequestSave())
+        : controller.propose,
+    } as DocumentModel,
     { detail, pending, setBusy, setError, load } = model;
   return (
     <>
@@ -157,7 +174,9 @@ function DocumentBody({
       )}
       <DocumentFields model={model} />
       <DocumentLinks model={model} />
-      <DocumentPreview model={model} context={context} taskId={taskId} />
+      {!onRequestSave && (
+        <DocumentPreview model={model} context={context} taskId={taskId} />
+      )}
       <TaskAccordion title="Hierarchie und Fortschritt">
         <EpicHierarchy model={model} context={context} taskId={taskId} />
       </TaskAccordion>

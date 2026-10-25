@@ -64,3 +64,13 @@ In der Bearbeitung stehen Grundinformationen direkt oben. Ziel, Checkliste und D
 Die dauerhaft sichtbare Leiste bietet Abbrechen, Speichern und eigene Dialoge für Abschluss, Löschen, Verschieben, Warten sowie Kommentar hinzufügen. Eine Sofortaktion übernimmt offene Grund-/Dokumententwürfe nur dann nicht, wenn diese Nichtübernahme ausdrücklich bestätigt wurde. Geänderte Aktionsdialoge beim Abbrechen bewusst verwerfen; nichts wird automatisch gespeichert. Abschluss-/Löschbestätigungen sind getrennt; Hierarchie- und Epic-Trennnachweise bleiben erforderlich.
 
 Bei verlorener Submit-Antwort keine neue Anfrage senden. «Schreibauftrag im Journal prüfen» liest nur den ursprünglichen Schlüssel nach; kein Treffer beweist keinen Fehlschlag. Unknown-/Partial-Nachweise bleiben sichtbar und sperren neue Mutationen. [Automatisierte und manuelle Prüfungen](../development/e9.5-verification.md).
+
+## E9.6 – Ein gemeinsamer Speichervorgang
+
+In der Aufgabenbearbeitung sammelt **Speichern** die geänderten Grundinformationen und die Entwürfe für Ziel, Checkliste und Dokumentenlinks. Auch ein noch im Textfeld stehender neuer Checklistenpunkt wird berücksichtigt. Ein kompakter Dialog zeigt die betroffenen Informationen; die vollständige Beschreibung vorher/nachher lässt sich bei Bedarf aufklappen. **Änderungen speichern** bestätigt den gemeinsamen Auftrag. **Zurück zur Aufgabe** bewahrt sämtliche Eingaben. Die grosse zusätzliche Vorschaukarte entfällt.
+
+Nach dem nativen Nachweis schliesst die Bearbeitung und die Aufgabenliste wird ohne Browserrefresh neu gelesen. Eine angenommene Operation bedeutet noch keinen Erfolg. Bei Unknown/Partial bleiben Entwürfe, Request-ID und Feldnachweise erhalten; weder der gesamte Auftrag noch ein ungeklärter Teil wird blind wiederholt. Eine verlorene Submit-Antwort wird ausschliesslich über den ursprünglichen Journalschlüssel nachgelesen.
+
+Unabhängige Änderungen an freiem Beschreibungstext und strukturierten Abschnitten sind gemeinsam möglich. Ändern das Beschreibungsfeld und ein strukturierter Entwurf denselben Abschnitt unterschiedlich, zuerst die Eingaben abgleichen; nichts wird still überschrieben. Die verbindliche abgeleitete Epic-Verständniskorrektur besitzt weiterhin ihre eigene E8-Bestätigung und ist kein nativer Todoist-Beschreibungsabschnitt. Ungespeicherte solche Korrekturen müssen zuerst dort bestätigt werden.
+
+[Prüfbericht und manuelle Abnahme](../development/e9.6-verification.md), [technischer Vertrag](../architecture/task-save.md).
