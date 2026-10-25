@@ -31,7 +31,7 @@ import {
   type PreparedJob,
 } from "./store";
 import { parentFingerprint } from "./journal";
-import { referenceForTask } from "./reference";
+import { referenceForTask, assertOrdinaryAiTask } from "./reference";
 
 export function createAiJobService(
   database: Database,
@@ -216,6 +216,12 @@ export function createAiJobService(
         source.task.is_deleted
       )
         throw new WorkFault("AI_JOB_ORIGIN_CHANGED", 409);
+      await assertOrdinaryAiTask(
+        database.db,
+        base.userId,
+        input.origin.contextId,
+        source.task,
+      );
       await tasks.enqueueDelegation(
         headers,
         {

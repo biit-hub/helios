@@ -37,9 +37,9 @@ export async function readSource(
   if (project.inbox_project || project.is_archived || project.is_deleted)
     throw new WorkFault("AI_SCOPE_DENIED", 409);
   const task = await reader.task(token, taskId);
-  await assertOrdinaryAiTask(database.db, user, contextId, task);
   if (task.project_id !== scope.c.projectId || task.checked || task.is_deleted)
     throw new WorkFault("AI_SCOPE_DENIED", 409);
+  await assertOrdinaryAiTask(database.db, user, contextId, task);
   const [rows, comments] = await Promise.all([
     reader.tasks(token, task.project_id),
     reader.comments(token, taskId),

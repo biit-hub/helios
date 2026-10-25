@@ -522,3 +522,79 @@ it("resolves only owned verified reference IDs and excludes them from E6 at both
     ),
   ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
 });
+it("rejects delegation of an unresolved native reference whose create reply was lost", async () => {
+  await configure();
+  const source = await origin();
+  await create(command({ origin: source }));
+  h.f.control.fail = "applied";
+  await executor().runNext();
+  h.f.control.fail = "";
+  const child = h.f.state.tasks[1]!;
+  const inspection = await createTaskService(h.db, h.config, reader()).inspect(
+    h.headers(),
+    source.contextId,
+    child.id,
+  );
+  await expect(
+    create(
+      command({
+        origin: {
+          contextId: source.contextId,
+          taskId: child.id,
+          basis: inspection.basis,
+        },
+      }),
+    ),
+  ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
+  expect(h.f.control.calls).toHaveLength(1);
+});
+it("keeps verified references out of delegation and E6 after a conscious native context move", async () => {
+  await configure();
+  const source = await origin();
+  const job = await create(command({ origin: source }));
+  await executor().runNext();
+  h.advance();
+  await h.work.handle(
+    "context-save",
+    h.headers(),
+    h.employer("Synthetic second context", projects[1]!.id),
+  );
+  const context = (await h.work.snapshot(h.headers())).contexts.find(
+    (c) => c.projectId === projects[1]!.id,
+  )!;
+  const child = h.f.state.tasks[1]!;
+  child.project_id = projects[1]!.id;
+  child.parent_id = null;
+  child.section_id = h.f.sections.find(
+    (s) => s.project_id === projects[1]!.id && s.name === "Offen",
+  )!.id;
+  h.advance();
+  await h.work.handle("tasks-refresh", h.headers(), { contextId: context.id });
+  const inspection = await createTaskService(h.db, h.config, reader()).inspect(
+    h.headers(),
+    context.id,
+    child.id,
+  );
+  await expect(
+    create(
+      command({
+        origin: {
+          contextId: context.id,
+          taskId: child.id,
+          basis: inspection.basis,
+        },
+      }),
+    ),
+  ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
+  const [row] = await h.db.db
+    .select()
+    .from(aiJobs)
+    .where(eq(aiJobs.id, job.id));
+  await expect(
+    readSource(h.db, h.config, reader(), row!.userId, context.id, child.id),
+  ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
+  await expect(
+    projectionScope(h.db.db, row!.userId, context.id, child.id),
+  ).rejects.toThrow("AI_JOB_REFERENCE_ONLY");
+  expect(h.f.control.calls).toHaveLength(1);
+});

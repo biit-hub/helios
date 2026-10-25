@@ -37,11 +37,11 @@ export async function assertOrdinaryAiTask(
     .where(
       and(
         eq(aiJobs.userId, userId),
-        eq(aiJobRefs.contextId, contextId),
-        eq(aiJobRefs.projectId, task.project_id),
         or(
           eq(aiJobRefs.childId, task.id),
           and(
+            eq(aiJobRefs.contextId, contextId),
+            eq(aiJobRefs.projectId, task.project_id),
             isNull(aiJobRefs.childId),
             eq(aiJobRefs.taskId, task.parent_id ?? ""),
             sql`${task.content} = 'KI Aufgabe ' || ${aiJobs.id}::text`,
