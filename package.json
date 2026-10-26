@@ -42,7 +42,7 @@
     "@helios/ui": "workspace:*",
     "drizzle-orm": "0.45.4",
     "prettier": "3.8.3",
-    "react": "19.3.0",
+    "react": "19.3.1",
     "react-dom": "19.3.0",
     "otplib": "13.5.0",
     "@types/qrcode": "1.5.6"
